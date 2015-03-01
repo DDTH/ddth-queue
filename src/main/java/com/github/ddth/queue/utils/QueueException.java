@@ -1,4 +1,4 @@
-package con.github.ddth.queue.utils;
+package com.github.ddth.queue.utils;
 
 /**
  * Thrown to indicate that there has been an error with queue oeration.

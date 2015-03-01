@@ -1,4 +1,4 @@
-package con.github.ddth.queue;
+package com.github.ddth.queue;
 
 import java.util.Date;
 

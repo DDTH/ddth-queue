@@ -1,4 +1,4 @@
-package con.github.ddth.queue.impl;
+package com.github.ddth.queue.impl;
 
 import java.sql.Connection;
 import java.text.MessageFormat;
@@ -10,10 +10,9 @@ import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.github.ddth.dao.jdbc.BaseJdbcDao;
-
-import con.github.ddth.queue.IQueue;
-import con.github.ddth.queue.IQueueMessage;
-import con.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.IQueue;
+import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.utils.QueueException;
 
 /**
  * Abstract JDBC implementation of {@link IQueue}.
