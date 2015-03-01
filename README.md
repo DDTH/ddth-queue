@@ -34,11 +34,36 @@ Maven dependency:
 
 `ddth-queue` provides a unified APIs to interact with various queue implementations.
 
-Queue flow:
+### Queue Usage Flow ###
 
+- Call `IQueue.take()` to take a message from queue.
+- Do something with the message.
+  - When done, call `IQueue.finish(msg)`
+  - If not done and the message need to be requeue, either call `IQueue.requeue(msg)` or `IQueue.requeueSilent(msg)` to put backthe message to queue.
 
+### Queue Storage Implementation ###
+
+Queue implementation has 2 message storages:
+- *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is FIFO.
+- *Ephemeral storage*: (optional) messages taken from queue storage are temporarily store in a ephemeral until _finished_ or _re-queued_.
+
+Queue implementation is required to provide *Queue storage* but *Ephemeral storage* is optional.
+
+### API Implementation ###
+
+*`boolean IQueue.queue(IQueueMessage)`:*
+Put a message to queue storage.
+
+*`boolean requeue(IQueueMessage)`:*
+Re-queue a taken message. Queue implementation must remove the message instance in the ephemeral storage (if any). Once re-queued, message's timestamp and number of re-queue times are updated.
+
+*`boolean requeueSilent(IQueueMessage)`:*
+Similar to API `requeue` but message's timestamp and number of re-queue times are _not_ updated.
+
+*`IQueueMessage take()`:*
+Take a message from queue.
+
+*`finish(IQueueMessage)`:*
+Called to clean-up message from ephemeral storage.
 
 ### JDBC Queue Implementation ###
-
-Persistent queue backed by a database system.
-
