@@ -51,19 +51,14 @@ Queue implementation is required to provide *Queue storage* but *Ephemeral stora
 
 ### API Implementation ###
 
-*`boolean IQueue.queue(IQueueMessage)`:*
-Put a message to queue storage.
+- *`boolean IQueue.queue(IQueueMessage)`*: Put a message to queue storage.
 
-*`boolean requeue(IQueueMessage)`:*
-Re-queue a taken message. Queue implementation must remove the message instance in the ephemeral storage (if any). Once re-queued, message's timestamp and number of re-queue times are updated.
+- *`boolean requeue(IQueueMessage)`*: Re-queue a taken message. Queue implementation must remove the message instance in the ephemeral storage (if any). Once re-queued, message's timestamp and number of re-queue times are updated.
 
-*`boolean requeueSilent(IQueueMessage)`:*
-Similar to API `requeue` but message's timestamp and number of re-queue times are _not_ updated.
+- *`boolean requeueSilent(IQueueMessage)`*: Similar to API `requeue` but message's timestamp and number of re-queue times are _not_ updated.
 
-*`IQueueMessage take()`:*
-Take a message from queue.
+- *`IQueueMessage take()`*: Take a message from queue.
 
-*`finish(IQueueMessage)`:*
-Called to clean-up message from ephemeral storage.
+- *`finish(IQueueMessage)`*: Called to clean-up message from ephemeral storage.
 
 ### JDBC Queue Implementation ###
