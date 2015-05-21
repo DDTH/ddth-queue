@@ -7,6 +7,7 @@ import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DeadlockLoserDataAccessException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.github.ddth.dao.jdbc.BaseJdbcDao;
@@ -157,6 +158,9 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
             Date now = new Date();
             msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
             return putToQueueStorage(jdbcTemplate, msg);
+        } catch (DuplicateKeyException dke) {
+            LOGGER.warn(dke.getMessage(), dke);
+            return true;
         } catch (DeadlockLoserDataAccessException dle) {
             if (numRetries > maxRetries) {
                 throw new QueueException(dle);
@@ -240,6 +244,9 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
             msg.qIncNumRequeues().qTimestamp(now);
             boolean result = putToQueueStorage(jdbcTemplate, msg);
             return result;
+        } catch (DuplicateKeyException dke) {
+            LOGGER.warn(dke.getMessage(), dke);
+            return true;
         } catch (DeadlockLoserDataAccessException dle) {
             if (numRetries > maxRetries) {
                 throw new QueueException(dle);
@@ -326,6 +333,9 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
             removeFromEphemeralStorage(jdbcTemplate, msg);
             boolean result = putToQueueStorage(jdbcTemplate, msg);
             return result;
+        } catch (DuplicateKeyException dke) {
+            LOGGER.warn(dke.getMessage(), dke);
+            return true;
         } catch (DeadlockLoserDataAccessException dle) {
             if (numRetries > maxRetries) {
                 throw new QueueException(dle);
@@ -484,7 +494,11 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
             }
             if (msg != null) {
                 removeFromQueueStorage(jdbcTemplate, msg);
-                putToEphemeralStorage(jdbcTemplate, msg);
+                try {
+                    putToEphemeralStorage(jdbcTemplate, msg);
+                } catch (DuplicateKeyException dke) {
+                    LOGGER.warn(dke.getMessage(), dke);
+                }
             }
         } catch (DeadlockLoserDataAccessException dle) {
             if (numRetries > maxRetries) {

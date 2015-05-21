@@ -1,6 +1,11 @@
 ddth-queue release notes
 ========================
 
+0.1.2 - 2015-05-21
+------------------
+- Fix a bug with `DuplicateKeyException`.
+
+
 0.1.1 - 2015-05-09
 ------------------
 - Bugs fixed & enhancements.
