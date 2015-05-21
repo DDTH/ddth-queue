@@ -479,19 +479,10 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * @param maxRetries
      * @return
      */
-    protected IQueueMessage _takeWithRetries(final JdbcTemplate jdbcTemplate,
-            final IQueueMessage _msg, final int numRetries, final int maxRetries) {
-        IQueueMessage msg = _msg;
+    protected IQueueMessage _takeWithRetries(final JdbcTemplate jdbcTemplate, final int numRetries,
+            final int maxRetries) {
         try {
-            if (msg == null) {
-                /*
-                 * Guard to make sure message are not taken from queue-storage
-                 * more than one in the case {@code readFromQueueStorage} and
-                 * {@code removeFromQueueStorage} succeeded, but {@code
-                 * putToEphemeralStorage} failed
-                 */
-                msg = readFromQueueStorage(jdbcTemplate);
-            }
+            IQueueMessage msg = readFromQueueStorage(jdbcTemplate);
             if (msg != null) {
                 removeFromQueueStorage(jdbcTemplate, msg);
                 try {
@@ -500,14 +491,14 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
                     LOGGER.warn(dke.getMessage(), dke);
                 }
             }
+            return msg;
         } catch (DeadlockLoserDataAccessException dle) {
             if (numRetries > maxRetries) {
                 throw new QueueException(dle);
             } else {
-                msg = _takeWithRetries(jdbcTemplate, msg, numRetries + 1, maxRetries);
+                return _takeWithRetries(jdbcTemplate, numRetries + 1, maxRetries);
             }
         }
-        return msg;
     }
 
     /**
@@ -523,8 +514,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
             try {
                 conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
                 JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
-                IQueueMessage result = _takeWithRetries(jdbcTemplate, null, 0, MAX_RETRIES);
+                IQueueMessage result = _takeWithRetries(jdbcTemplate, 0, MAX_RETRIES);
                 commitTransaction(conn);
                 return result;
             } catch (Exception e) {
