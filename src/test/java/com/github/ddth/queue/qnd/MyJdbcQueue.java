@@ -1,6 +1,9 @@
 package com.github.ddth.queue.qnd;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -30,14 +33,20 @@ public class MyJdbcQueue extends JdbcQueue {
     }
 
     @Override
-    protected IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate) {
-        final String SQL = "SELECT * FROM {0} ORDER BY queue_id LIMIT 1";
-        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(MessageFormat.format(SQL,
-                getTableNameEphemeral()));
+    protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
+            long thresholdTimestampMs) {
+        final String SQL = "SELECT * FROM {0} ORDER BY queue_id WHERE msg_timestamp < ?";
+        final Date threshold = new Date(thresholdTimestampMs);
+        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(
+                MessageFormat.format(SQL, getTableNameEphemeral()), threshold);
         if (dbRows != null && dbRows.size() > 0) {
-            Map<String, Object> dbRow = dbRows.get(0);
-            MyQueueMessage msg = new MyQueueMessage();
-            return (IQueueMessage) msg.fromMap(dbRow);
+            Collection<IQueueMessage> result = new ArrayList<IQueueMessage>();
+            for (Map<String, Object> dbRow : dbRows) {
+                MyQueueMessage msg = new MyQueueMessage();
+                msg.fromMap(dbRow);
+                result.add(msg);
+            }
+            return result;
         }
         return null;
     }

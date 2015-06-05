@@ -2,6 +2,7 @@ package com.github.ddth.queue.impl;
 
 import java.sql.Connection;
 import java.text.MessageFormat;
+import java.util.Collection;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -88,15 +89,21 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     protected abstract IQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate);
 
     /**
-     * Reads a message from ephemeral storage.
+     * Gets all orphan messages (messages that were left in ephemeral storage
+     * for a long time).
      * 
      * @param jdbcTemplate
+     * @param thresholdTimestampMs
+     *            get all orphan messages that were queued
+     *            <strong>before</strong> this timestamp
      * @return
+     * @since 0.2.0
      */
-    protected abstract IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate);
+    protected abstract Collection<IQueueMessage> getOrphanFromEphemeralStorage(
+            JdbcTemplate jdbcTemplate, long thresholdTimestampMs);
 
     /**
-     * Puts message to tail of queue storage.
+     * Puts a message to tail of the queue storage.
      * 
      * @param jdbcTemplate
      * @param msg
@@ -105,7 +112,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     protected abstract boolean putToQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg);
 
     /**
-     * Puts message to tail of ephemeral storage.
+     * Puts a message to the ephemeral storage.
      * 
      * @param jdbcTemplate
      * @param msg
@@ -114,7 +121,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     protected abstract boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg);
 
     /**
-     * Removes message from queue storage.
+     * Removes a message from the queue storage.
      * 
      * @param jdbcTemplate
      * @param msg
@@ -123,7 +130,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     protected abstract boolean removeFromQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg);
 
     /**
-     * Removes message from ephemeral storage.
+     * Removes a message from the ephemeral storage.
      * 
      * @param jdbcTemplate
      * @param msg
@@ -526,6 +533,80 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
         } catch (Exception e) {
             final String logMsg = "(take) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
+            LOGGER.error(logMsg, e);
+            if (e instanceof QueueException) {
+                throw (QueueException) e;
+            } else {
+                throw new QueueException(e);
+            }
+        }
+    }
+
+    /**
+     * Gets all orphan messages (messages that were left in ephemeral storage
+     * for a long time), retry if deadlock.
+     * 
+     * <p>
+     * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
+     * </p>
+     * <p>
+     * InnoDB uses automatic row-level locking. You can get deadlocks even in
+     * the case of transactions that just insert or delete a single row. That is
+     * because these operations are not really "atomic"; they automatically set
+     * locks on the (possibly several) index records of the row inserted or
+     * deleted.
+     * </p>
+     * 
+     * @param thresholdTimestampMs
+     * @param jdbcTemplate
+     * @param numRetries
+     * @param maxRetries
+     * @return
+     * @since 0.2.0
+     */
+    protected Collection<IQueueMessage> _getOrphanMessagesWithRetries(
+            final long thresholdTimestampMs, final JdbcTemplate jdbcTemplate, final int numRetries,
+            final int maxRetries) {
+        try {
+            Collection<IQueueMessage> msgs = getOrphanFromEphemeralStorage(jdbcTemplate,
+                    thresholdTimestampMs);
+            return msgs;
+        } catch (DeadlockLoserDataAccessException dle) {
+            if (numRetries > maxRetries) {
+                throw new QueueException(dle);
+            } else {
+                return _getOrphanMessagesWithRetries(thresholdTimestampMs, jdbcTemplate,
+                        numRetries + 1, maxRetries);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+        try {
+            /*
+             * obtain a new connection & start transaction
+             */
+            Connection conn = connection(true);
+            try {
+                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+                Collection<IQueueMessage> result = _getOrphanMessagesWithRetries(
+                        thresholdTimestampMs, jdbcTemplate, 0, MAX_RETRIES);
+                commitTransaction(conn);
+                return result;
+            } catch (Exception e) {
+                rollbackTransaction(conn);
+                throw e;
+            } finally {
+                returnConnection(conn);
+            }
+        } catch (Exception e) {
+            final String logMsg = "(getOrphanMessages) Exception [" + e.getClass().getName()
+                    + "]: " + e.getMessage();
             LOGGER.error(logMsg, e);
             if (e instanceof QueueException) {
                 throw (QueueException) e;

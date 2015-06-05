@@ -1,6 +1,13 @@
 ddth-queue release notes
 ========================
 
+0.2.0 - 2015-06-05
+------------------
+- New method `IQueue.getOrphanMessages(long)`
+- New method `abstract JdbcQueue.readOrphanFromEphemeralStorage(JdbcTemplate, long)`
+- Remove method `abstract JdbcQueue.readFromEphemeralStorage(JdbcTemplate)`
+
+
 0.1.3 - 2015-05-22
 ------------------
 - Fix a bug with `DuplicateKeyException`.

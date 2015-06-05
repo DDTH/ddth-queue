@@ -1,5 +1,7 @@
 package com.github.ddth.queue;
 
+import java.util.Collection;
+
 /**
  * APIs to interact with queue.
  * 
@@ -121,6 +123,18 @@ public interface IQueue {
     public IQueueMessage take();
 
     /**
+     * Gets all orphan messages (messages that were left in ephemeral storage
+     * for a long time).
+     * 
+     * @param thresholdTimestampMs
+     *            get all orphan messages that were queued
+     *            <strong>before</strong> this timestamp
+     * @return
+     * @since 0.2.0
+     */
+    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs);
+
+    /**
      * Gets queue's number of items.
      * 
      * @return
@@ -128,7 +142,7 @@ public interface IQueue {
     public int queueSize();
 
     /**
-     * Gets ephemeral-queue's number of items.
+     * Gets ephemeral-storage's number of items.
      * 
      * <p>
      * Note: ephemeral storage implementation is optional, depends on
