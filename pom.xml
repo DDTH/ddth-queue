@@ -8,7 +8,7 @@
     </parent>
 
     <artifactId>ddth-queue</artifactId>
-    <version>0.1.4-SNAPSHOT</version>
+    <version>0.2.0</version>
     <packaging>bundle</packaging>
 
     <name>ddth-queue</name>
