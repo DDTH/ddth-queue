@@ -85,4 +85,17 @@ public class MyJdbcQueue extends JdbcQueue {
         return numRows > 0;
     }
 
+    @Override
+    protected IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg) {
+        final String SQL = "SELECT * FROM {0} WHERE queue_id=?";
+        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(
+                MessageFormat.format(SQL, getTableNameEphemeral()), msg.qId());
+        if (dbRows != null && dbRows.size() > 0) {
+            Map<String, Object> dbRow = dbRows.get(0);
+            MyQueueMessage myMsg = new MyQueueMessage();
+            return (IQueueMessage) myMsg.fromMap(dbRow);
+        }
+        return null;
+    }
+
 }

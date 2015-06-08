@@ -135,6 +135,26 @@ public interface IQueue {
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs);
 
     /**
+     * Moves a message from ephemeral back to queue storage. Useful when dealing
+     * with orphan messages.
+     * 
+     * <p>
+     * Implementation flow:
+     * <ul>
+     * <li>Read message from the ephemeral storage.</li>
+     * <li>Re-queue the message.</li>
+     * <li>(message is removed from the ephemeral storage).</li>
+     * </ul>
+     * </p>
+     * 
+     * @param msg
+     * @return {@code true} if a move has been made, {@code false} otherwise
+     *         (e.g. the message didn't exist in ephemeral storage)
+     * @since 0.2.1
+     */
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg);
+
+    /**
      * Gets queue's number of items.
      * 
      * @return

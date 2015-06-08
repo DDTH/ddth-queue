@@ -1,6 +1,13 @@
 ddth-queue release notes
 ========================
 
+0.2.1 - 2015-06-08
+------------------
+- Orphan messages enhancement:
+  - New method `boolean IQueue.moveFromEphemeralToQueueStorage(IQueueMessage)`
+  - New method `IQueueMessage readFromEphemeralStorage(JdbcTemplate, IQueueMessage)`
+
+
 0.2.0 - 2015-06-05
 ------------------
 - New method `IQueue.getOrphanMessages(long)`

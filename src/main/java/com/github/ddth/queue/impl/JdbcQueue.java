@@ -89,6 +89,17 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     protected abstract IQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate);
 
     /**
+     * Reads a message from the ephemeral storage.
+     * 
+     * @param jdbcTemplate
+     * @param msg
+     * @return
+     * @since 0.2.1
+     */
+    protected abstract IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate,
+            IQueueMessage msg);
+
+    /**
      * Gets all orphan messages (messages that were left in ephemeral storage
      * for a long time).
      * 
@@ -607,6 +618,81 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
         } catch (Exception e) {
             final String logMsg = "(getOrphanMessages) Exception [" + e.getClass().getName()
                     + "]: " + e.getMessage();
+            LOGGER.error(logMsg, e);
+            if (e instanceof QueueException) {
+                throw (QueueException) e;
+            } else {
+                throw new QueueException(e);
+            }
+        }
+    }
+
+    /**
+     * Moves a message from ephemeral back to queue storage, retry if deadlock.
+     * 
+     * <p>
+     * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
+     * </p>
+     * <p>
+     * InnoDB uses automatic row-level locking. You can get deadlocks even in
+     * the case of transactions that just insert or delete a single row. That is
+     * because these operations are not really "atomic"; they automatically set
+     * locks on the (possibly several) index records of the row inserted or
+     * deleted.
+     * </p>
+     * 
+     * @param msg
+     * @param jdbcTemplate
+     * @param numRetries
+     * @param maxRetries
+     * @return
+     */
+    protected boolean _moveFromEphemeralToQueueStorageWithRetries(final IQueueMessage msg,
+            final JdbcTemplate jdbcTemplate, final int numRetries, final int maxRetries) {
+        try {
+            IQueueMessage orphanMsg = readFromEphemeralStorage(jdbcTemplate, msg);
+            if (orphanMsg != null) {
+                // Note: re-queue a message will remove it from the ephemeral
+                // storage
+                return _requeueSilentWithRetries(jdbcTemplate, orphanMsg, 0, MAX_RETRIES);
+            }
+            return false;
+        } catch (DeadlockLoserDataAccessException dle) {
+            if (numRetries > maxRetries) {
+                throw new QueueException(dle);
+            } else {
+                return _moveFromEphemeralToQueueStorageWithRetries(msg, jdbcTemplate,
+                        numRetries + 1, maxRetries);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+        try {
+            /*
+             * obtain a new connection & start transaction
+             */
+            Connection conn = connection(true);
+            try {
+                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+                boolean result = _moveFromEphemeralToQueueStorageWithRetries(msg, jdbcTemplate, 0,
+                        MAX_RETRIES);
+                commitTransaction(conn);
+                return result;
+            } catch (Exception e) {
+                rollbackTransaction(conn);
+                throw e;
+            } finally {
+                returnConnection(conn);
+            }
+        } catch (Exception e) {
+            final String logMsg = "(moveFromEphemeralToQueueStorage) Exception ["
+                    + e.getClass().getName() + "]: " + e.getMessage();
             LOGGER.error(logMsg, e);
             if (e instanceof QueueException) {
                 throw (QueueException) e;
