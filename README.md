@@ -48,6 +48,7 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 ### Queue Storage Implementation ###
 
 Queue implementation has 2 message storages:
+
 - *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is FIFO.
 - *Ephemeral storage*: (optional) messages taken from queue storage are temporarily store in a ephemeral until _finished_ or _re-queued_.
 
