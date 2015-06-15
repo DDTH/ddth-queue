@@ -36,11 +36,36 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
     }
 
     /**
+     * @since v0.2.2.2
+     */
+    public final static String FIELD_QUEUE_ID = "queue_id";
+
+    /**
+     * @since v0.2.2.2
+     */
+    public final static String FIELD_ORG_TIMESTAMP = "org_timestamp";
+
+    /**
+     * @since v0.2.2.2
+     */
+    public final static String FIELD_TIMESTAMP = "timestamp";
+
+    /**
+     * @since v0.2.2.2
+     */
+    public final static String FIELD_NUM_REQUEUES = "num_requeues";
+
+    /**
+     * @since v0.2.2.2
+     */
+    public final static String FIELD_CONTENT = "content";
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public Object qId() {
-        Long value = getAttribute("queue_id", Long.class);
+        Long value = getAttribute(FIELD_QUEUE_ID, Long.class);
         return value != null ? value.longValue() : 0;
     }
 
@@ -50,7 +75,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
     @Override
     public UniversalQueueMessage qId(Object queueId) {
         long value = (queueId instanceof Number) ? ((Number) queueId).longValue() : 0;
-        return (UniversalQueueMessage) setAttribute("queue_id", value);
+        return (UniversalQueueMessage) setAttribute(FIELD_QUEUE_ID, value);
     }
 
     /**
@@ -58,7 +83,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     @Override
     public Date qOriginalTimestamp() {
-        return getAttribute("org_timestamp", Date.class);
+        return getAttribute(FIELD_ORG_TIMESTAMP, Date.class);
     }
 
     /**
@@ -66,7 +91,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     @Override
     public UniversalQueueMessage qOriginalTimestamp(Date timestamp) {
-        return (UniversalQueueMessage) setAttribute("org_timestamp", timestamp);
+        return (UniversalQueueMessage) setAttribute(FIELD_ORG_TIMESTAMP, timestamp);
     }
 
     /**
@@ -74,7 +99,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     @Override
     public Date qTimestamp() {
-        return getAttribute("timestamp", Date.class);
+        return getAttribute(FIELD_TIMESTAMP, Date.class);
     }
 
     /**
@@ -82,12 +107,12 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     @Override
     public UniversalQueueMessage qTimestamp(Date timestamp) {
-        return (UniversalQueueMessage) setAttribute("timestamp", timestamp);
+        return (UniversalQueueMessage) setAttribute(FIELD_TIMESTAMP, timestamp);
     }
 
     @Override
     public int qNumRequeues() {
-        Integer value = getAttribute("num_requeues", Integer.class);
+        Integer value = getAttribute(FIELD_NUM_REQUEUES, Integer.class);
         return value != null ? value.intValue() : 0;
     }
 
@@ -96,7 +121,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     @Override
     public UniversalQueueMessage qNumRequeues(int numRequeues) {
-        return (UniversalQueueMessage) setAttribute("num_requeues", numRequeues);
+        return (UniversalQueueMessage) setAttribute(FIELD_NUM_REQUEUES, numRequeues);
     }
 
     /**
@@ -113,7 +138,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      * @return
      */
     public byte[] content() {
-        return getAttribute("content", byte[].class);
+        return getAttribute(FIELD_CONTENT, byte[].class);
     }
 
     /**
@@ -123,6 +148,6 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      * @return
      */
     public UniversalQueueMessage content(byte[] content) {
-        return (UniversalQueueMessage) setAttribute("content", content);
+        return (UniversalQueueMessage) setAttribute(FIELD_CONTENT, content);
     }
 }
