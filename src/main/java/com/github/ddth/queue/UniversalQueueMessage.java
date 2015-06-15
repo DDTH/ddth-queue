@@ -87,7 +87,8 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
 
     @Override
     public int qNumRequeues() {
-        return getAttribute("num_requeues", int.class);
+        Integer value = getAttribute("num_requeues", Integer.class);
+        return value != null ? value.intValue() : 0;
     }
 
     /**

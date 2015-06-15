@@ -1,6 +1,11 @@
 ddth-queue release notes
 ========================
 
+0.2.2.1 - 2015-06-15
+--------------------
+- Bug fix.
+
+
 0.2.2 - 2015-06-12
 ------------------
 - New class `UniversalQueueMessage`.
