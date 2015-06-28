@@ -1,8 +1,8 @@
 ddth-queue release notes
 ========================
 
-0.2.3 - 2015-06-28
-------------------
+0.2.3.1 - 2015-06-28
+--------------------
 
 - `JdbcQueue` enhancements
   - New property: `maxRetries` (default value: 3)
