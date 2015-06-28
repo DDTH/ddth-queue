@@ -123,6 +123,8 @@ Universal JDBC queue implementation:
 
 Sample table schema for MySQL: see [sample_schema.mysql.sql](sample-dbschema/sample_schema.mysql.sql).
 
+Sample table schema for PgSQL: see [sample_schema.pgsql.sql](sample-dbschema/sample_schema.pgsql.sql).
+
 ### LessLockingUniversalMySQLQueue ###
 
 Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for MySQL, and requires
@@ -133,6 +135,8 @@ only one single db table for both queue and ephemeral storages.
 - Work with `UniversalQueueMessage`
 - Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
 
+Sample table schema for MySQL: see [sample_schema-less-locking.mysql.sql](sample-dbschema/sample_schema-less-locking.mysql.sql).
+
 ### LessLockingUniversalPgSQLQueue ###
 
 Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for PostgreSQL, and requires
@@ -142,6 +146,8 @@ only one single db table for both queue and ephemeral storages.
 - 1 single db table for both queue and ephemeral storages
 - Work with `UniversalQueueMessage`
 - Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
+
+Sample table schema for MySQL: see [sample_schema-less-locking.pgsql.sql](sample-dbschema/sample_schema-less-locking.pgsql.sql).
 
 
 ## License ##
