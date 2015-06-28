@@ -1,14 +1,15 @@
 package com.github.ddth.queue.impl;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.github.ddth.dao.jdbc.BaseJdbcDao;
@@ -31,13 +32,19 @@ import com.github.ddth.queue.utils.QueueException;
  */
 public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
 
+    public static int DEFAULT_MAX_RETRIES = 3;
+
     private Logger LOGGER = LoggerFactory.getLogger(JdbcQueue.class);
 
     private String tableName, tableNameEphemeral;
     private String SQL_COUNT = "SELECT COUNT(*) AS num_entries FROM {0}";
     private String SQL_COUNT_EPHEMERAL = "SELECT COUNT(*) AS num_entries FROM {0}";
 
-    private static int MAX_RETRIES = 3;
+    private int maxRetries = DEFAULT_MAX_RETRIES;
+
+    // private int transactionIsolationLevel =
+    // Connection.TRANSACTION_REPEATABLE_READ;
+    private int transactionIsolationLevel = Connection.TRANSACTION_READ_COMMITTED;
 
     /*----------------------------------------------------------------------*/
     public JdbcQueue setTableName(String tableName) {
@@ -45,7 +52,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
         return this;
     }
 
-    protected String getTableName() {
+    public String getTableName() {
         return tableName;
     }
 
@@ -54,8 +61,26 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
         return this;
     }
 
-    protected String getTableNameEphemeral() {
+    public String getTableNameEphemeral() {
         return tableNameEphemeral;
+    }
+
+    public JdbcQueue setTransactionIsolationLevel(int transactionIsolationLevel) {
+        this.transactionIsolationLevel = transactionIsolationLevel;
+        return this;
+    }
+
+    public int getTransactionIsolationLevel() {
+        return transactionIsolationLevel;
+    }
+
+    public JdbcQueue setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+        return this;
+    }
+
+    public int getMaxRetries() {
+        return maxRetries;
     }
 
     /*----------------------------------------------------------------------*/
@@ -164,27 +189,39 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * deleted.
      * </p>
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
      * @return
+     * @throws SQLException
      */
-    protected boolean _queueWithRetries(JdbcTemplate jdbcTemplate, IQueueMessage msg,
-            int numRetries, int maxRetries) {
+    protected boolean _queueWithRetries(final Connection conn, final IQueueMessage msg,
+            final int numRetries, final int maxRetries) throws SQLException {
         try {
+            // startTransaction(conn);
+            // conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
             Date now = new Date();
             msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
-            return putToQueueStorage(jdbcTemplate, msg);
+            boolean result = putToQueueStorage(jdbcTemplate, msg);
+
+            // commitTransaction(conn);
+            return result;
         } catch (DuplicateKeyException dke) {
             LOGGER.warn(dke.getMessage(), dke);
             return true;
-        } catch (DeadlockLoserDataAccessException dle) {
+        } catch (PessimisticLockingFailureException ex) {
+            // rollbackTransaction(conn);
             if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+                throw new QueueException(ex);
             } else {
-                return _queueWithRetries(jdbcTemplate, msg, numRetries + 1, maxRetries);
+                return _queueWithRetries(conn, msg, numRetries + 1, maxRetries);
             }
+        } catch (Exception e) {
+            // rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -192,33 +229,15 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(IQueueMessage msg) {
+    public boolean queue(final IQueueMessage msg) {
         if (msg == null) {
             return false;
         }
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
-                /*
-                 * commit if underlying storage method successes, rollback
-                 * otherwise
-                 */
-                boolean result = _queueWithRetries(jdbcTemplate, msg, 0, MAX_RETRIES);
-                if (result) {
-                    commitTransaction(conn);
-                } else {
-                    rollbackTransaction(conn);
-                }
+                boolean result = _queueWithRetries(conn, msg, 0, this.maxRetries);
                 return result;
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
             } finally {
                 returnConnection(conn);
             }
@@ -248,34 +267,45 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * deleted.
      * </p>
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
      * @return
+     * @throws SQLException
      */
-    protected boolean _requeueWithRetries(JdbcTemplate jdbcTemplate, IQueueMessage msg,
-            int numRetries, int maxRetries) {
+    protected boolean _requeueWithRetries(final Connection conn, final IQueueMessage msg,
+            final int numRetries, final int maxRetries) throws SQLException {
         try {
+            startTransaction(conn);
+            conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
             removeFromEphemeralStorage(jdbcTemplate, msg);
             Date now = new Date();
             msg.qIncNumRequeues().qTimestamp(now);
             boolean result = putToQueueStorage(jdbcTemplate, msg);
+
+            commitTransaction(conn);
             return result;
         } catch (DuplicateKeyException dke) {
             LOGGER.warn(dke.getMessage(), dke);
             return true;
-        } catch (DeadlockLoserDataAccessException dle) {
+        } catch (PessimisticLockingFailureException ex) {
+            rollbackTransaction(conn);
             if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+                throw new QueueException(ex);
             } else {
                 /*
                  * call _requeueSilentWithRetries(...) here is correct because
                  * we do not want message's num-requeues is increased with every
                  * retry
                  */
-                return _requeueSilentWithRetries(jdbcTemplate, msg, numRetries + 1, maxRetries);
+                return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
             }
+        } catch (Exception e) {
+            rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -283,33 +313,15 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeue(IQueueMessage msg) {
+    public boolean requeue(final IQueueMessage msg) {
         if (msg == null) {
             return false;
         }
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
-                /*
-                 * commit if underlying storage method successes, rollback
-                 * otherwise
-                 */
-                boolean result = _requeueWithRetries(jdbcTemplate, msg, 0, MAX_RETRIES);
-                if (result) {
-                    commitTransaction(conn);
-                } else {
-                    rollbackTransaction(conn);
-                }
+                boolean result = _requeueWithRetries(conn, msg, 0, this.maxRetries);
                 return result;
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
             } finally {
                 returnConnection(conn);
             }
@@ -339,27 +351,38 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * deleted.
      * </p>
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
      * @return
+     * @throws SQLException
      */
-    protected boolean _requeueSilentWithRetries(JdbcTemplate jdbcTemplate, IQueueMessage msg,
-            int numRetries, int maxRetries) {
+    protected boolean _requeueSilentWithRetries(final Connection conn, final IQueueMessage msg,
+            final int numRetries, final int maxRetries) throws SQLException {
         try {
+            startTransaction(conn);
+            conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
             removeFromEphemeralStorage(jdbcTemplate, msg);
             boolean result = putToQueueStorage(jdbcTemplate, msg);
+
+            commitTransaction(conn);
             return result;
         } catch (DuplicateKeyException dke) {
             LOGGER.warn(dke.getMessage(), dke);
             return true;
-        } catch (DeadlockLoserDataAccessException dle) {
+        } catch (PessimisticLockingFailureException ex) {
+            rollbackTransaction(conn);
             if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+                throw new QueueException(ex);
             } else {
-                return _requeueSilentWithRetries(jdbcTemplate, msg, numRetries + 1, maxRetries);
+                return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
             }
+        } catch (Exception e) {
+            rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -367,33 +390,15 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(IQueueMessage msg) {
+    public boolean requeueSilent(final IQueueMessage msg) {
         if (msg == null) {
             return false;
         }
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
-                /*
-                 * commit if underlying storage method successes, rollback
-                 * otherwise
-                 */
-                boolean result = _requeueSilentWithRetries(jdbcTemplate, msg, 0, MAX_RETRIES);
-                if (result) {
-                    commitTransaction(conn);
-                } else {
-                    rollbackTransaction(conn);
-                }
+                boolean result = _requeueSilentWithRetries(conn, msg, 0, this.maxRetries);
                 return result;
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
             } finally {
                 returnConnection(conn);
             }
@@ -423,21 +428,32 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * deleted.
      * </p>
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
+     * @throws SQLException
      */
-    protected void _finishWithRetries(JdbcTemplate jdbcTemplate, IQueueMessage msg, int numRetries,
-            int maxRetries) {
+    protected void _finishWithRetries(final Connection conn, final IQueueMessage msg,
+            final int numRetries, final int maxRetries) throws SQLException {
         try {
+            // startTransaction(conn);
+            // conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
             removeFromEphemeralStorage(jdbcTemplate, msg);
-        } catch (DeadlockLoserDataAccessException dle) {
+
+            // commitTransaction(conn);
+        } catch (PessimisticLockingFailureException ex) {
+            // rollbackTransaction(conn);
             if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+                throw new QueueException(ex);
             } else {
-                _finishWithRetries(jdbcTemplate, msg, numRetries + 1, maxRetries);
+                _finishWithRetries(conn, msg, numRetries + 1, maxRetries);
             }
+        } catch (Exception e) {
+            // rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -445,24 +461,14 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * {@inheritDoc}
      */
     @Override
-    public void finish(IQueueMessage msg) {
+    public void finish(final IQueueMessage msg) {
         if (msg == null) {
             return;
         }
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
-                _finishWithRetries(jdbcTemplate, msg, 0, MAX_RETRIES);
-                commitTransaction(conn);
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
+                _finishWithRetries(conn, msg, 0, this.maxRetries);
             } finally {
                 returnConnection(conn);
             }
@@ -492,30 +498,47 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * deleted.
      * </p>
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param numRetries
      * @param maxRetries
      * @return
+     * @throws SQLException
      */
-    protected IQueueMessage _takeWithRetries(final JdbcTemplate jdbcTemplate, final int numRetries,
-            final int maxRetries) {
+    protected IQueueMessage _takeWithRetries(final Connection conn, final int numRetries,
+            final int maxRetries) throws SQLException {
         try {
+            startTransaction(conn);
+            conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
+            boolean result = true;
             IQueueMessage msg = readFromQueueStorage(jdbcTemplate);
             if (msg != null) {
-                removeFromQueueStorage(jdbcTemplate, msg);
+                result = result && removeFromQueueStorage(jdbcTemplate, msg);
                 try {
-                    putToEphemeralStorage(jdbcTemplate, msg);
+                    result = result && putToEphemeralStorage(jdbcTemplate, msg);
                 } catch (DuplicateKeyException dke) {
                     LOGGER.warn(dke.getMessage(), dke);
                 }
             }
-            return msg;
-        } catch (DeadlockLoserDataAccessException dle) {
-            if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+
+            if (result) {
+                commitTransaction(conn);
+                return msg;
             } else {
-                return _takeWithRetries(jdbcTemplate, numRetries + 1, maxRetries);
+                rollbackTransaction(conn);
+                return null;
             }
+        } catch (PessimisticLockingFailureException ex) {
+            rollbackTransaction(conn);
+            if (numRetries > maxRetries) {
+                throw new QueueException(ex);
+            } else {
+                return _takeWithRetries(conn, numRetries + 1, maxRetries);
+            }
+        } catch (Exception e) {
+            rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -525,19 +548,10 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     @Override
     public IQueueMessage take() {
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-                IQueueMessage result = _takeWithRetries(jdbcTemplate, 0, MAX_RETRIES);
-                commitTransaction(conn);
+                IQueueMessage result = _takeWithRetries(conn, 0, this.maxRetries);
                 return result;
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
             } finally {
                 returnConnection(conn);
             }
@@ -569,26 +583,37 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * </p>
      * 
      * @param thresholdTimestampMs
-     * @param jdbcTemplate
+     * @param conn
      * @param numRetries
      * @param maxRetries
      * @return
+     * @throws SQLException
      * @since 0.2.0
      */
     protected Collection<IQueueMessage> _getOrphanMessagesWithRetries(
-            final long thresholdTimestampMs, final JdbcTemplate jdbcTemplate, final int numRetries,
-            final int maxRetries) {
+            final long thresholdTimestampMs, final Connection conn, final int numRetries,
+            final int maxRetries) throws SQLException {
         try {
+            startTransaction(conn);
+            conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
             Collection<IQueueMessage> msgs = getOrphanFromEphemeralStorage(jdbcTemplate,
                     thresholdTimestampMs);
+
+            commitTransaction(conn);
             return msgs;
-        } catch (DeadlockLoserDataAccessException dle) {
+        } catch (PessimisticLockingFailureException ex) {
+            rollbackTransaction(conn);
             if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+                throw new QueueException(ex);
             } else {
-                return _getOrphanMessagesWithRetries(thresholdTimestampMs, jdbcTemplate,
-                        numRetries + 1, maxRetries);
+                return _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, numRetries + 1,
+                        maxRetries);
             }
+        } catch (Exception e) {
+            rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -598,20 +623,11 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
                 Collection<IQueueMessage> result = _getOrphanMessagesWithRetries(
-                        thresholdTimestampMs, jdbcTemplate, 0, MAX_RETRIES);
-                commitTransaction(conn);
+                        thresholdTimestampMs, conn, 0, this.maxRetries);
                 return result;
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
             } finally {
                 returnConnection(conn);
             }
@@ -642,28 +658,41 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
      * </p>
      * 
      * @param msg
-     * @param jdbcTemplate
+     * @param conn
      * @param numRetries
      * @param maxRetries
      * @return
+     * @throws SQLException
      */
     protected boolean _moveFromEphemeralToQueueStorageWithRetries(final IQueueMessage msg,
-            final JdbcTemplate jdbcTemplate, final int numRetries, final int maxRetries) {
+            final Connection conn, final int numRetries, final int maxRetries) throws SQLException {
         try {
+            startTransaction(conn);
+            conn.setTransactionIsolation(transactionIsolationLevel);
+            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+
             IQueueMessage orphanMsg = readFromEphemeralStorage(jdbcTemplate, msg);
             if (orphanMsg != null) {
-                // Note: re-queue a message will remove it from the ephemeral
-                // storage
-                return _requeueSilentWithRetries(jdbcTemplate, orphanMsg, 0, MAX_RETRIES);
+                removeFromEphemeralStorage(jdbcTemplate, msg);
+                boolean result = putToQueueStorage(jdbcTemplate, msg);
+
+                commitTransaction(conn);
+                return result;
             }
+
+            rollbackTransaction(conn);
             return false;
-        } catch (DeadlockLoserDataAccessException dle) {
+        } catch (PessimisticLockingFailureException ex) {
+            rollbackTransaction(conn);
             if (numRetries > maxRetries) {
-                throw new QueueException(dle);
+                throw new QueueException(ex);
             } else {
-                return _moveFromEphemeralToQueueStorageWithRetries(msg, jdbcTemplate,
-                        numRetries + 1, maxRetries);
+                return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
+                        maxRetries);
             }
+        } catch (Exception e) {
+            rollbackTransaction(conn);
+            throw new QueueException(e);
         }
     }
 
@@ -673,20 +702,11 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue {
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
         try {
-            /*
-             * obtain a new connection & start transaction
-             */
-            Connection conn = connection(true);
+            Connection conn = connection();
             try {
-                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-                boolean result = _moveFromEphemeralToQueueStorageWithRetries(msg, jdbcTemplate, 0,
-                        MAX_RETRIES);
-                commitTransaction(conn);
+                boolean result = _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0,
+                        this.maxRetries);
                 return result;
-            } catch (Exception e) {
-                rollbackTransaction(conn);
-                throw e;
             } finally {
                 returnConnection(conn);
             }

@@ -1,112 +1,119 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>com.github.ddth</groupId>
-        <artifactId>ddth-parent</artifactId>
-        <version>2</version>
-    </parent>
+	<parent>
+		<groupId>com.github.ddth</groupId>
+		<artifactId>ddth-parent</artifactId>
+		<version>2</version>
+	</parent>
 
-    <artifactId>ddth-queue</artifactId>
-    <version>0.2.2.3-SNAPSHOT</version>
-    <packaging>bundle</packaging>
+	<artifactId>ddth-queue</artifactId>
+	<version>0.2.2.3-SNAPSHOT</version>
+	<packaging>bundle</packaging>
 
-    <name>ddth-queue</name>
-    <description>DDTH's Libary to interact with various queue implementations</description>
-    <url>https://github.com/DDTH/ddth-queue</url>
+	<name>ddth-queue</name>
+	<description>DDTH's Libary to interact with various queue implementations</description>
+	<url>https://github.com/DDTH/ddth-queue</url>
 
-    <scm>
-        <url>git@github.com:DDTH/ddth-queue</url>
-        <connection>scm:git:git@github.com:DDTH/ddth-queue</connection>
-        <developerConnection>scm:git:git@github.com:DDTH/ddth-queue</developerConnection>
-    </scm>
-    <developers>
-        <developer>
-            <id>btnguyen2k</id>
-            <name>Thanh Ba Nguyen</name>
-            <email>btnguyen2k@gmail.com</email>
-        </developer>
-    </developers>
+	<scm>
+		<url>git@github.com:DDTH/ddth-queue</url>
+		<connection>scm:git:git@github.com:DDTH/ddth-queue</connection>
+		<developerConnection>scm:git:git@github.com:DDTH/ddth-queue</developerConnection>
+	</scm>
+	<developers>
+		<developer>
+			<id>btnguyen2k</id>
+			<name>Thanh Ba Nguyen</name>
+			<email>btnguyen2k@gmail.com</email>
+		</developer>
+	</developers>
 
-    <properties>
-        <skipTests>true</skipTests>
-        <version.ddth-redis>0.4.0</version.ddth-redis>
-        <version.curator>2.7.1</version.curator>
-    </properties>
+	<properties>
+		<skipTests>true</skipTests>
+		<version.ddth-redis>0.4.0</version.ddth-redis>
+		<version.curator>2.7.1</version.curator>
+	</properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>${version.junit}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.35</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-dbcp2</artifactId>
-            <version>2.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${version.jackson}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${version.jackson}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${version.jackson}</version>
-            <scope>test</scope>
-        </dependency>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>${version.junit}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.35</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>9.4-1201-jdbc41</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-dbcp2</artifactId>
+			<version>2.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${version.jackson}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${version.jackson}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${version.jackson}</version>
+			<scope>test</scope>
+		</dependency>
 
-        <dependency>
-            <groupId>com.github.ddth</groupId>
-            <artifactId>ddth-dao</artifactId>
-            <version>0.4.0.2</version>
-            <optional>true</optional>
-        </dependency>
-    </dependencies>
+		<dependency>
+			<groupId>com.github.ddth</groupId>
+			<artifactId>ddth-dao</artifactId>
+			<version>0.4.0.2</version>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <!-- <Bundle-Activator></Bundle-Activator> -->
-                        <Export-Package>com.github.ddth.queue,com.github.ddth.queue.impl,com.github.ddth.queue.utils</Export-Package>
-                        <!-- <Import-Package></Import-Package> -->
-                    </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <skipTests>${skipTests}</skipTests>
-                    <systemPropertyVariables>
-                        <log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
-                    </systemPropertyVariables>
-                </configuration>
-            </plugin>
-            <!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-assembly-plugin</artifactId> 
-                <executions> <execution> <id>distro-assembly</id> <phase>package</phase> 
-                <goals> <goal>single</goal> </goals> <configuration> <descriptors> <descriptor>assembly/ddth-queue-withdeps.xml</descriptor> 
-                </descriptors> </configuration> </execution> </executions> </plugin> -->
-        </plugins>
-    </build>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions>
+						<!-- <Bundle-Activator></Bundle-Activator> -->
+						<Export-Package>com.github.ddth.queue,com.github.ddth.queue.impl,com.github.ddth.queue.utils</Export-Package>
+						<!-- <Import-Package></Import-Package> -->
+					</instructions>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<skipTests>${skipTests}</skipTests>
+					<systemPropertyVariables>
+						<log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
+			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-assembly-plugin</artifactId> 
+				<executions> <execution> <id>distro-assembly</id> <phase>package</phase> 
+				<goals> <goal>single</goal> </goals> <configuration> <descriptors> <descriptor>assembly/ddth-queue-withdeps.xml</descriptor> 
+				</descriptors> </configuration> </execution> </executions> </plugin> -->
+		</plugins>
+	</build>
 </project>

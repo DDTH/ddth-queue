@@ -11,7 +11,7 @@ import com.github.ddth.dao.BaseBo;
  * Fields:
  * </p>
  * <ul>
- * <li>{@code queue_id}: see {@link IQueueMessage#qId()}</li>
+ * <li>{@code queue_id (long)}: see {@link IQueueMessage#qId()}</li>
  * <li>{@code org_timestamp}: see {@link IQueueMessage#qOriginalTimestamp()}</li>
  * <li>{@code timestamp}: see {@link IQueueMessage#qTimestamp()}</li>
  * <li>{@code num_requeues}: see {@link IQueueMessage#qNumRequeues()}</li>

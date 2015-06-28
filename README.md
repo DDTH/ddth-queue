@@ -6,12 +6,12 @@ DDTH's libary to interact with various queue implementations.
 Project home:
 [https://github.com/DDTH/ddth-queue](https://github.com/DDTH/ddth-queue)
 
-OSGi environment: ddth-queue modules are packaged as an OSGi bundle.
+OSGi environment: ddth-queue modules are packaged as an OSGi bundle (Experimental!).
 
 
 ## Installation ##
 
-Latest release version: `0.2.2.2`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.2.3`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency:
 
@@ -19,7 +19,7 @@ Maven dependency:
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue</artifactId>
-	<version>0.2.2.1</version>
+	<version>0.2.3</version>
 </dependency>
 ```
 
@@ -34,6 +34,21 @@ Maven dependency:
   - When done, call `IQueue.finish(msg)`
   - If not done and the message need to be re-queued, either call `IQueue.requeue(msg)` or `IQueue.requeueSilent(msg)` to put back the message to queue.
 
+### Queue Storage Implementation ###
+
+Queue implementation has 2 message storages:
+
+- *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is FIFO.
+- *Ephemeral storage*: (optional) messages taken from queue storage are temporarily store in a ephemeral until _finished_ or _re-queued_.
+
+(Queue implementation is required to provide *Queue storage*. *Ephemeral storage* is optional.)
+
+When `IQueue.take()` is called, the message is put in a ephemeral storage.
+When either `IQueue.finish(msg)` or  `IQueue.requeue(msg)` or `IQueue.requeueSilent(msg)` is called,
+the message is removed from the ephemeral storage.
+
+The idea of the ephemeral storage is to make sure messages are not lost in the case the application
+crashes in between `IQueue.take()` and `IQueue.finish(msg)` (or `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)`).
 
 #### Orphan Messages ####
 
@@ -45,14 +60,7 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 - Call `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)` to put the message back to the queue.
 
 
-### Queue Storage Implementation ###
 
-Queue implementation has 2 message storages:
-
-- *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is FIFO.
-- *Ephemeral storage*: (optional) messages taken from queue storage are temporarily store in a ephemeral until _finished_ or _re-queued_.
-
-Queue implementation is required to provide *Queue storage*. *Ephemeral storage* is optional.
 
 
 ### APIs ###
@@ -91,7 +99,51 @@ Usage:
   - `boolean removeFromQueueStorage(JdbcTemplate, IQueueMessage)`
   - `boolean removeFromEphemeralStorage(JdbcTemplate, IQueueMessage)`
 
-  
+
+## Pre-made Convenient Classes ##
+
+### UniversalQueueMessage ###
+
+Universal queue message implementation, with the following fields:
+
+- `queue_id` (`long`): message's unique id in the queue
+- `org_timestamp` (`java.util.Date`): timestamp when the message was first-queued
+- `timestamp` (`java.util.Date`): message's last-queued timestamp
+- `num_requeues` (`int`): number of times the message has been re-queued
+- `content` (`byte[]`): message's content
+
+### UniversalJdbcQueue ###
+
+Universal JDBC queue implementation:
+
+- 2 db tables for queue and ephemeral storages
+- Work with `UniversalQueueMessage`
+- Property `ephemeralDisabled` (default `false`): when set to `true` ephemeral storage is disabled
+- Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
+
+Sample table schema for MySQL: see [sample_schema.mysql.sql](sample-dbschema/sample_schema.mysql.sql).
+
+### LessLockingUniversalMySQLQueue ###
+
+Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for MySQL, and requires
+only one single db table for both queue and ephemeral storages.
+
+- Optimized for MySQL (EXPERIMENTAL!)
+- 1 single db table for both queue and ephemeral storages
+- Work with `UniversalQueueMessage`
+- Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
+
+### LessLockingUniversalPgSQLQueue ###
+
+Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for PostgreSQL, and requires
+only one single db table for both queue and ephemeral storages.
+
+- Optimized for PostgreSQL (EXPERIMENTAL!)
+- 1 single db table for both queue and ephemeral storages
+- Work with `UniversalQueueMessage`
+- Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
+
+
 ## License ##
 
 See LICENSE.txt for details. Copyright (c) 2015 Thanh Ba Nguyen.
