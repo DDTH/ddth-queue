@@ -60,13 +60,15 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     public final static String FIELD_CONTENT = "content";
 
+    private final static Long ZERO = new Long(0);
+
     /**
      * {@inheritDoc}
      */
     @Override
-    public Object qId() {
+    public Long qId() {
         Long value = getAttribute(FIELD_QUEUE_ID, Long.class);
-        return value != null ? value.longValue() : 0;
+        return value != null ? value : ZERO;
     }
 
     /**

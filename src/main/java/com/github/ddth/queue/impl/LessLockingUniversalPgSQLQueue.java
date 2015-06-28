@@ -1,6 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
@@ -147,33 +146,25 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
         return this;
     }
 
-    private static Charset UTF8 = Charset.forName("UTF-8");
-
-    private static void ensureContentIsByteArray(Map<String, Object> dbRow) {
-        Object content = dbRow.get(UniversalQueueMessage.FIELD_CONTENT);
-        if (content != null) {
-            if (!(content instanceof byte[])) {
-                content = content.toString().getBytes(UTF8);
-                dbRow.put(UniversalQueueMessage.FIELD_CONTENT, content);
-            }
-        }
-    }
+    // private static Charset UTF8 = Charset.forName("UTF-8");
+    //
+    // private static void ensureContentIsByteArray(Map<String, Object> dbRow) {
+    // Object content = dbRow.get(UniversalQueueMessage.FIELD_CONTENT);
+    // if (content != null) {
+    // if (!(content instanceof byte[])) {
+    // content = content.toString().getBytes(UTF8);
+    // dbRow.put(UniversalQueueMessage.FIELD_CONTENT, content);
+    // }
+    // }
+    // }
 
     /**
      * {@inheritDoc}
      */
     @Override
     protected UniversalQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate) {
+        // UNUSED
         return null;
-        // List<Map<String, Object>> dbRows =
-        // jdbcTemplate.queryForList(SQL_READ_FROM_QUEUE);
-        // if (dbRows != null && dbRows.size() > 0) {
-        // Map<String, Object> dbRow = dbRows.get(0);
-        // ensureContentIsByteArray(dbRow);
-        // UniversalQueueMessage msg = new UniversalQueueMessage();
-        // return (UniversalQueueMessage) msg.fromMap(dbRow);
-        // }
-        // return null;
     }
 
     /**
@@ -182,20 +173,8 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
     @Override
     protected UniversalQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             IQueueMessage msg) {
+        // UNUSED
         return null;
-        // if (ephemeralDisabled) {
-        // return null;
-        // }
-        // List<Map<String, Object>> dbRows =
-        // jdbcTemplate.queryForList(SQL_READ_FROM_EPHEMERAL,
-        // msg.qId());
-        // if (dbRows != null && dbRows.size() > 0) {
-        // Map<String, Object> dbRow = dbRows.get(0);
-        // ensureContentIsByteArray(dbRow);
-        // UniversalQueueMessage myMsg = new UniversalQueueMessage();
-        // return (UniversalQueueMessage) myMsg.fromMap(dbRow);
-        // }
-        // return null;
     }
 
     /**
@@ -211,6 +190,7 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
             Collection<IQueueMessage> result = new ArrayList<IQueueMessage>();
             for (Map<String, Object> dbRow : dbRows) {
                 UniversalQueueMessage msg = new UniversalQueueMessage();
+                // ensureContentIsByteArray(dbRow);
                 msg.fromMap(dbRow);
                 result.add(msg);
             }
@@ -224,15 +204,20 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
      */
     @Override
     protected boolean putToQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        Object qid = msg.qId();
-        if (qid == null || (qid instanceof Number && ((Number) qid).longValue() == 0)) {
+        Long qid = msg.qId();
+        if (qid == null || qid.longValue() == 0) {
             int numRows = jdbcTemplate.update(SQL_PUT_NEW_TO_QUEUE, msg.qOriginalTimestamp(),
                     msg.qTimestamp(), msg.qNumRequeues(), msg.content());
             return numRows > 0;
         } else {
-            int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, msg.qId(),
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+            int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, qid, msg.qOriginalTimestamp(),
+                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
             return numRows > 0;
         }
     }
@@ -259,7 +244,13 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg) {
+    protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
+        UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         int numRows = jdbcTemplate.update(SQL_REMOVE_FROM_EPHEMERAL, msg.qId());
         return numRows > 0;
     }
@@ -269,8 +260,14 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean _queueWithRetries(final Connection conn, final IQueueMessage msg,
+    protected boolean _queueWithRetries(final Connection conn, final IQueueMessage _msg,
             final int numRetries, final int maxRetries) throws SQLException {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
+        UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         try {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
             Date now = new Date();
@@ -294,8 +291,14 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
     /**
      * {@inheritDoc}
      */
-    protected boolean _requeueWithRetries(final Connection conn, final IQueueMessage msg,
+    protected boolean _requeueWithRetries(final Connection conn, final IQueueMessage _msg,
             final int numRetries, final int maxRetries) throws SQLException {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
+        UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         try {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
             int numRows = jdbcTemplate.update(SQL_REQUEUE, new Date(), msg.qId());
@@ -322,8 +325,14 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
     /**
      * {@inheritDoc}
      */
-    protected boolean _requeueSilentWithRetries(final Connection conn, final IQueueMessage msg,
+    protected boolean _requeueSilentWithRetries(final Connection conn, final IQueueMessage _msg,
             final int numRetries, final int maxRetries) throws SQLException {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
+        UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         try {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
             int numRows = jdbcTemplate.update(SQL_REQUEUE_SILENT, msg.qId());
@@ -346,8 +355,14 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected void _finishWithRetries(final Connection conn, final IQueueMessage msg,
+    protected void _finishWithRetries(final Connection conn, final IQueueMessage _msg,
             final int numRetries, final int maxRetries) throws SQLException {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
+        UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         try {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
             removeFromEphemeralStorage(jdbcTemplate, msg);
@@ -365,12 +380,12 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
     /**
      * {@inheritDoc}
      */
-    protected IQueueMessage _takeWithRetries(final Connection conn, final int numRetries,
+    protected UniversalQueueMessage _takeWithRetries(final Connection conn, final int numRetries,
             final int maxRetries) throws SQLException {
         try {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
-            IQueueMessage msg = null;
+            UniversalQueueMessage msg = null;
             long ephemeralId = IDGEN.generateId64();
             int numRows = jdbcTemplate.update(SQL_UPDATE_EPHEMERAL_ID_TAKE, ephemeralId);
             if (numRows > 0) {
@@ -378,10 +393,9 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
                         SQL_READ_BY_EPHEMERAL_ID, ephemeralId);
                 if (dbRows != null && dbRows.size() > 0) {
                     Map<String, Object> dbRow = dbRows.get(0);
-                    ensureContentIsByteArray(dbRow);
-                    UniversalQueueMessage _msg = new UniversalQueueMessage();
-                    _msg.fromMap(dbRow);
-                    msg = _msg;
+                    // ensureContentIsByteArray(dbRow);
+                    msg = new UniversalQueueMessage();
+                    msg.fromMap(dbRow);
                 }
             }
 
@@ -401,8 +415,14 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean _moveFromEphemeralToQueueStorageWithRetries(final IQueueMessage msg,
+    protected boolean _moveFromEphemeralToQueueStorageWithRetries(final IQueueMessage _msg,
             final Connection conn, final int numRetries, final int maxRetries) throws SQLException {
+        if (!(_msg instanceof UniversalQueueMessage)) {
+            throw new IllegalArgumentException("This method requires an argument of type ["
+                    + UniversalQueueMessage.class.getName() + "]!");
+        }
+
+        UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         try {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
             int numRows = jdbcTemplate.update(SQL_CLEAR_EPHEMERAL_ID, msg.qId());

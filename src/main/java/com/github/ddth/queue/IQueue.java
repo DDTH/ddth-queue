@@ -45,7 +45,7 @@ public interface IQueue {
      * Implementation flow:
      * <ul>
      * <li>Put message to tail of queue storage; and increase message's re-queue
-     * & update message's queue timestamp. count.</li>
+     * count & update message's queue timestamp.</li>
      * <li>Remove message from ephemeral storage.</li>
      * </ul>
      * </p>
@@ -67,7 +67,7 @@ public interface IQueue {
      * Implementation flow:
      * <ul>
      * <li>Put message to tail of queue storage; do NOT increase message's
-     * re-queue count or update message's queue timestamp.</li>
+     * re-queue count and do NOT update message's queue timestamp.</li>
      * <li>Remove message from ephemeral storage.</li>
      * </ul>
      * </p>
@@ -142,8 +142,8 @@ public interface IQueue {
      * Implementation flow:
      * <ul>
      * <li>Read message from the ephemeral storage.</li>
-     * <li>Re-queue the message.</li>
-     * <li>(message is removed from the ephemeral storage).</li>
+     * <li>Put the message back to queue.</li>
+     * <li>Remove the message from the ephemeral storage.</li>
      * </ul>
      * </p>
      * 

@@ -11,7 +11,7 @@ OSGi environment: ddth-queue modules are packaged as an OSGi bundle (Experimenta
 
 ## Installation ##
 
-Latest release version: `0.2.3.1`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.3.0`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency:
 
@@ -19,7 +19,7 @@ Maven dependency:
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue</artifactId>
-	<version>0.2.3.1</version>
+	<version>0.3.0</version>
 </dependency>
 ```
 
@@ -111,6 +111,14 @@ Universal queue message implementation, with the following fields:
 - `timestamp` (`java.util.Date`): message's last-queued timestamp
 - `num_requeues` (`int`): number of times the message has been re-queued
 - `content` (`byte[]`): message's content
+
+### UniversalRedisQueue ###
+
+Universal Redis queue implementation:
+
+- Work with `UniversalQueueMessage`
+- Use a hash (to store `{queue_id => message}`), a list (to act as a queue of `queue_id`), and a sorted-set (to act as the ephemeral storage).
+
 
 ### UniversalJdbcQueue ###
 

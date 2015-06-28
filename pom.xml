@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -30,8 +31,6 @@
 
 	<properties>
 		<skipTests>true</skipTests>
-		<version.ddth-redis>0.4.0</version.ddth-redis>
-		<version.curator>2.7.1</version.curator>
 	</properties>
 
 	<dependencies>
@@ -78,10 +77,29 @@
 			<scope>test</scope>
 		</dependency>
 
+
 		<dependency>
 			<groupId>com.github.ddth</groupId>
 			<artifactId>ddth-dao</artifactId>
 			<version>0.4.0.2</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>2.7.2</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.17</version>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.10</version>
 			<optional>true</optional>
 		</dependency>
 	</dependencies>

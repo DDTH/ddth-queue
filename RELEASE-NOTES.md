@@ -1,6 +1,13 @@
 ddth-queue release notes
 ========================
 
+0.3.0 - 2015-06-29
+------------------
+
+- New class `UniversalRedisQueue`: queue implementation with Redis backend.
+- Bugs fixed and enhancements.
+
+
 0.2.3.1 - 2015-06-28
 --------------------
 
