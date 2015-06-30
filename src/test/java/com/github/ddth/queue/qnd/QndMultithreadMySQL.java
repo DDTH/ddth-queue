@@ -18,16 +18,18 @@ public class QndMultithreadMySQL {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 8192;
-    private static int NUM_THREADS = 8;
+    private static long NUM_ITEMS = 100;
+    private static int NUM_THREADS = 2;
 
     public static void main(String[] args) throws Exception {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
         dataSource
-                .setUrl("jdbc:mysql://localhost:3306/temp?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
+                .setUrl("jdbc:mysql://192.168.1.10:3306/test?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername("test");
         dataSource.setPassword("test");
+        dataSource.setMaxTotal(NUM_THREADS);
+        dataSource.setMaxIdle(NUM_THREADS);
 
         final UniversalJdbcQueue queue = new UniversalJdbcQueue();
         // queue.setFifo(false);

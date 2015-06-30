@@ -1,6 +1,14 @@
 ddth-queue release notes
 ========================
 
+0.3.1 - 2015-06-30
+------------------
+
+- Enhancements:
+  - `UniversalRedisQueue` now extends an abtract class `RedisQueue`.
+  - Many `RedisQueue`s can share a single `JedisPool`.
+
+
 0.3.0 - 2015-06-29
 ------------------
 

@@ -21,7 +21,7 @@ public class QndMultithreadRedis {
 
     public static void main(String[] args) throws Exception {
         final UniversalRedisQueue queue = new UniversalRedisQueue();
-        queue.setRedisHost("localhost").setRedisPort(6379);
+        queue.setRedisHostAndPort("localhost:6379");
         queue.setRedisHashName("queue_h").setRedisListName("queue_l")
                 .setRedisSortedSetName("queue_s");
         queue.init();
@@ -31,7 +31,7 @@ public class QndMultithreadRedis {
                 public void run() {
                     while (true) {
                         try {
-                            UniversalQueueMessage msg = (UniversalQueueMessage) queue.take();
+                            UniversalQueueMessage msg = queue.take();
                             if (msg != null) {
                                 // System.out.println(this + ": " + msg);
                                 queue.finish(msg);
