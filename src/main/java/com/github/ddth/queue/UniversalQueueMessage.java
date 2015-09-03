@@ -1,8 +1,14 @@
 package com.github.ddth.queue;
 
 import java.util.Date;
+import java.util.Map;
 
+import org.apache.commons.codec.binary.Base64;
+
+import com.github.ddth.commons.utils.IdGenerator;
+import com.github.ddth.commons.utils.SerializationUtils;
 import com.github.ddth.dao.BaseBo;
+import com.github.ddth.queue.utils.QueueUtils;
 
 /**
  * Universal queue message.
@@ -23,6 +29,8 @@ import com.github.ddth.dao.BaseBo;
  */
 public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
 
+    private static IdGenerator IDGEN = IdGenerator.getInstance(IdGenerator.getMacAddr());
+
     /**
      * Creates a new {@link UniversalQueueMessage} object.
      * 
@@ -31,7 +39,7 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
     public static UniversalQueueMessage newInstance() {
         Date now = new Date();
         UniversalQueueMessage msg = new UniversalQueueMessage();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+        msg.qId(IDGEN.generateId64()).qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
         return msg;
     }
 
@@ -151,5 +159,42 @@ public class UniversalQueueMessage extends BaseBo implements IQueueMessage {
      */
     public UniversalQueueMessage content(byte[] content) {
         return (UniversalQueueMessage) setAttribute(FIELD_CONTENT, content);
+    }
+
+    /**
+     * Serializes to {@code byte[]}.
+     * 
+     * @return
+     * @since 0.3.2
+     */
+    public byte[] toBytes() {
+        Map<String, Object> dataMap = this.toMap();
+        byte[] content = this.content();
+        String contentStr = content != null ? Base64.encodeBase64String(content) : null;
+        dataMap.put(FIELD_CONTENT, contentStr);
+        return SerializationUtils.toJsonString(dataMap).getBytes(QueueUtils.UTF8);
+    }
+
+    /**
+     * Deserializes from a {@code byte[]}.
+     * 
+     * @param msgData
+     * @return
+     * @since 0.3.2
+     */
+    @SuppressWarnings("unchecked")
+    public static UniversalQueueMessage fromBytes(byte[] msgData) {
+        if (msgData == null) {
+            return null;
+        }
+        String msgDataJson = new String(msgData, QueueUtils.UTF8);
+        Map<String, Object> dataMap = SerializationUtils.fromJsonString(msgDataJson, Map.class);
+        Object content = dataMap.get(UniversalQueueMessage.FIELD_CONTENT);
+        byte[] contentData = content == null ? null : (content instanceof byte[] ? (byte[]) content
+                : Base64.decodeBase64(content.toString()));
+        dataMap.put(UniversalQueueMessage.FIELD_CONTENT, contentData);
+        UniversalQueueMessage msg = new UniversalQueueMessage();
+        msg.fromMap(dataMap);
+        return msg;
     }
 }

@@ -11,7 +11,7 @@ OSGi environment: ddth-queue modules are packaged as an OSGi bundle (Experimenta
 
 ## Installation ##
 
-Latest release version: `0.3.1`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.3.2`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency:
 
@@ -19,7 +19,7 @@ Maven dependency:
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue</artifactId>
-	<version>0.3.1</version>
+	<version>0.3.2</version>
 </dependency>
 ```
 
@@ -60,9 +60,6 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 - Call `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)` to put the message back to the queue.
 
 
-
-
-
 ### APIs ###
 
 *`boolean IQueue.queue(IQueueMessage)`*: Put a message to queue storage.
@@ -86,18 +83,36 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 
 ### JDBC Queue ###
 
-Queue storage and Ephemeral storage are implemented as 2 database tables, identical schema. 
+Queue storage and Ephemeral storage are implemented as 2 database tables, identical schema.
+
+See [JdbcQueue.java](src/main/java/com/github/ddth/queue/impl/JdbcQueue.java).
 
 Usage:
 
 - Extends class `con.github.ddth.queue.impl.JdbcQueue`, and
-- Implements 6 methods:
-  - `IQueueMessage readFromQueueStorage(JdbcTemplate)`
-  - `Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate, long)`
-  - `boolean putToQueueStorage(JdbcTemplate, IQueueMessage)`
-  - `boolean putToEphemeralStorage(JdbcTemplate, IQueueMessage)`
-  - `boolean removeFromQueueStorage(JdbcTemplate, IQueueMessage)`
-  - `boolean removeFromEphemeralStorage(JdbcTemplate, IQueueMessage)`
+- Implements the following methods:
+    - `protected IQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate)`
+    - `protected IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
+    - `protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate, long thresholdTimestampMs)`
+    - `protected boolean putToQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
+    - `protected boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
+    - `protected boolean removeFromQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
+    - `protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
+
+
+### Redis Queue ###
+
+Queue storage and Ephemeral storage are implemented as a Redis hash and sorted set respectively. 
+Also, a Redis list is used as a queue of message-ids.
+
+See [RedisQueue.java](src/main/java/com/github/ddth/queue/impl/RedisQueue.java)
+
+Usage:
+
+- Extends class `con.github.ddth.queue.impl.RedisQueue`, and
+- Implements the following methods:
+    - `protected byte[] serialize(IQueueMessage msg)`
+    - `protected IQueueMessage deserialize(byte[] msgData)`
 
 
 ## Pre-made Convenient Classes ##

@@ -1,12 +1,10 @@
 ddth-queue release notes
 ========================
 
-0.3.1 - 2015-06-30
+0.3.2 - 2015-09-02
 ------------------
 
-- Enhancements:
-  - `UniversalRedisQueue` now extends an abtract class `RedisQueue`.
-  - Many `RedisQueue`s can share a single `JedisPool`.
+- (Experimental) New queue implementation that use Apache Kafka as queue backend.
 
 
 0.3.0 - 2015-06-29

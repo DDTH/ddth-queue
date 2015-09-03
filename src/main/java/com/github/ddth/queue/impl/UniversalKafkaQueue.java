@@ -5,20 +5,20 @@ import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.UniversalQueueMessage;
 
 /**
- * Universal Redis implementation of {@link IQueue}.
+ * Universal Kafka implementation of {@link IQueue}.
  * 
  * <p>
  * Queue and Take {@link UniversalQueueMessage}s.
  * </p>
  * 
  * <p>
- * Implementation: see {@link RedisQueue}.
+ * Implementation: see {@link KafkaQueue}.
  * </p>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.3.0
+ * @since 0.3.2
  */
-public class UniversalRedisQueue extends RedisQueue {
+public class UniversalKafkaQueue extends KafkaQueue {
 
     /**
      * {@inheritDoc}

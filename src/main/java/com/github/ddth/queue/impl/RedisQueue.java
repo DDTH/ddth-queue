@@ -1,6 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -13,9 +12,9 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 
-import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.utils.QueueUtils;
 
 /**
  * Redis implementation of {@link IQueue}.
@@ -37,22 +36,18 @@ import com.github.ddth.queue.IQueueMessage;
  */
 public abstract class RedisQueue implements IQueue {
 
-    protected final static Charset UTF8 = Charset.forName("UTF-8");
-
-    private IdGenerator IDGEN = IdGenerator.getInstance(IdGenerator.getMacAddr());
-
     private JedisPool jedisPool;
     private boolean myOwnJedisPool = true;
     private String redisHostAndPort = "localhost:6379";
 
     private String _redisHashName = "queue_h";
-    private byte[] redisHashName = _redisHashName.getBytes(UTF8);
+    private byte[] redisHashName = _redisHashName.getBytes(QueueUtils.UTF8);
 
     private String _redisListName = "queue_l";
-    private byte[] redisListName = _redisListName.getBytes(UTF8);
+    private byte[] redisListName = _redisListName.getBytes(QueueUtils.UTF8);
 
     private String _redisSortedSetName = "queue_s";
-    private byte[] redisSortedSetName = _redisSortedSetName.getBytes(UTF8);
+    private byte[] redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
 
     /**
      * Redis' host and port scheme (format {@code host:port}).
@@ -80,7 +75,7 @@ public abstract class RedisQueue implements IQueue {
 
     public RedisQueue setRedisHashName(String redisHashName) {
         _redisHashName = redisHashName;
-        this.redisHashName = _redisHashName.getBytes(UTF8);
+        this.redisHashName = _redisHashName.getBytes(QueueUtils.UTF8);
         return this;
     }
 
@@ -90,7 +85,7 @@ public abstract class RedisQueue implements IQueue {
 
     public RedisQueue setRedisListName(String redisListName) {
         _redisListName = redisListName;
-        this.redisListName = _redisListName.getBytes(UTF8);
+        this.redisListName = _redisListName.getBytes(QueueUtils.UTF8);
         return this;
     }
 
@@ -100,7 +95,7 @@ public abstract class RedisQueue implements IQueue {
 
     public RedisQueue setRedisSortedSetName(String redisSortedSetName) {
         _redisSortedSetName = redisSortedSetName;
-        this.redisSortedSetName = _redisSortedSetName.getBytes(UTF8);
+        this.redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
         return this;
     }
 
@@ -189,7 +184,7 @@ public abstract class RedisQueue implements IQueue {
         try (Jedis jedis = jedisPool.getResource()) {
             Transaction jt = jedis.multi();
 
-            byte[] field = msg.qId().toString().getBytes(UTF8);
+            byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
             Response<Long> response = jt.hdel(redisHashName, field);
             jt.zrem(redisSortedSetName, field);
 
@@ -209,7 +204,7 @@ public abstract class RedisQueue implements IQueue {
         try (Jedis jedis = jedisPool.getResource()) {
             Transaction jt = jedis.multi();
 
-            byte[] field = msg.qId().toString().getBytes(UTF8);
+            byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
             byte[] data = serialize(msg);
             jt.hset(redisHashName, field, data);
             jt.rpush(redisListName, field);
@@ -230,7 +225,7 @@ public abstract class RedisQueue implements IQueue {
         try (Jedis jedis = jedisPool.getResource()) {
             Transaction jt = jedis.multi();
 
-            byte[] field = msg.qId().toString().getBytes(UTF8);
+            byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
             byte[] data = serialize(msg);
             jt.hset(redisHashName, field, data);
             jt.rpush(redisListName, field);
@@ -247,10 +242,6 @@ public abstract class RedisQueue implements IQueue {
     @Override
     public boolean queue(IQueueMessage msg) {
         Date now = new Date();
-        Object qId = msg.qId();
-        if (qId == null || (qId instanceof Number && ((Number) qId).longValue() == 0)) {
-            msg.qId(IDGEN.generateId64());
-        }
         msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
         return storeNew(msg);
     }
@@ -293,7 +284,7 @@ public abstract class RedisQueue implements IQueue {
                 return null;
             }
             return deserialize(response instanceof byte[] ? (byte[]) response : response.toString()
-                    .getBytes(UTF8));
+                    .getBytes(QueueUtils.UTF8));
         }
     }
 
