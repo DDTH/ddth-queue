@@ -1,4 +1,4 @@
-package com.github.ddth.queue.qnd;
+package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import com.github.ddth.queue.UniversalQueueMessage;
-import com.github.ddth.queue.impl.LessLockingUniversalPgSQLQueue;
+import com.github.ddth.queue.impl.universal.UniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
 
-public class QndMultithreadLessLockingPgSQL {
+public class QndMultithreadPgSQL {
 
     private static AtomicLong NUM_SENT = new AtomicLong(0);
     private static AtomicLong NUM_TAKEN = new AtomicLong(0);
@@ -18,19 +18,24 @@ public class QndMultithreadLessLockingPgSQL {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 8192;
-    private static int NUM_THREADS = 8;
+    private static long NUM_ITEMS = 1024;
+    private static int NUM_THREADS = 4;
 
     public static void main(String[] args) throws Exception {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://localhost:5432/temp");
+        dataSource.setUrl("jdbc:postgresql://192.168.1.10:5432/test");
         dataSource.setUsername("test");
         dataSource.setPassword("test");
+        dataSource.setMaxTotal(NUM_THREADS);
+        dataSource.setMaxIdle(NUM_THREADS);
 
-        final LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue();
+        final UniversalJdbcQueue queue = new UniversalJdbcQueue();
+        // queue.setMaxRetries(10);
         queue.setFifo(false);
-        queue.setTableName("queuell").setDataSource(dataSource).init();
+        queue.setEphemeralDisabled(true);
+        queue.setTableName("queue").setTableNameEphemeral("queue_ephemeral")
+                .setDataSource(dataSource).init();
 
         for (int i = 0; i < NUM_THREADS; i++) {
             Thread t = new Thread() {
@@ -54,7 +59,7 @@ public class QndMultithreadLessLockingPgSQL {
                             }
                         } catch (Exception e) {
                             NUM_EXCEPTION.incrementAndGet();
-                            e.printStackTrace();
+                            // e.printStackTrace();
                         }
                     }
                 }
@@ -67,10 +72,9 @@ public class QndMultithreadLessLockingPgSQL {
 
         long t1 = System.currentTimeMillis();
         for (int i = 0; i < NUM_ITEMS; i++) {
-            UniversalQueueMessage msg = new UniversalQueueMessage();
+            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();
-            msg.qNumRequeues(0).qOriginalTimestamp(new Date()).qTimestamp(new Date())
-                    .content(content.getBytes());
+            msg.content(content);
             // System.out.println("Sending: " + msg.toJson());
             queue.queue(msg);
             NUM_SENT.incrementAndGet();
@@ -79,17 +83,19 @@ public class QndMultithreadLessLockingPgSQL {
         }
         long t2 = System.currentTimeMillis();
 
-        while (NUM_TAKEN.get() < NUM_ITEMS) {
+        long t = System.currentTimeMillis();
+        while (NUM_TAKEN.get() < NUM_ITEMS && t - t2 < 60000) {
             Thread.sleep(1);
+            t = System.currentTimeMillis();
         }
         System.out.println("Duration Queue: " + (t2 - t1));
         System.out.println("Duration Take : " + (TIMESTAMP.get() - t1));
-        System.out.println("Num sent      : " + NUM_SENT.get());
-        System.out.println("Num taken     : " + NUM_TAKEN.get());
-        System.out.println("Num exception : " + NUM_EXCEPTION.get());
-        System.out.println("Sent size     : " + SENT.size());
-        System.out.println("Receive size  : " + RECEIVE.size());
-        System.out.println("Check         : " + SENT.equals(RECEIVE));
+        System.out.println("Num sent     : " + NUM_SENT.get());
+        System.out.println("Num taken    : " + NUM_TAKEN.get());
+        System.out.println("Num exception: " + NUM_EXCEPTION.get());
+        System.out.println("Sent size    : " + SENT.size());
+        System.out.println("Receive size : " + RECEIVE.size());
+        System.out.println("Check        : " + SENT.equals(RECEIVE));
 
         Thread.sleep(4000);
         System.exit(-1);

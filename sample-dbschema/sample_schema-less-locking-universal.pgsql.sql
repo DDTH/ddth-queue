@@ -1,4 +1,4 @@
--- Sample table schema for less-locking PgSQL queue
+-- Sample table schema for less-locking universal PgSQL queue
 
 DROP TABLE IF EXISTS queuell;
 CREATE TABLE queuell (

@@ -1,8 +1,8 @@
--- Sample table schema for MySQL queue
+-- Sample table schema for universal2 MySQL queue
 
 DROP TABLE IF EXISTS queue;
 CREATE TABLE queue (
-    queue_id                    BIGINT              AUTO_INCREMENT,
+    queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     msg_org_timestamp           DATETIME            NOT NULL            COMMENT "Message's original timestamp; when requeued original timestamp will not be changed",
     msg_timestamp               DATETIME            NOT NULL            COMMENT "Message's queue timestamp",
@@ -12,7 +12,7 @@ CREATE TABLE queue (
 
 DROP TABLE IF EXISTS queue_ephemeral;
 CREATE TABLE queue_ephemeral (
-    queue_id                    BIGINT              NOT NULL,
+    queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     msg_org_timestamp           DATETIME            NOT NULL,
     msg_timestamp               DATETIME            NOT NULL,

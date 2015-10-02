@@ -1,10 +1,23 @@
 ddth-queue release notes
 ========================
 
+0.3.3 - 2015-10-02
+------------------
+
+- (Experimental) New queue implementation that use [Facebook RocksDB](http://rocksdb.org) as queue backend.
+- (Experimental) Kafka queue:
+  - Add `take()` operation.
+  - Improve consumer performance.
+- New package `com.github.ddth.queue.impl.universal`: universal queue implementations are moved to under this package.
+  - `com.github.ddth.queue.impl.universal.UniversalQueueMessage`: queue-id is a 64-bit integer.
+- New package `com.github.ddth.queue.impl.universal2`: universal queue implementations are moved to under this package.
+  - `com.github.ddth.queue.impl.universal2.UniversalQueueMessage`: queue-id is a 32-hex-character string.
+
+
 0.3.2 - 2015-09-02
 ------------------
 
-- (Experimental) New queue implementation that use Apache Kafka as queue backend.
+- (Experimental) New queue implementation that use [Apache Kafka](http://kafka.apache.org) as queue backend.
 
 
 0.3.0 - 2015-06-29

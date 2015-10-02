@@ -1,4 +1,4 @@
-package com.github.ddth.queue.impl;
+package com.github.ddth.queue.impl.universal2;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -7,11 +7,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.UniversalQueueMessage;
+import com.github.ddth.queue.impl.JdbcQueue;
+import com.github.ddth.queue.utils.QueueUtils;
 
 /**
  * Universal JDBC implementation of {@link IQueue}.
@@ -35,39 +37,51 @@ import com.github.ddth.queue.UniversalQueueMessage;
  * </p>
  * <ul>
  * <li>{@code queue_id}: {@code bigint, auto increment}, see
- * {@link IQueueMessage#qId()}</li>
+ * {@link IQueueMessage#qId()}, {@link #COL_QUEUE_ID}</li>
  * <li>{@code msg_org_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qOriginalTimestamp()}</li>
+ * {@link IQueueMessage#qOriginalTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
  * <li>{@code msg_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qTimestamp()}</li>
+ * {@link IQueueMessage#qTimestamp()}, {@link #COL_TIMESTAMP}</li>
  * <li>{@code msg_num_requeues}: {@code int}, see
- * {@link IQueueMessage#qNumRequeues()}</li>
- * <li>{@code msg_content}: {@code blob}, message's content</li>
+ * {@link IQueueMessage#qNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
+ * <li>{@code msg_content}: {@code blob}, message's content, see
+ * {@link #COL_CONTENT}</li>
  * </ul>
  * 
  * <p>
  * Ephemeral db table schema:
  * </p>
  * <ul>
- * <li>{@code queue_id}: {@code bigint}, see {@link IQueueMessage#qId()}</li>
+ * <li>{@code queue_id}: {@code bigint}, see {@link IQueueMessage#qId()},
+ * {@link #COL_QUEUE_ID}</li>
  * <li>{@code msg_org_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qOriginalTimestamp()}</li>
+ * {@link IQueueMessage#qOriginalTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
  * <li>{@code msg_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qTimestamp()}</li>
+ * {@link IQueueMessage#qTimestamp()}, {@link #COL_TIMESTAMP}</li>
  * <li>{@code msg_num_requeues}: {@code int}, see
- * {@link IQueueMessage#qNumRequeues()}</li>
- * <li>{@code msg_content}: {@code blob}, message's content</li>
+ * {@link IQueueMessage#qNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
+ * <li>{@code msg_content}: {@code blob}, message's content, see
+ * {@link #COL_CONTENT}</li>
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.2.3
+ * @since 0.3.3
  */
 public class UniversalJdbcQueue extends JdbcQueue {
 
+    /** Table's column name to store queue-id */
     public final static String COL_QUEUE_ID = "queue_id";
+
+    /** Table's column name to store message's original timestamp */
     public final static String COL_ORG_TIMESTAMP = "msg_org_timestamp";
+
+    /** Table's column name to store message's timestamp */
     public final static String COL_TIMESTAMP = "msg_timestamp";
+
+    /** Table's column name to store message's number of requeues */
     public final static String COL_NUM_REQUEUES = "msg_num_requeues";
+
+    /** Table's column name to store message's content */
     public final static String COL_CONTENT = "msg_content";
 
     private boolean fifo = true;
@@ -169,18 +183,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
         return this;
     }
 
-    // private static Charset UTF8 = Charset.forName("UTF-8");
-    //
-    // private static void ensureContentIsByteArray(Map<String, Object> dbRow) {
-    // Object content = dbRow.get(UniversalQueueMessage.FIELD_CONTENT);
-    // if (content != null) {
-    // if (!(content instanceof byte[])) {
-    // content = content.toString().getBytes(UTF8);
-    // dbRow.put(UniversalQueueMessage.FIELD_CONTENT, content);
-    // }
-    // }
-    // }
-
     /**
      * {@inheritDoc}
      */
@@ -252,16 +254,13 @@ public class UniversalJdbcQueue extends JdbcQueue {
         }
 
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        Long qid = msg.qId();
-        if (qid == null || qid.longValue() == 0) {
-            int numRows = jdbcTemplate.update(SQL_PUT_NEW_TO_QUEUE, msg.qOriginalTimestamp(),
-                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
-            return numRows > 0;
-        } else {
-            int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, qid, msg.qOriginalTimestamp(),
-                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
-            return numRows > 0;
+        String qid = msg.qId();
+        if (StringUtils.isEmpty(qid)) {
+            qid = QueueUtils.IDGEN.generateId128Hex();
         }
+        int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, qid, msg.qOriginalTimestamp(),
+                msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        return numRows > 0;
     }
 
     /**

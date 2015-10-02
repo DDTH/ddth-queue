@@ -1,11 +1,11 @@
-package com.github.ddth.queue.qnd;
+package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import com.github.ddth.queue.UniversalQueueMessage;
-import com.github.ddth.queue.impl.LessLockingUniversalPgSQLQueue;
+import com.github.ddth.queue.impl.universal.LessLockingUniversalPgSQLQueue;
+import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
 
 public class QndLessLockingQueuePgSQL {
 
@@ -20,10 +20,8 @@ public class QndLessLockingQueuePgSQL {
         final LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue();
         queue.setTableName("queuell").setDataSource(dataSource).init();
 
-        UniversalQueueMessage msg = new UniversalQueueMessage();
-        String content = "Content: [" + System.currentTimeMillis() + "] " + new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(new Date()).qTimestamp(new Date())
-                .content(content.getBytes());
+        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+        msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
         System.out.println("Queue: " + queue.queue(msg));
 
         msg = queue.take();

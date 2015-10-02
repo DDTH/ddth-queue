@@ -1,14 +1,16 @@
-package com.github.ddth.queue.qnd;
+package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.github.ddth.queue.UniversalQueueMessage;
-import com.github.ddth.queue.impl.UniversalRedisQueue;
+import org.apache.commons.dbcp2.BasicDataSource;
 
-public class QndMultithreadRedis {
+import com.github.ddth.queue.impl.universal.UniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+
+public class QndMultithreadMySQL {
 
     private static AtomicLong NUM_SENT = new AtomicLong(0);
     private static AtomicLong NUM_TAKEN = new AtomicLong(0);
@@ -16,22 +18,31 @@ public class QndMultithreadRedis {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 8192 * 5;
+    private static long NUM_ITEMS = 8192;
     private static int NUM_THREADS = 8;
 
     public static void main(String[] args) throws Exception {
-        final UniversalRedisQueue queue = new UniversalRedisQueue();
-        queue.setRedisHostAndPort("localhost:6379");
-        queue.setRedisHashName("queue_h").setRedisListName("queue_l")
-                .setRedisSortedSetName("queue_s");
-        queue.init();
+        BasicDataSource dataSource = new BasicDataSource();
+        dataSource.setDriverClassName("com.mysql.jdbc.Driver");
+        dataSource
+                .setUrl("jdbc:mysql://localhost:3306/temp?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
+        dataSource.setUsername("test");
+        dataSource.setPassword("test");
+        dataSource.setMaxTotal(NUM_THREADS);
+        dataSource.setMaxIdle(NUM_THREADS);
+
+        final UniversalJdbcQueue queue = new UniversalJdbcQueue();
+        // queue.setFifo(false);
+        // queue.setEphemeralDisabled(true);
+        queue.setTableName("queue").setTableNameEphemeral("queue_ephemeral")
+                .setDataSource(dataSource).init();
 
         for (int i = 0; i < NUM_THREADS; i++) {
             Thread t = new Thread() {
                 public void run() {
                     while (true) {
                         try {
-                            UniversalQueueMessage msg = queue.take();
+                            UniversalQueueMessage msg = (UniversalQueueMessage) queue.take();
                             if (msg != null) {
                                 // System.out.println(this + ": " + msg);
                                 queue.finish(msg);
@@ -61,10 +72,9 @@ public class QndMultithreadRedis {
 
         long t1 = System.currentTimeMillis();
         for (int i = 0; i < NUM_ITEMS; i++) {
-            UniversalQueueMessage msg = new UniversalQueueMessage();
+            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();
-            msg.qNumRequeues(0).qOriginalTimestamp(new Date()).qTimestamp(new Date())
-                    .content(content.getBytes());
+            msg.content(content);
             // System.out.println("Sending: " + msg.toJson());
             queue.queue(msg);
             NUM_SENT.incrementAndGet();
@@ -73,17 +83,19 @@ public class QndMultithreadRedis {
         }
         long t2 = System.currentTimeMillis();
 
-        while (NUM_TAKEN.get() < NUM_ITEMS) {
+        long t = System.currentTimeMillis();
+        while (NUM_TAKEN.get() < NUM_ITEMS && t - t2 < 60000) {
             Thread.sleep(1);
+            t = System.currentTimeMillis();
         }
         System.out.println("Duration Queue: " + (t2 - t1));
         System.out.println("Duration Take : " + (TIMESTAMP.get() - t1));
-        System.out.println("Num sent     : " + NUM_SENT.get());
-        System.out.println("Num taken    : " + NUM_TAKEN.get());
-        System.out.println("Num exception: " + NUM_EXCEPTION.get());
-        System.out.println("Sent size    : " + SENT.size());
-        System.out.println("Receive size : " + RECEIVE.size());
-        System.out.println("Check        : " + SENT.equals(RECEIVE));
+        System.out.println("Num sent      : " + NUM_SENT.get());
+        System.out.println("Num taken     : " + NUM_TAKEN.get());
+        System.out.println("Num exception : " + NUM_EXCEPTION.get());
+        System.out.println("Sent size     : " + SENT.size());
+        System.out.println("Receive size  : " + RECEIVE.size());
+        System.out.println("Check         : " + SENT.equals(RECEIVE));
 
         Thread.sleep(4000);
         System.exit(-1);

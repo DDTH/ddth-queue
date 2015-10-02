@@ -1,9 +1,9 @@
-package com.github.ddth.queue.qnd;
+package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 
-import com.github.ddth.queue.UniversalQueueMessage;
-import com.github.ddth.queue.impl.UniversalRedisQueue;
+import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalRedisQueue;
 
 public class QndQueueRedis {
 
@@ -11,15 +11,14 @@ public class QndQueueRedis {
         final UniversalRedisQueue queue = new UniversalRedisQueue();
         queue.setRedisHostAndPort("localhost:6379").init();
 
-        UniversalQueueMessage msg = new UniversalQueueMessage();
-        String content = "Content: [" + System.currentTimeMillis() + "] " + new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(new Date()).qTimestamp(new Date())
-                .content(content.getBytes());
+        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+        msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
         System.out.println("Queue: " + queue.queue(msg));
 
         msg = queue.take();
         while (msg.qNumRequeues() < 2) {
-            System.out.println(msg);
+            System.out.println("Message: " + msg);
+            System.out.println("Content: " + new String(msg.content()));
             System.out.println("Requeue: " + queue.requeue(msg));
             msg = queue.take();
         }

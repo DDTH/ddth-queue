@@ -1,4 +1,4 @@
-package com.github.ddth.queue.qnd;
+package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,10 +7,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import com.github.ddth.queue.UniversalQueueMessage;
-import com.github.ddth.queue.impl.UniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.LessLockingUniversalMySQLQueue;
+import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
 
-public class QndMultithreadMySQL {
+public class QndMultithreadLessLockingMySQL {
 
     private static AtomicLong NUM_SENT = new AtomicLong(0);
     private static AtomicLong NUM_TAKEN = new AtomicLong(0);
@@ -18,24 +18,21 @@ public class QndMultithreadMySQL {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 100;
-    private static int NUM_THREADS = 2;
+    private static long NUM_ITEMS = 8192;
+    private static int NUM_THREADS = 8;
 
     public static void main(String[] args) throws Exception {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
         dataSource
-                .setUrl("jdbc:mysql://192.168.1.10:3306/test?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
+                .setUrl("jdbc:mysql://localhost:3306/temp?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername("test");
         dataSource.setPassword("test");
-        dataSource.setMaxTotal(NUM_THREADS);
-        dataSource.setMaxIdle(NUM_THREADS);
 
-        final UniversalJdbcQueue queue = new UniversalJdbcQueue();
-        // queue.setFifo(false);
-        // queue.setEphemeralDisabled(true);
-        queue.setTableName("queue").setTableNameEphemeral("queue_ephemeral")
-                .setDataSource(dataSource).init();
+        final LessLockingUniversalMySQLQueue queue = new LessLockingUniversalMySQLQueue();
+        // queue.setMaxRetries(10);
+        queue.setFifo(false);
+        queue.setTableName("queuell").setDataSource(dataSource).init();
 
         for (int i = 0; i < NUM_THREADS; i++) {
             Thread t = new Thread() {
@@ -59,7 +56,7 @@ public class QndMultithreadMySQL {
                             }
                         } catch (Exception e) {
                             NUM_EXCEPTION.incrementAndGet();
-                            e.printStackTrace();
+                            // e.printStackTrace();
                         }
                     }
                 }
@@ -72,10 +69,9 @@ public class QndMultithreadMySQL {
 
         long t1 = System.currentTimeMillis();
         for (int i = 0; i < NUM_ITEMS; i++) {
-            UniversalQueueMessage msg = new UniversalQueueMessage();
+            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();
-            msg.qNumRequeues(0).qOriginalTimestamp(new Date()).qTimestamp(new Date())
-                    .content(content.getBytes());
+            msg.content(content);
             // System.out.println("Sending: " + msg.toJson());
             queue.queue(msg);
             NUM_SENT.incrementAndGet();
@@ -84,8 +80,10 @@ public class QndMultithreadMySQL {
         }
         long t2 = System.currentTimeMillis();
 
-        while (NUM_TAKEN.get() < NUM_ITEMS) {
+        long t = System.currentTimeMillis();
+        while (NUM_TAKEN.get() < NUM_ITEMS && t - t2 < 60000) {
             Thread.sleep(1);
+            t = System.currentTimeMillis();
         }
         System.out.println("Duration Queue: " + (t2 - t1));
         System.out.println("Duration Take : " + (TIMESTAMP.get() - t1));

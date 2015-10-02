@@ -75,4 +75,59 @@ public interface IQueueMessage {
      * @return
      */
     public IQueueMessage qIncNumRequeues();
+
+    /**
+     * An empty queue message.
+     * 
+     * @author Thanh Nguyen <btnguyen2k@gmail.com>
+     * @since 0.3.3
+     */
+    public static class EmptyQueueMessage implements IQueueMessage {
+
+        @Override
+        public Object qId() {
+            return null;
+        }
+
+        @Override
+        public IQueueMessage qId(Object queueId) {
+            return null;
+        }
+
+        @Override
+        public Date qOriginalTimestamp() {
+            return null;
+        }
+
+        @Override
+        public IQueueMessage qOriginalTimestamp(Date timestamp) {
+            return null;
+        }
+
+        @Override
+        public Date qTimestamp() {
+            return null;
+        }
+
+        @Override
+        public IQueueMessage qTimestamp(Date timestamp) {
+            return null;
+        }
+
+        @Override
+        public int qNumRequeues() {
+            return 0;
+        }
+
+        @Override
+        public IQueueMessage qNumRequeues(int numRequeues) {
+            return null;
+        }
+
+        @Override
+        public IQueueMessage qIncNumRequeues() {
+            return null;
+        }
+
+    }
 }

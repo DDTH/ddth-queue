@@ -1,4 +1,4 @@
-package com.github.ddth.queue.impl;
+package com.github.ddth.queue.impl.universal2;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -9,16 +9,18 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.UniversalQueueMessage;
+import com.github.ddth.queue.impl.JdbcQueue;
+import com.github.ddth.queue.impl.universal.UniversalJdbcQueue;
 import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.utils.QueueUtils;
 
 /**
  * Same as {@link UniversalJdbcQueue}, but using a less-locking algorithm -
@@ -29,31 +31,42 @@ import com.github.ddth.queue.utils.QueueException;
  * Queue db table schema:
  * </p>
  * <ul>
- * <li>{@code queue_id}: {@code bigint, auto increment}, see
- * {@link IQueueMessage#qId()}</li>
- * <li>{@code ephemeral_id}: {@code bigint}</li>
+ * <li>{@code queue_id}: {@code varchar(32)}, see {@link IQueueMessage#qId()},
+ * {@link #COL_QUEUE_ID}</li>
+ * <li>{@code ephemeral_id}: {@code varchar(32)}, see {@link #COL_EPHEMERAL_ID}</li>
  * <li>{@code msg_org_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qOriginalTimestamp()}</li>
+ * {@link IQueueMessage#qOriginalTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
  * <li>{@code msg_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qTimestamp()}</li>
+ * {@link IQueueMessage#qTimestamp()}, {@link #COL_TIMESTAMP}</li>
  * <li>{@code msg_num_requeues}: {@code int}, see
- * {@link IQueueMessage#qNumRequeues()}</li>
- * <li>{@code msg_content}: {@code blob}, message's content</li>
+ * {@link IQueueMessage#qNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
+ * <li>{@code msg_content}: {@code blob}, message's content, see
+ * {@link #COL_CONTENT}</li>
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.2.3
+ * @since 0.3.3
  */
 public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
 
     private Logger LOGGER = LoggerFactory.getLogger(LessLockingUniversalPgSQLQueue.class);
-    private IdGenerator IDGEN = IdGenerator.getInstance(IdGenerator.getMacAddr());
 
+    /** Table's column name to store queue-id */
     public final static String COL_QUEUE_ID = "queue_id";
+
+    /** Table's column name to store ephemeral id */
     public final static String COL_EPHEMERAL_ID = "ephemeral_id";
+
+    /** Table's column name to store message's original timestamp */
     public final static String COL_ORG_TIMESTAMP = "msg_org_timestamp";
+
+    /** Table's column name to store message's timestamp */
     public final static String COL_TIMESTAMP = "msg_timestamp";
+
+    /** Table's column name to store message's number of requeues */
     public final static String COL_NUM_REQUEUES = "msg_num_requeues";
+
+    /** Table's column name to store message's content */
     public final static String COL_CONTENT = "msg_content";
 
     private boolean fifo = true;
@@ -97,20 +110,20 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
     public LessLockingUniversalPgSQLQueue init() {
         super.init();
 
-        SQL_REQUEUE = "UPDATE {0} SET {1}=0, {2}={2}+1, {3}=? WHERE {4}=?";
+        SQL_REQUEUE = "UPDATE {0} SET {1}=null, {2}={2}+1, {3}=? WHERE {4}=?";
         SQL_REQUEUE = MessageFormat.format(SQL_REQUEUE, getTableName(), COL_EPHEMERAL_ID,
                 COL_NUM_REQUEUES, COL_TIMESTAMP, COL_QUEUE_ID);
 
-        SQL_REQUEUE_SILENT = "UPDATE {0} SET {1}=0 WHERE {2}=?";
+        SQL_REQUEUE_SILENT = "UPDATE {0} SET {1}=null WHERE {2}=?";
         SQL_REQUEUE_SILENT = MessageFormat.format(SQL_REQUEUE_SILENT, getTableName(),
                 COL_EPHEMERAL_ID, COL_QUEUE_ID);
 
-        SQL_UPDATE_EPHEMERAL_ID_TAKE = "UPDATE {0} M SET {1}=? FROM (SELECT {2} FROM {0} WHERE {1}=0"
+        SQL_UPDATE_EPHEMERAL_ID_TAKE = "UPDATE {0} M SET {1}=? FROM (SELECT {2} FROM {0} WHERE {1}=null"
                 + (fifo ? (" ORDER BY {2} DESC") : "") + " LIMIT 1 FOR UPDATE) S WHERE M.{2}=S.{2}";
         SQL_UPDATE_EPHEMERAL_ID_TAKE = MessageFormat.format(SQL_UPDATE_EPHEMERAL_ID_TAKE,
                 getTableName(), COL_EPHEMERAL_ID, COL_QUEUE_ID);
 
-        SQL_CLEAR_EPHEMERAL_ID = "UPDATE {0} SET {1}=0 WHERE {2}=?";
+        SQL_CLEAR_EPHEMERAL_ID = "UPDATE {0} SET {1}=null WHERE {2}=?";
         SQL_CLEAR_EPHEMERAL_ID = MessageFormat.format(SQL_CLEAR_EPHEMERAL_ID, getTableName(),
                 COL_EPHEMERAL_ID, COL_QUEUE_ID);
 
@@ -123,7 +136,7 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
                         + UniversalQueueMessage.FIELD_CONTENT, COL_EPHEMERAL_ID);
 
         SQL_GET_ORPHAN_MSGS = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE " + COL_EPHEMERAL_ID
-                + "!=0 AND " + COL_TIMESTAMP + "<?";
+                + " IS NOT null AND " + COL_TIMESTAMP + "<?";
         SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS, getTableNameEphemeral(),
                 COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
                         + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
@@ -210,16 +223,13 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
         }
 
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        Long qid = msg.qId();
-        if (qid == null || qid.longValue() == 0) {
-            int numRows = jdbcTemplate.update(SQL_PUT_NEW_TO_QUEUE, msg.qOriginalTimestamp(),
-                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
-            return numRows > 0;
-        } else {
-            int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, qid, msg.qOriginalTimestamp(),
-                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
-            return numRows > 0;
+        String qid = msg.qId();
+        if (StringUtils.isEmpty(qid)) {
+            qid = QueueUtils.IDGEN.generateId128Hex();
         }
+        int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, qid, msg.qOriginalTimestamp(),
+                msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        return numRows > 0;
     }
 
     /**
@@ -386,7 +396,7 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
             UniversalQueueMessage msg = null;
-            long ephemeralId = IDGEN.generateId64();
+            String ephemeralId = QueueUtils.IDGEN.generateId128Hex();
             int numRows = jdbcTemplate.update(SQL_UPDATE_EPHEMERAL_ID_TAKE, ephemeralId);
             if (numRows > 0) {
                 List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(

@@ -1,4 +1,4 @@
--- Sample table schema for PgSQL queue
+-- Sample table schema for universal PgSQL queue
 
 DROP TABLE IF EXISTS queue;
 CREATE TABLE queue (

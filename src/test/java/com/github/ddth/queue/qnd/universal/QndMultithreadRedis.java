@@ -1,16 +1,14 @@
-package com.github.ddth.queue.qnd;
+package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.dbcp2.BasicDataSource;
+import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalRedisQueue;
 
-import com.github.ddth.queue.UniversalQueueMessage;
-import com.github.ddth.queue.impl.UniversalJdbcQueue;
-
-public class QndMultithreadPgSQL {
+public class QndMultithreadRedis {
 
     private static AtomicLong NUM_SENT = new AtomicLong(0);
     private static AtomicLong NUM_TAKEN = new AtomicLong(0);
@@ -18,36 +16,27 @@ public class QndMultithreadPgSQL {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 1024;
-    private static int NUM_THREADS = 4;
+    private static long NUM_ITEMS = 8192 * 5;
+    private static int NUM_THREADS = 8;
 
     public static void main(String[] args) throws Exception {
-        BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://192.168.1.10:5432/test");
-        dataSource.setUsername("test");
-        dataSource.setPassword("test");
-        dataSource.setMaxTotal(NUM_THREADS);
-        dataSource.setMaxIdle(NUM_THREADS);
-
-        final UniversalJdbcQueue queue = new UniversalJdbcQueue();
-        // queue.setMaxRetries(10);
-        queue.setFifo(false);
-        queue.setEphemeralDisabled(true);
-        queue.setTableName("queue").setTableNameEphemeral("queue_ephemeral")
-                .setDataSource(dataSource).init();
+        final UniversalRedisQueue queue = new UniversalRedisQueue();
+        queue.setRedisHostAndPort("localhost:6379");
+        queue.setRedisHashName("queue_h").setRedisListName("queue_l")
+                .setRedisSortedSetName("queue_s");
+        queue.init();
 
         for (int i = 0; i < NUM_THREADS; i++) {
             Thread t = new Thread() {
                 public void run() {
                     while (true) {
                         try {
-                            UniversalQueueMessage msg = (UniversalQueueMessage) queue.take();
+                            UniversalQueueMessage msg = queue.take();
                             if (msg != null) {
                                 // System.out.println(this + ": " + msg);
                                 queue.finish(msg);
                                 long numItems = NUM_TAKEN.incrementAndGet();
-                                if (numItems == NUM_ITEMS) {
+                                if (numItems >= NUM_ITEMS) {
                                     TIMESTAMP.set(System.currentTimeMillis());
                                 }
                                 RECEIVE.put(new String(msg.content()), Boolean.TRUE);
@@ -59,7 +48,7 @@ public class QndMultithreadPgSQL {
                             }
                         } catch (Exception e) {
                             NUM_EXCEPTION.incrementAndGet();
-                            // e.printStackTrace();
+                            e.printStackTrace();
                         }
                     }
                 }
@@ -72,10 +61,9 @@ public class QndMultithreadPgSQL {
 
         long t1 = System.currentTimeMillis();
         for (int i = 0; i < NUM_ITEMS; i++) {
-            UniversalQueueMessage msg = new UniversalQueueMessage();
+            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();
-            msg.qNumRequeues(0).qOriginalTimestamp(new Date()).qTimestamp(new Date())
-                    .content(content.getBytes());
+            msg.content(content);
             // System.out.println("Sending: " + msg.toJson());
             queue.queue(msg);
             NUM_SENT.incrementAndGet();
@@ -84,8 +72,10 @@ public class QndMultithreadPgSQL {
         }
         long t2 = System.currentTimeMillis();
 
-        while (NUM_TAKEN.get() < NUM_ITEMS) {
+        long t = System.currentTimeMillis();
+        while (NUM_TAKEN.get() < NUM_ITEMS && t - t2 < 60000) {
             Thread.sleep(1);
+            t = System.currentTimeMillis();
         }
         System.out.println("Duration Queue: " + (t2 - t1));
         System.out.println("Duration Take : " + (TIMESTAMP.get() - t1));
