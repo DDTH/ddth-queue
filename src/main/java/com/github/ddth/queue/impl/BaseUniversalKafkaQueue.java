@@ -17,20 +17,20 @@ public abstract class BaseUniversalKafkaQueue<T extends BaseUniversalQueueMessag
 
     /**
      * Puts a message to Kafka queue, partitioning message by
-     * {@link BaseUniversalQueueMessage#kafkaKey()} (or
+     * {@link BaseUniversalQueueMessage#partitionKey()} (or
      * {@link IQueueMessage#qId()} if message is not of type
      * {@link BaseUniversalQueueMessage)}).
      * 
      * @param msg
      * @return
-     * @since 0.3.3.1
+     * @since 0.3.3.2
      */
     @Override
     protected boolean putToQueue(IQueueMessage msg) {
         byte[] msgData = serialize(msg);
         Object qId = msg.qId();
         String kafkaKey = msg instanceof BaseUniversalQueueMessage ? ((BaseUniversalQueueMessage) msg)
-                .kafkaKey() : null;
+                .partitionKey() : null;
         kafkaKey = kafkaKey != null ? kafkaKey : (qId != null ? qId.toString() : null);
         KafkaMessage kmsg = kafkaKey != null ? new KafkaMessage(getTopicName(), kafkaKey, msgData)
                 : new KafkaMessage(getTopicName(), msgData);

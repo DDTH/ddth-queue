@@ -25,8 +25,8 @@ import com.github.ddth.queue.utils.QueueUtils;
  * <li>{@code num_requeues (type: int)}: see
  * {@link IQueueMessage#qNumRequeues()}</li>
  * <li>{@code content (type: byte[])}: message's content</li>
- * <li>{@code kafkaKey (type: string)}: key for partitioning Kafka messages, see
- * {@link #kafkaKey()}</li>
+ * <li>{@code partitionKey (type: string)}: key for partitioning messages, see
+ * {@link #partitionKey()}</li>
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
@@ -41,31 +41,33 @@ public abstract class BaseUniversalQueueMessage extends BaseBo implements IQueue
     public final static String FIELD_CONTENT = "content";
 
     /**
-     * For Kafka use only.
+     * Key used for partitioning messages.
      * 
-     * @since 0.3.3.1
+     * @since 0.3.3.2
      */
-    public final static String FIELD_KAFKA_KEY = "_key_";
+    public final static String FIELD_PARTITION_KEY = "_partition_key_";
 
     /**
-     * Gets Kafka message's key.
+     * Key used for partitioning messages (some queue implementations, such as
+     * Kafka queue, use this).
      * 
      * @return
-     * @since 0.3.3.1
+     * @since 0.3.3.2
      */
-    public String kafkaKey() {
-        return getAttribute(FIELD_KAFKA_KEY, String.class);
+    public String partitionKey() {
+        return getAttribute(FIELD_PARTITION_KEY, String.class);
     }
 
     /**
-     * Sets Kafka message's key.
+     * Key used for partitioning messages (some queue implementations, such as
+     * Kafka queue, use this).
      * 
      * @param key
      * @return
-     * @since 0.3.3.1
+     * @since 0.3.3.2
      */
-    public BaseUniversalQueueMessage kafkaKey(String key) {
-        setAttribute(FIELD_KAFKA_KEY, key);
+    public BaseUniversalQueueMessage partitionKey(String key) {
+        setAttribute(FIELD_PARTITION_KEY, key);
         return this;
     }
 
