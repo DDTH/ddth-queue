@@ -401,7 +401,8 @@ public abstract class KafkaQueue implements IQueue {
     }
 
     /**
-     * Puts a message to Kafka queue.
+     * Puts a message to Kafka queue, partitioning message by
+     * {@link IQueueMessage#qId()}
      * 
      * @param msg
      * @return

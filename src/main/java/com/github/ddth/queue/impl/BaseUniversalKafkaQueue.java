@@ -1,5 +1,6 @@
 package com.github.ddth.queue.impl;
 
+import com.github.ddth.kafka.KafkaMessage;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
@@ -13,6 +14,29 @@ import com.github.ddth.queue.utils.QueueException;
  */
 public abstract class BaseUniversalKafkaQueue<T extends BaseUniversalQueueMessage> extends
         KafkaQueue {
+
+    /**
+     * Puts a message to Kafka queue, partitioning message by
+     * {@link BaseUniversalQueueMessage#kafkaKey()} (or
+     * {@link IQueueMessage#qId()} if message is not of type
+     * {@link BaseUniversalQueueMessage)}).
+     * 
+     * @param msg
+     * @return
+     * @since 0.3.3.1
+     */
+    @Override
+    protected boolean putToQueue(IQueueMessage msg) {
+        byte[] msgData = serialize(msg);
+        Object qId = msg.qId();
+        String kafkaKey = msg instanceof BaseUniversalQueueMessage ? ((BaseUniversalQueueMessage) msg)
+                .kafkaKey() : null;
+        kafkaKey = kafkaKey != null ? kafkaKey : (qId != null ? qId.toString() : null);
+        KafkaMessage kmsg = kafkaKey != null ? new KafkaMessage(getTopicName(), kafkaKey, msgData)
+                : new KafkaMessage(getTopicName(), msgData);
+        getKafkaClient().sendMessage(getProducerType(), kmsg);
+        return true;
+    }
 
     /**
      * {@inheritDoc}

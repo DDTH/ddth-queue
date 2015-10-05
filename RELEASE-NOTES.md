@@ -1,6 +1,13 @@
 ddth-queue release notes
 ========================
 
+0.3.3.1 - 2015-10-05
+--------------------
+
+- (Experimental) Universal Kafka queue:
+  - Class `BaseUniversalQueueMessage`: new field `kafkaKey` for partitioning queue messages.
+
+
 0.3.3 - 2015-10-02
 ------------------
 

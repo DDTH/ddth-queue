@@ -25,6 +25,8 @@ import com.github.ddth.queue.utils.QueueUtils;
  * <li>{@code num_requeues (type: int)}: see
  * {@link IQueueMessage#qNumRequeues()}</li>
  * <li>{@code content (type: byte[])}: message's content</li>
+ * <li>{@code kafkaKey (type: string)}: key for partitioning Kafka messages, see
+ * {@link #kafkaKey()}</li>
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
@@ -37,6 +39,35 @@ public abstract class BaseUniversalQueueMessage extends BaseBo implements IQueue
     public final static String FIELD_TIMESTAMP = "timestamp";
     public final static String FIELD_NUM_REQUEUES = "num_requeues";
     public final static String FIELD_CONTENT = "content";
+
+    /**
+     * For Kafka use only.
+     * 
+     * @since 0.3.3.1
+     */
+    public final static String FIELD_KAFKA_KEY = "_key_";
+
+    /**
+     * Gets Kafka message's key.
+     * 
+     * @return
+     * @since 0.3.3.1
+     */
+    public String kafkaKey() {
+        return getAttribute(FIELD_KAFKA_KEY, String.class);
+    }
+
+    /**
+     * Sets Kafka message's key.
+     * 
+     * @param key
+     * @return
+     * @since 0.3.3.1
+     */
+    public BaseUniversalQueueMessage kafkaKey(String key) {
+        setAttribute(FIELD_KAFKA_KEY, key);
+        return this;
+    }
 
     /**
      * {@inheritDoc}
