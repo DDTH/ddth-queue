@@ -159,6 +159,7 @@
 					<systemPropertyVariables>
 						<log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
 					</systemPropertyVariables>
+					<runOrder>alphabetical</runOrder>
 				</configuration>
 			</plugin>
 			<plugin>
