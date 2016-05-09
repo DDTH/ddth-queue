@@ -5,16 +5,32 @@
 	<parent>
 		<groupId>com.github.ddth</groupId>
 		<artifactId>ddth-parent</artifactId>
-		<version>2</version>
+		<version>5.1</version>
 	</parent>
 
 	<artifactId>ddth-queue</artifactId>
-	<version>0.3.3.3-SNAPSHOT</version>
-	<packaging>bundle</packaging>
+	<version>0.4.0-SNAPSHOT</version>
+	<packaging>pom</packaging>
 
 	<name>ddth-queue</name>
 	<description>DDTH's Libary to interact with various queue implementations</description>
 	<url>https://github.com/DDTH/ddth-queue</url>
+
+	<modules>
+		<module>ddth-queue-core</module>
+		<module>ddth-queue-disruptor</module>
+		<module>ddth-queue-jdbc</module>
+		<module>ddth-queue-kafka</module>
+		<module>ddth-queue-redis</module>
+	</modules>
+
+	<licenses>
+		<license>
+			<name>The MIT License (MIT)</name>
+			<url>http://opensource.org/licenses/MIT</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
 	<scm>
 		<url>git@github.com:DDTH/ddth-queue</url>
@@ -30,10 +46,23 @@
 	</developers>
 
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<skipTests>true</skipTests>
-		<version.curator>2.8.0</version.curator>
-		<version.jackson>2.6.2</version.jackson>
+
+		<version.ddth_dao>0.5.0.4</version.ddth_dao>
+		<version.jedis>2.8.1</version.jedis>
+		<version.log4j>1.2.17</version.log4j>
+		<version.disruptor>3.3.4</version.disruptor>
+		<version.ddth_kafka>1.2.1.1</version.ddth_kafka>
 	</properties>
+
+	<repositories>
+		<repository>
+			<id>sonatype-org</id>
+			<name>Sonatype Releases</name>
+			<url>http://oss.sonatype.org/content/repositories/releases/</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
@@ -62,25 +91,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>${version.jackson}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>${version.jackson}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-			<version>${version.jackson}</version>
-		</dependency>
-
-		<dependency>
 			<groupId>com.github.ddth</groupId>
-			<artifactId>ddth-dao</artifactId>
-			<version>0.4.0.2</version>
+			<artifactId>ddth-dao-core</artifactId>
+			<version>${version.ddth_dao}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
@@ -88,69 +101,66 @@
 			<version>1.10</version>
 		</dependency>
 
-		<!-- for Redis-based queue -->
+		<!-- for LMAX Disruptor-based queues -->
+		<dependency>
+			<groupId>com.lmax</groupId>
+			<artifactId>disruptor</artifactId>
+			<version>${version.disruptor}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- for Jdbc-based queues -->
+		<dependency>
+			<groupId>com.github.ddth</groupId>
+			<artifactId>ddth-dao-jdbc</artifactId>
+			<version>${version.ddth_dao}</version>
+			<type>pom</type>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- for Redis-based queues -->
 		<dependency>
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
-			<version>2.7.3</version>
+			<version>${version.jedis}</version>
 			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>log4j</groupId>
 			<artifactId>log4j</artifactId>
-			<version>1.2.17</version>
+			<version>${version.log4j}</version>
 			<optional>true</optional>
 		</dependency>
 
-		<!-- for Kafka/ZooKeeper-based queue -->
+		<!-- for Kafka-based queue -->
 		<dependency>
 			<groupId>com.github.ddth</groupId>
 			<artifactId>ddth-kafka</artifactId>
-			<version>1.1.2</version>
+			<version>${version.ddth_kafka}</version>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.zookeeper</groupId>
-			<artifactId>zookeeper</artifactId>
-			<version>3.4.6</version>
-			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.curator</groupId>
-			<artifactId>curator-framework</artifactId>
-			<optional>true</optional>
-			<version>${version.curator}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.curator</groupId>
-			<artifactId>curator-client</artifactId>
-			<optional>true</optional>
-			<version>${version.curator}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.curator</groupId>
-			<artifactId>curator-recipes</artifactId>
-			<optional>true</optional>
-			<version>${version.curator}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.kafka</groupId>
-			<artifactId>kafka_2.10</artifactId>
-			<optional>true</optional>
-			<version>0.8.2.2</version>
 		</dependency>
 
 		<!-- for RocksDb-based queue -->
 		<dependency>
 			<groupId>org.rocksdb</groupId>
 			<artifactId>rocksdbjni</artifactId>
-			<version>3.10.1</version>
+			<version>4.5.1</version>
 			<optional>true</optional>
 		</dependency>
 	</dependencies>
 
 	<build>
 		<plugins>
+			<plugin>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<forkMode>always</forkMode>
+					<skipTests>${skipTests}</skipTests>
+					<systemPropertyVariables>
+						<log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
@@ -159,31 +169,6 @@
 					<additionalparam>-Xdoclint:none</additionalparam>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.felix</groupId>
-				<artifactId>maven-bundle-plugin</artifactId>
-				<extensions>true</extensions>
-				<configuration>
-					<instructions>
-						<!-- <Bundle-Activator></Bundle-Activator> -->
-						<Export-Package>com.github.ddth.queue,com.github.ddth.queue.impl,com.github.ddth.queue.utils</Export-Package>
-						<!-- <Import-Package></Import-Package> -->
-					</instructions>
-				</configuration>
-			</plugin>
-			<plugin>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<skipTests>${skipTests}</skipTests>
-					<systemPropertyVariables>
-						<log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
-					</systemPropertyVariables>
-				</configuration>
-			</plugin>
-			<!-- <plugin> <groupId>org.apache.maven.plugins</groupId> <artifactId>maven-assembly-plugin</artifactId> 
-				<executions> <execution> <id>distro-assembly</id> <phase>package</phase> 
-				<goals> <goal>single</goal> </goals> <configuration> <descriptors> <descriptor>assembly/ddth-queue-withdeps.xml</descriptor> 
-				</descriptors> </configuration> </execution> </executions> </plugin> -->
 		</plugins>
 	</build>
 </project>

@@ -11,7 +11,7 @@ OSGi environment: ddth-queue modules are packaged as an OSGi bundle (Experimenta
 
 ## Installation ##
 
-Latest release version: `0.3.3.2`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.4.0`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency:
 
