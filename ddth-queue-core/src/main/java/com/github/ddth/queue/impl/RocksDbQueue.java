@@ -205,10 +205,10 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
     protected abstract IQueueMessage deserialize(byte[] msgData);
 
     protected boolean putToQueue(IQueueMessage msg) {
+        byte[] value = serialize(msg);
         lockPut.lock();
         try {
             byte[] key = idGen.generateId128Hex().toLowerCase().getBytes();
-            byte[] value = serialize(msg);
             try {
                 rocksDb.put(writeOptions, key, value);
                 return true;
@@ -270,9 +270,9 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
             } else {
                 rocksDbIt.seek(lastFetchedId);
             }
-            if (!rocksDbIt.isValid()) {
-                rocksDbIt.next();
-            }
+            // if (!rocksDbIt.isValid()) {
+            // rocksDbIt.next();
+            // }
             if (!rocksDbIt.isValid()) {
                 return null;
             }
