@@ -80,7 +80,7 @@ public class TestRocksDbQueueLong extends BaseTest {
         }
 
         long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 60000) {
+        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
             Thread.sleep(1);
             t = System.currentTimeMillis();
         }
@@ -116,7 +116,7 @@ public class TestRocksDbQueueLong extends BaseTest {
         }
 
         long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 60000) {
+        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
             Thread.sleep(1);
             t = System.currentTimeMillis();
         }
@@ -152,7 +152,7 @@ public class TestRocksDbQueueLong extends BaseTest {
         }
 
         long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 60000) {
+        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
             Thread.sleep(1);
             t = System.currentTimeMillis();
         }
@@ -188,7 +188,7 @@ public class TestRocksDbQueueLong extends BaseTest {
         }
 
         long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 60000) {
+        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
             Thread.sleep(1);
             t = System.currentTimeMillis();
         }
