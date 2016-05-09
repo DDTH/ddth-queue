@@ -50,6 +50,42 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
     private String _redisSortedSetName = "queue_s";
     private byte[] redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
 
+    private boolean ephemeralDisabled = false;
+
+    /**
+     * Is ephemeral storage disabled?
+     * 
+     * @return
+     * @since 0.4.0
+     */
+    public boolean getEphemeralDisabled() {
+        return ephemeralDisabled;
+    }
+
+    /**
+     * Is ephemeral storage disabled?
+     * 
+     * @return
+     * @since 0.4.0
+     */
+    public boolean isEphemeralDisabled() {
+        return ephemeralDisabled;
+    }
+
+    /**
+     * Disables/Enables ephemeral storage.
+     * 
+     * @param ephemeralDisabled
+     *            {@code true} to disable ephemeral storage, {@code false}
+     *            otherwise.
+     * @return
+     * @since 0.4.0
+     */
+    public RedisQueue setEphemeralDisabled(boolean ephemeralDisabled) {
+        this.ephemeralDisabled = ephemeralDisabled;
+        return this;
+    }
+
     /**
      * Redis' host and port scheme (format {@code host:port}).
      * 
@@ -136,9 +172,16 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
             myOwnJedisPool = true;
         }
 
-        SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
-                + "redis.call(\"zadd\", \"{1}\",  ARGV[1], qid); return redis.call(\"hget\", \"{2}\", qid) "
-                + "else return nil end";
+        if (ephemeralDisabled) {
+            SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
+                    + "local qcontent=redis.call(\"hget\", \"{2}\", qid); "
+                    + "redis.call(\"hdel\", \"{2}\", qid); return qcontent "
+                    + "else return nil end";
+        } else {
+            SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
+                    + "redis.call(\"zadd\", \"{1}\", ARGV[1], qid); return redis.call(\"hget\", \"{2}\", qid) "
+                    + "else return nil end";
+        }
         SCRIPT_TAKE = MessageFormat.format(SCRIPT_TAKE, _redisListName, _redisSortedSetName,
                 _redisHashName);
 
@@ -192,6 +235,9 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      * @return
      */
     protected boolean remove(IQueueMessage msg) {
+        if (ephemeralDisabled) {
+            return true;
+        }
         try (Jedis jedis = jedisPool.getResource()) {
             Transaction jt = jedis.multi();
 
@@ -266,7 +312,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
         IQueueMessage msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
-        return storeOld(msg);
+        return ephemeralDisabled ? storeNew(msg) : storeOld(msg);
     }
 
     /**
@@ -274,7 +320,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean requeueSilent(IQueueMessage msg) {
-        return storeOld(msg);
+        return ephemeralDisabled ? storeNew(msg) : storeOld(msg);
     }
 
     /**
@@ -282,7 +328,9 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public void finish(IQueueMessage msg) {
-        remove(msg);
+        if (!ephemeralDisabled) {
+            remove(msg);
+        }
     }
 
     /**
@@ -309,6 +357,9 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+        if (ephemeralDisabled) {
+            return null;
+        }
         try (Jedis jedis = jedisPool.getResource()) {
             Collection<IQueueMessage> result = new HashSet<IQueueMessage>();
 
@@ -332,6 +383,9 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+        if (ephemeralDisabled) {
+            return true;
+        }
         try (Jedis jedis = jedisPool.getResource()) {
             Object response = jedis.eval(SCRIPT_MOVE, 0, msg.qId().toString());
             return response != null && "1".equals(response.toString());
@@ -354,6 +408,9 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public int ephemeralSize() {
+        if (ephemeralDisabled) {
+            return -1;
+        }
         try (Jedis jedis = jedisPool.getResource()) {
             Long result = jedis.zcard(redisSortedSetName);
             return result != null ? result.intValue() : 0;

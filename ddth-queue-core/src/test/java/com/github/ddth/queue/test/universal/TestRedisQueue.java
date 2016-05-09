@@ -39,7 +39,7 @@ public class TestRedisQueue extends BaseTest {
         RECEIVE = new ConcurrentHashMap<Object, Object>();
 
         MyRedisQueue queue = new MyRedisQueue();
-        queue.setRedisHostAndPort("localhost:6379").init();
+        queue.setRedisHostAndPort("localhost:6379").setEphemeralDisabled(false).init();
         queue.flush();
         return queue;
     }
@@ -58,7 +58,7 @@ public class TestRedisQueue extends BaseTest {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
 
-    private final static int NUM_MSGS = 16 * 1024;
+    private final static int NUM_MSGS = 32 * 1024;
 
     @org.junit.Test
     public void test1P1C() throws Exception {
@@ -84,12 +84,11 @@ public class TestRedisQueue extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 1P / 1C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 
     @org.junit.Test
@@ -116,12 +115,11 @@ public class TestRedisQueue extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 1P / 4C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 
     @org.junit.Test
@@ -148,12 +146,11 @@ public class TestRedisQueue extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 4P / 1C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 
     @org.junit.Test
@@ -180,11 +177,10 @@ public class TestRedisQueue extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 4P / 4C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 }

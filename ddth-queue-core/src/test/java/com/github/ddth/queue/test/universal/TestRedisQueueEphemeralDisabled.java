@@ -6,18 +6,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.DisruptorQueue;
+import com.github.ddth.queue.impl.RedisQueue;
+import com.github.ddth.queue.impl.universal.UniversalRedisQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import redis.clients.jedis.Jedis;
 
-public class TestDisruptorQueueLarge extends BaseTest {
-    public TestDisruptorQueueLarge(String testName) {
+public class TestRedisQueueEphemeralDisabled extends BaseTest {
+    public TestRedisQueueEphemeralDisabled(String testName) {
         super(testName);
     }
 
     public static Test suite() {
-        return new TestSuite(TestDisruptorQueueLarge.class);
+        return new TestSuite(TestRedisQueueEphemeralDisabled.class);
+    }
+
+    private static class MyRedisQueue extends UniversalRedisQueue {
+        public void flush() {
+            try (Jedis jedis = getJedisPool().getResource()) {
+                jedis.flushAll();
+            }
+        }
     }
 
     @Override
@@ -28,17 +38,16 @@ public class TestDisruptorQueueLarge extends BaseTest {
         SENT = new ConcurrentHashMap<Object, Object>();
         RECEIVE = new ConcurrentHashMap<Object, Object>();
 
-        DisruptorQueue queue = new DisruptorQueue();
-        queue.setRingSize(8192).setEphemeralDisabled(false).init();
+        MyRedisQueue queue = new MyRedisQueue();
+        queue.setRedisHostAndPort("localhost:6379").setEphemeralDisabled(true).init();
+        queue.flush();
         return queue;
     }
 
     @Override
     protected void destroyQueueInstance(IQueue queue) {
-        if (queue instanceof DisruptorQueue) {
-            ((DisruptorQueue) queue).destroy();
-        } else {
-            throw new RuntimeException("[queue] is not closed!");
+        if (queue instanceof RedisQueue) {
+            ((RedisQueue) queue).destroy();
         }
     }
     /*----------------------------------------------------------------------*/
@@ -49,7 +58,7 @@ public class TestDisruptorQueueLarge extends BaseTest {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
 
-    private final static int NUM_MSGS = 512 * 1024;
+    private final static int NUM_MSGS = 32 * 1024;
 
     @org.junit.Test
     public void test1P1C() throws Exception {

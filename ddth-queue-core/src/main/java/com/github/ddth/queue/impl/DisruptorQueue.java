@@ -53,8 +53,9 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
         }
     };
 
-    private ConcurrentMap<Object, IQueueMessage> ephemeralStorage = new ConcurrentHashMap<>();
+    private ConcurrentMap<Object, IQueueMessage> ephemeralStorage;
 
+    private boolean ephemeralDisabled = false;
     private RingBuffer<Event> ringBuffer;
     private Sequence consumedSeq;
     private long knownPublishedSeq;
@@ -65,6 +66,37 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
 
     public DisruptorQueue(int ringSize) {
         setRingSize(ringSize);
+    }
+
+    /**
+     * Is ephemeral storage disabled?
+     * 
+     * @return
+     */
+    public boolean getEphemeralDisabled() {
+        return ephemeralDisabled;
+    }
+
+    /**
+     * Is ephemeral storage disabled?
+     * 
+     * @return
+     */
+    public boolean isEphemeralDisabled() {
+        return ephemeralDisabled;
+    }
+
+    /**
+     * Disables/Enables ephemeral storage.
+     * 
+     * @param ephemeralDisabled
+     *            {@code true} to disable ephemeral storage, {@code false}
+     *            otherwise.
+     * @return
+     */
+    public DisruptorQueue setEphemeralDisabled(boolean ephemeralDisabled) {
+        this.ephemeralDisabled = ephemeralDisabled;
+        return this;
     }
 
     /**
@@ -114,6 +146,10 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
     public DisruptorQueue init() {
         ringBuffer = RingBuffer.createSingleProducer(EVENT_FACTORY, ringSize);
         // ringBuffer = RingBuffer.createMultiProducer(EVENT_FACTORY, ringSize);
+
+        if (!ephemeralDisabled) {
+            ephemeralStorage = new ConcurrentHashMap<>(ringSize);
+        }
 
         consumedSeq = new Sequence();
         ringBuffer.addGatingSequences(consumedSeq);
@@ -194,7 +230,9 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
         if (putToRingBuffer(msg)) {
-            ephemeralStorage.remove(msg.qId());
+            if (!ephemeralDisabled) {
+                ephemeralStorage.remove(msg.qId());
+            }
             return true;
         }
         return false;
@@ -206,7 +244,9 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
     @Override
     public boolean requeueSilent(IQueueMessage msg) {
         if (putToRingBuffer(msg)) {
-            ephemeralStorage.remove(msg.qId());
+            if (!ephemeralDisabled) {
+                ephemeralStorage.remove(msg.qId());
+            }
             return true;
         }
         return false;
@@ -217,7 +257,9 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public void finish(IQueueMessage msg) {
-        ephemeralStorage.remove(msg.qId());
+        if (!ephemeralDisabled) {
+            ephemeralStorage.remove(msg.qId());
+        }
     }
 
     /**
@@ -271,7 +313,7 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
     @Override
     public IQueueMessage take() {
         IQueueMessage msg = takeFromRingBuffer();
-        if (msg != null) {
+        if (msg != null && !ephemeralDisabled) {
             ephemeralStorage.putIfAbsent(msg.qId(), msg);
         }
         return msg;
@@ -285,6 +327,9 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+        if (ephemeralDisabled) {
+            return null;
+        }
         Collection<IQueueMessage> orphanMessages = new HashSet<>();
         long now = System.currentTimeMillis();
         for (Entry<?, IQueueMessage> entry : ephemeralStorage.entrySet()) {
@@ -301,12 +346,14 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage _msg) {
-        IQueueMessage msg = ephemeralStorage.remove(_msg.qId());
-        if (msg != null) {
-            if (putToRingBuffer(msg)) {
-                return true;
-            } else {
-                ephemeralStorage.putIfAbsent(msg.qId(), msg);
+        if (!ephemeralDisabled) {
+            IQueueMessage msg = ephemeralStorage.remove(_msg.qId());
+            if (msg != null) {
+                if (putToRingBuffer(msg)) {
+                    return true;
+                } else {
+                    ephemeralStorage.putIfAbsent(msg.qId(), msg);
+                }
             }
         }
         return false;
@@ -325,6 +372,6 @@ public class DisruptorQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public int ephemeralSize() {
-        return ephemeralStorage.size();
+        return ephemeralDisabled ? -1 : ephemeralStorage.size();
     }
 }

@@ -29,7 +29,7 @@ public class TestInmemQueueBoundLarge extends BaseTest {
         RECEIVE = new ConcurrentHashMap<Object, Object>();
 
         InmemQueue queue = new InmemQueue();
-        queue.setBoundary(8192).init();
+        queue.setBoundary(8192).setEphemeralDisabled(false).init();
         return queue;
     }
 
@@ -75,12 +75,11 @@ public class TestInmemQueueBoundLarge extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 1P / 1C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 
     @org.junit.Test
@@ -107,12 +106,11 @@ public class TestInmemQueueBoundLarge extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 1P / 4C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 
     @org.junit.Test
@@ -139,12 +137,11 @@ public class TestInmemQueueBoundLarge extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 4P / 1C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 
     @org.junit.Test
@@ -171,11 +168,10 @@ public class TestInmemQueueBoundLarge extends BaseTest {
         SIGNAL.set(true);
         long d = t - t1;
         boolean checkResult = SENT.equals(RECEIVE);
-        assertTrue(checkResult);
         System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 4P / 4C");
-        System.out.println(
-                "  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / " + checkResult);
-        System.out.println("  Rate: " + d + "ms / " + String.format("%,.1f", NUM_MSGS * 1000.0 / d)
-                + " msg/s");
+        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
+                + checkResult + " / Rate: " + d + "ms / "
+                + String.format("%,.1f", NUM_MSGS * 1000.0 / d) + " msg/s");
+        assertTrue(checkResult);
     }
 }

@@ -11,13 +11,13 @@ import com.github.ddth.queue.impl.DisruptorQueue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-public class TestDisruptorQueueLarge extends BaseTest {
-    public TestDisruptorQueueLarge(String testName) {
+public class TestDisruptorQueueLargeEphemeralDisabled extends BaseTest {
+    public TestDisruptorQueueLargeEphemeralDisabled(String testName) {
         super(testName);
     }
 
     public static Test suite() {
-        return new TestSuite(TestDisruptorQueueLarge.class);
+        return new TestSuite(TestDisruptorQueueLargeEphemeralDisabled.class);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class TestDisruptorQueueLarge extends BaseTest {
         RECEIVE = new ConcurrentHashMap<Object, Object>();
 
         DisruptorQueue queue = new DisruptorQueue();
-        queue.setRingSize(8192).setEphemeralDisabled(false).init();
+        queue.setRingSize(8192).setEphemeralDisabled(true).init();
         return queue;
     }
 

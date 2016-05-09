@@ -6,18 +6,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.DisruptorQueue;
+import com.github.ddth.queue.impl.InmemQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-public class TestDisruptorQueueLarge extends BaseTest {
-    public TestDisruptorQueueLarge(String testName) {
+public class TestInmemQueueUnboundEphemeralDisabled extends BaseTest {
+    public TestInmemQueueUnboundEphemeralDisabled(String testName) {
         super(testName);
     }
 
     public static Test suite() {
-        return new TestSuite(TestDisruptorQueueLarge.class);
+        return new TestSuite(TestInmemQueueUnboundEphemeralDisabled.class);
     }
 
     @Override
@@ -28,15 +28,15 @@ public class TestDisruptorQueueLarge extends BaseTest {
         SENT = new ConcurrentHashMap<Object, Object>();
         RECEIVE = new ConcurrentHashMap<Object, Object>();
 
-        DisruptorQueue queue = new DisruptorQueue();
-        queue.setRingSize(8192).setEphemeralDisabled(false).init();
+        InmemQueue queue = new InmemQueue();
+        queue.setBoundary(-1).setEphemeralDisabled(true).init();
         return queue;
     }
 
     @Override
     protected void destroyQueueInstance(IQueue queue) {
-        if (queue instanceof DisruptorQueue) {
-            ((DisruptorQueue) queue).destroy();
+        if (queue instanceof InmemQueue) {
+            ((InmemQueue) queue).destroy();
         } else {
             throw new RuntimeException("[queue] is not closed!");
         }

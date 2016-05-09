@@ -32,7 +32,8 @@ import com.github.ddth.queue.IQueueMessage;
 public class InmemQueue implements IQueue, Closeable, AutoCloseable {
 
     private Queue<IQueueMessage> queue;
-    private ConcurrentMap<Object, IQueueMessage> ephemeralStorage = new ConcurrentHashMap<>();
+    private ConcurrentMap<Object, IQueueMessage> ephemeralStorage;
+    private boolean ephemeralDisabled = false;
 
     /**
      * A value less than {@code 1} mean "no boundary".
@@ -44,6 +45,37 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
 
     public InmemQueue(int boundary) {
         setBoundary(boundary);
+    }
+
+    /**
+     * Is ephemeral storage disabled?
+     * 
+     * @return
+     */
+    public boolean getEphemeralDisabled() {
+        return ephemeralDisabled;
+    }
+
+    /**
+     * Is ephemeral storage disabled?
+     * 
+     * @return
+     */
+    public boolean isEphemeralDisabled() {
+        return ephemeralDisabled;
+    }
+
+    /**
+     * Disables/Enables ephemeral storage.
+     * 
+     * @param ephemeralDisabled
+     *            {@code true} to disable ephemeral storage, {@code false}
+     *            otherwise.
+     * @return
+     */
+    public InmemQueue setEphemeralDisabled(boolean ephemeralDisabled) {
+        this.ephemeralDisabled = ephemeralDisabled;
+        return this;
     }
 
     /**
@@ -102,6 +134,9 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     public InmemQueue init() {
         queue = createQueue(boundary);
+        if (!ephemeralDisabled) {
+            ephemeralStorage = new ConcurrentHashMap<>();
+        }
         return this;
     }
 
@@ -149,7 +184,9 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
         if (putToQueue(msg)) {
-            ephemeralStorage.remove(msg.qId());
+            if (!ephemeralDisabled) {
+                ephemeralStorage.remove(msg.qId());
+            }
             return true;
         }
         return false;
@@ -161,7 +198,9 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
     @Override
     public boolean requeueSilent(IQueueMessage msg) {
         if (putToQueue(msg)) {
-            ephemeralStorage.remove(msg.qId());
+            if (!ephemeralDisabled) {
+                ephemeralStorage.remove(msg.qId());
+            }
             return true;
         }
         return false;
@@ -172,7 +211,9 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public void finish(IQueueMessage msg) {
-        ephemeralStorage.remove(msg.qId());
+        if (!ephemeralDisabled) {
+            ephemeralStorage.remove(msg.qId());
+        }
     }
 
     /**
@@ -190,7 +231,7 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
     @Override
     public IQueueMessage take() {
         IQueueMessage msg = takeFromQueue();
-        if (msg != null) {
+        if (msg != null && !ephemeralDisabled) {
             ephemeralStorage.putIfAbsent(msg.qId(), msg);
         }
         return msg;
@@ -204,6 +245,9 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+        if (ephemeralDisabled) {
+            return null;
+        }
         Collection<IQueueMessage> orphanMessages = new HashSet<>();
         long now = System.currentTimeMillis();
         for (Entry<?, IQueueMessage> entry : ephemeralStorage.entrySet()) {
@@ -220,12 +264,14 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage _msg) {
-        IQueueMessage msg = ephemeralStorage.remove(_msg.qId());
-        if (msg != null) {
-            if (putToQueue(msg)) {
-                return true;
-            } else {
-                ephemeralStorage.putIfAbsent(msg.qId(), msg);
+        if (!ephemeralDisabled) {
+            IQueueMessage msg = ephemeralStorage.remove(_msg.qId());
+            if (msg != null) {
+                if (putToQueue(msg)) {
+                    return true;
+                } else {
+                    ephemeralStorage.putIfAbsent(msg.qId(), msg);
+                }
             }
         }
         return false;
@@ -244,6 +290,6 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public int ephemeralSize() {
-        return ephemeralStorage.size();
+        return ephemeralDisabled ? -1 : ephemeralStorage.size();
     }
 }
