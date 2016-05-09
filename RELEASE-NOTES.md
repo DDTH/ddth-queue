@@ -1,6 +1,17 @@
 ddth-queue release notes
 ========================
 
+0.4.0 - 2016-05-09
+------------------
+
+- Separated artifacts: `ddth-queue-core`, `ddth-queue-disruptor`, `ddth-queue-jdbc`, `ddth-queue-kafka` and `ddth-queue-redis`.
+- (Experimental) New queue implementation that use [Facebook RocksDB](http://rocksdb.org) as queue backend.
+- New in-memory queue implementations:
+  - `InmemQueue` that uses `java.util.Queue` as queue backend.
+  - `DisruptorQueue` that uses [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as queue backend.
+- Ephemeral storage can be optionally disabled for `InmemQueue`, `DisruptorQueue` and `RedisQueue`.
+
+
 0.3.3.2 - 2015-10-05
 --------------------
 
@@ -11,7 +22,6 @@ ddth-queue release notes
 0.3.3 - 2015-10-02
 ------------------
 
-- (Experimental) New queue implementation that use [Facebook RocksDB](http://rocksdb.org) as queue backend.
 - (Experimental) Kafka queue:
   - Add `take()` operation.
   - Improve consumer performance.

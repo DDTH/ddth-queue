@@ -6,26 +6,86 @@ DDTH's libary to interact with various queue implementations.
 Project home:
 [https://github.com/DDTH/ddth-queue](https://github.com/DDTH/ddth-queue)
 
-OSGi environment: ddth-queue modules are packaged as an OSGi bundle (Experimental!).
+
+## Introduction ##
+
+I work with queues from projects to projects.
+However, different projects are fit with different queues.
+I need a unified and simple API set to interact with various queue backend systems,
+also extra functionalities such as commit queue item when done or re-queue the item if needed,
+or find orphan queue items (items that have not been committed for a long period).
+Hence this library is born to fulfill my need.
 
 
 ## Installation ##
 
 Latest release version: `0.4.0`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
-Maven dependency:
+Maven dependency: if only a sub-set of `ddth-queue` functionality is used, choose the
+corresponding dependency artifact(s) to reduce the number of unused jar files.
+
+`ddth-queue-core`: ddth-queue interfaces and in-memory (using `java.util.Queue`) implementations:
 
 ```xml
 <dependency>
 	<groupId>com.github.ddth</groupId>
-	<artifactId>ddth-queue</artifactId>
-	<version>0.3.3.2</version>
+	<artifactId>ddth-queue-core</artifactId>
+	<version>0.4.0</version>
+</dependency>
+```
+
+`ddth-queue-disruptor`: include `ddth-queue-core` and [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-disruptor</artifactId>
+    <version>0.4.0</version>
+    <type>pom</type>
+</dependency>
+```
+
+`ddth-queue-jdbc`: include `ddth-queue-core` and [`ddth-dao-jdbc`](https://github.com/DDTH/ddth-dao) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-jdbc</artifactId>
+    <version>0.4.0</version>
+    <type>pom</type>
+</dependency>
+```
+
+`ddth-queue-kafka`: include `ddth-queue-core` and [`ddth-kafka`](https://github.com/DDTH/ddth-kafka) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-kafka</artifactId>
+    <version>0.4.0</version>
+    <type>pom</type>
+</dependency>
+```
+
+`ddth-queue-redis`: include `ddth-queue-core` and [`Jedis`](https://github.com/xetorthio/jedis) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-jedis</artifactId>
+    <version>0.4.0</version>
+    <type>pom</type>
 </dependency>
 ```
 
 ## Usage ##
 
-`ddth-queue` provides a unified APIs to interact with various queue implementations.
+`ddth-queue` provides a unified and simple APIs to interact with various queue implementations:
+
+- Put an item to queue: queue or re-queue.
+- Take an item from queue.
+- Retrive list of orphan items.
+
 
 ### Queue Usage Flow ###
 
@@ -41,7 +101,7 @@ Queue implementation has 2 message storages:
 - *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is FIFO.
 - *Ephemeral storage*: (optional) messages taken from queue storage are temporarily store in a ephemeral until _finished_ or _re-queued_.
 
-(Queue implementation is required to provide *Queue storage*. *Ephemeral storage* is optional.)
+(Queue implementation is required to provide *Queue storage*. *Ephemeral storage* is optional)
 
 When `IQueue.take()` is called, the message is put in a ephemeral storage.
 When either `IQueue.finish(msg)` or  `IQueue.requeue(msg)` or `IQueue.requeueSilent(msg)` is called,
@@ -56,8 +116,8 @@ If the application crashes in between `IQueue.take()` and `IQueue.finish(msg)` (
 there could be orphan messages left in the ephemeral storage. To deal with orphan messages:
 
 - Call `Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs)` to get all orphan messages that were queued _before_ `thresholdTimestampMs`.
-- Call `IQueue.finish(msg)` to clear the orphan message from the ephemeral storage, or
-- Call `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)` to put the message back to the queue.
+- Call `IQueue.finish(msg)` to completely clear the orphan message from the ephemeral storage, or
+- Call `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)` to move the message back to the queue.
 
 
 ### APIs ###
@@ -79,13 +139,13 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 *`int ephemeralSize()`*: Gets ephemeral-storage's number of items.
 
 
-## Queue Implementations ##
+## Built-in Queue Implementations ##
 
 ### JDBC Queue ###
 
 Queue storage and Ephemeral storage are implemented as 2 database tables, identical schema.
 
-See [JdbcQueue.java](src/main/java/com/github/ddth/queue/impl/JdbcQueue.java).
+See [JdbcQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/JdbcQueue.java).
 
 Usage:
 
@@ -175,6 +235,6 @@ Sample table schema for MySQL: see [sample_schema-less-locking.pgsql.sql](sample
 
 ## License ##
 
-See LICENSE.txt for details. Copyright (c) 2015 Thanh Ba Nguyen.
+See LICENSE.txt for details. Copyright (c) 2015-2016 Thanh Ba Nguyen.
 
 Third party libraries are distributed under their own licenses.
