@@ -1,7 +1,7 @@
 ddth-queue release notes
 ========================
 
-0.4.0 - 2016-05-09
+0.4.0 - 2016-05-10
 ------------------
 
 - Separated artifacts: `ddth-queue-core`, `ddth-queue-disruptor`, `ddth-queue-jdbc`, `ddth-queue-kafka` and `ddth-queue-redis`.

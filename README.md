@@ -141,66 +141,112 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 
 ## Built-in Queue Implementations ##
 
+| Implementation | Bounded Size | Persistent | Ephemeral Storage | Multi-Clients |
+|----------------|:------------:|:----------:|:-----------------:|:-------------:|
+| In-memory      | Optional     | No         | Yes               | No            |
+| JDBC           | No           | Yes        | Yes               | Yes           |
+| Kafka          | No           | Yes        | No                | Yes           |
+| Redis          | No           | Yes (1)    | Yes               | Yes           |
+| RocksDB        | No           | Yes        | No                | No            |
+
+- *Bounded Size*: queue's size is bounded.
+  - Currently only in-memory queue(s) support bounded queue size
+  - Databases, Kafka, Redis and RocksDB are virtually limited only by hardware's capability
+- *Persistent*: queue's items are persistent between JVM restarts.
+  - Redis backend: persistency depends on Redis server's configurations
+- *Ephemeral Storage*: supports retrieval of orphan messages.
+- *Multi-Clients*: multi-clients can share a same queue backend storage.
+
+
+### In-Memory Queue ###
+
+There are 2 implementations:
+
+- [InmemQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/InmemQueue.java):
+uses a `java.util.Queue` as Queue storage and a `java.util.concurrent.ConcurrentMap` as Ephemeral storage. 
+- [DisruptorQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/DisruptorQueue.java):
+use [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as Queue storage
+and a `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
+
+Messages in in-memory queues are _not_ persistent between JVM restarts!
+
 ### JDBC Queue ###
 
-Queue storage and Ephemeral storage are implemented as 2 database tables, identical schema.
+Queue messages are stored in RDBMS tables.
 
 See [JdbcQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/JdbcQueue.java).
 
-Usage:
+Queue messages are persistent.
 
-- Extends class `con.github.ddth.queue.impl.JdbcQueue`, and
-- Implements the following methods:
-    - `protected IQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate)`
-    - `protected IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
-    - `protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate, long thresholdTimestampMs)`
-    - `protected boolean putToQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
-    - `protected boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
-    - `protected boolean removeFromQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
-    - `protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg)`
+### Kafka Queue ###
 
+This queue implementation utilizes [Apache Kafka](http://kafka.apache.org) as queue storage.
+
+_Ephemeral storage is currently not supported!_
+
+Queue messages are persistent.
+
+See [KafkaQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/KafkaQueue.java).
 
 ### Redis Queue ###
 
 Queue storage and Ephemeral storage are implemented as a Redis hash and sorted set respectively. 
 Also, a Redis list is used as a queue of message-ids.
 
-See [RedisQueue.java](src/main/java/com/github/ddth/queue/impl/RedisQueue.java)
+Queue messages are persistent (depends on Redis server's configurations).
 
-Usage:
+See [RedisQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/RedisQueue.java).
 
-- Extends class `con.github.ddth.queue.impl.RedisQueue`, and
-- Implements the following methods:
-    - `protected byte[] serialize(IQueueMessage msg)`
-    - `protected IQueueMessage deserialize(byte[] msgData)`
+### RocksDB Queue ###
+
+Queue messages are stored in [RocskDB](http://rocksdb.org).
+
+_Ephemeral storage is currently not supported!_
+
+Queue messages are persistent.
+
+See [RocksDbQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/RocksDbQueue.java).
 
 
 ## Pre-made Convenient Classes ##
+
+- `com.github.ddth.queue.impl.universal.*`: universal queue implementations, where queue's message's id is a `64-bit long`.
+- `com.github.ddth.queue.impl.universal2.*`: universal queue implementations, where queue's message's id is a `String`.
 
 ### UniversalQueueMessage ###
 
 Universal queue message implementation, with the following fields:
 
-- `queue_id` (`long`): message's unique id in the queue
+- `queue_id`: message's unique id
+  - `com.github.ddth.queue.impl.universal.UniversalQueueMessage`: queue-id is a 64-bit `long`
+  - `com.github.ddth.queue.impl.universal2.UniversalQueueMessage`: queue-id is a `String`
 - `org_timestamp` (`java.util.Date`): timestamp when the message was first-queued
 - `timestamp` (`java.util.Date`): message's last-queued timestamp
 - `num_requeues` (`int`): number of times the message has been re-queued
 - `content` (`byte[]`): message's content
 
-### UniversalRedisQueue ###
+### UniversalInmemQueue ###
 
-Universal Redis queue implementation:
+Universal in-memory queue implementation that uses `java.util.Queue` as Queue storage,
+and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
-- Work with `UniversalQueueMessage`
-- Use a hash (to store `{queue_id => message}`), a list (to act as a queue of `queue_id`), and a sorted-set (to act as the ephemeral storage).
+`universal.UniversalInmemQueue` to work with `universal.UniversalQueueMessage`, and
+`universal2.UniversalInmemQueue` to work with `universal2.UniversalQueueMessage`.
 
+### UniversalDisruptorQueue ###
+
+Universal in-memory queue implementation that uses [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as Queue storage,
+and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
+
+`universal.UniversalDisruptorQueue` to work with `universal.UniversalQueueMessage`, and
+`universal2.UniversalDisruptorQueue` to work with `universal2.UniversalQueueMessage`.
 
 ### UniversalJdbcQueue ###
 
 Universal JDBC queue implementation:
 
 - 2 db tables for queue and ephemeral storages
-- Work with `UniversalQueueMessage`
+- `universal.UniversalRedisQueue` to work with `universal.UniversalQueueMessage`, and `universal2.UniversalRedisQueue` to work with `universal2.UniversalQueueMessage`
 - Property `ephemeralDisabled` (default `false`): when set to `true` ephemeral storage is disabled
 - Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
 
@@ -210,7 +256,7 @@ Sample table schema for PgSQL: see [sample_schema.pgsql.sql](sample-dbschema/sam
 
 ### LessLockingUniversalMySQLQueue ###
 
-Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for MySQL, and requires
+Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for MySQL, and needs
 only one single db table for both queue and ephemeral storages.
 
 - Optimized for MySQL (EXPERIMENTAL!)
@@ -222,7 +268,7 @@ Sample table schema for MySQL: see [sample_schema-less-locking.mysql.sql](sample
 
 ### LessLockingUniversalPgSQLQueue ###
 
-Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for PostgreSQL, and requires
+Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for PostgreSQL, and needs
 only one single db table for both queue and ephemeral storages.
 
 - Optimized for PostgreSQL (EXPERIMENTAL!)
@@ -231,6 +277,27 @@ only one single db table for both queue and ephemeral storages.
 - Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
 
 Sample table schema for MySQL: see [sample_schema-less-locking.pgsql.sql](sample-dbschema/sample_schema-less-locking.pgsql.sql).
+
+### UniversalKafkaQueue ###
+
+Universal queue implementation that uses [Apache Kafka](http://kafka.apache.org) as queue backend.
+
+- Ephemeral storage is currently _not_ supported.
+- `universal.UniversalKafkaQueue` to work with `universal.UniversalQueueMessage`, and `universal2.UniversalKafkaQueue` to work with `universal2.UniversalQueueMessage`.
+
+### UniversalRedisQueue ###
+
+Universal [Redis](http://redis.io) queue implementation.
+
+`universal.UniversalRedisQueue` to work with `universal.UniversalQueueMessage`, and
+`universal2.UniversalRedisQueue` to work with `universal2.UniversalQueueMessage`.
+
+### UniversalRocksDbQueue ###
+
+Universal queue implementation that uses [RocksDB](http://rocksdb.org) to store queue messages.
+
+- Ephemeral storage is currently _not_ supported.
+- `universal.UniversalRocksDbQueue` to work with `universal.UniversalRocksDbQueue`, and `universal2.UniversalKafkaQueue` to work with `universal2.UniversalQueueMessage`.
 
 
 ## License ##
