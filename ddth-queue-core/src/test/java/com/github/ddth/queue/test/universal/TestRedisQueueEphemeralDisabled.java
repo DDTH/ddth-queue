@@ -48,6 +48,8 @@ public class TestRedisQueueEphemeralDisabled extends BaseTest {
     protected void destroyQueueInstance(IQueue queue) {
         if (queue instanceof RedisQueue) {
             ((RedisQueue) queue).destroy();
+        } else {
+            throw new RuntimeException("[queue] is not closed!");
         }
     }
     /*----------------------------------------------------------------------*/

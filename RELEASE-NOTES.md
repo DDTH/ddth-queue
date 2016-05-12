@@ -1,6 +1,14 @@
 ddth-queue release notes
 ========================
 
+0.4.0.1 - 2016-05-12
+--------------------
+
+- (Experimental) `RocksDbQueue`: support ephemeral storage functionality.
+- Bug fixes.
+- More unit tests.
+
+
 0.4.0 - 2016-05-10
 ------------------
 

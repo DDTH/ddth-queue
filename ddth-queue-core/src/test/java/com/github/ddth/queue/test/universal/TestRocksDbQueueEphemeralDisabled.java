@@ -1,33 +1,27 @@
 package com.github.ddth.queue.test.universal;
 
+import java.io.File;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.io.FileUtils;
+
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.RedisQueue;
-import com.github.ddth.queue.impl.universal.UniversalRedisQueue;
+import com.github.ddth.queue.impl.RocksDbQueue;
+import com.github.ddth.queue.impl.universal.UniversalRocksDbQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import redis.clients.jedis.Jedis;
 
-public class TestRedisQueue extends BaseTest {
-    public TestRedisQueue(String testName) {
+public class TestRocksDbQueueEphemeralDisabled extends BaseTest {
+    public TestRocksDbQueueEphemeralDisabled(String testName) {
         super(testName);
     }
 
     public static Test suite() {
-        return new TestSuite(TestRedisQueue.class);
-    }
-
-    private static class MyRedisQueue extends UniversalRedisQueue {
-        public void flush() {
-            try (Jedis jedis = getJedisPool().getResource()) {
-                jedis.flushAll();
-            }
-        }
+        return new TestSuite(TestRocksDbQueueEphemeralDisabled.class);
     }
 
     @Override
@@ -38,16 +32,20 @@ public class TestRedisQueue extends BaseTest {
         SENT = new ConcurrentHashMap<Object, Object>();
         RECEIVE = new ConcurrentHashMap<Object, Object>();
 
-        MyRedisQueue queue = new MyRedisQueue();
-        queue.setRedisHostAndPort("localhost:6379").setEphemeralDisabled(false).init();
-        queue.flush();
+        File tempDir = FileUtils.getTempDirectory();
+        File testDir = new File(tempDir, String.valueOf(System.currentTimeMillis()));
+
+        UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
+        queue.setStorageDir(testDir.getAbsolutePath()).setEphemeralDisabled(true).init();
         return queue;
     }
 
     @Override
     protected void destroyQueueInstance(IQueue queue) {
-        if (queue instanceof RedisQueue) {
-            ((RedisQueue) queue).destroy();
+        if (queue instanceof RocksDbQueue) {
+            File dir = new File(((RocksDbQueue) queue).getStorageDir());
+            ((RocksDbQueue) queue).destroy();
+            FileUtils.deleteQuietly(dir);
         } else {
             throw new RuntimeException("[queue] is not closed!");
         }
@@ -60,7 +58,7 @@ public class TestRedisQueue extends BaseTest {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
 
-    private final static int NUM_MSGS = 32 * 1024;
+    private final static int NUM_MSGS = 64 * 1024;
 
     @org.junit.Test
     public void test1P1C() throws Exception {

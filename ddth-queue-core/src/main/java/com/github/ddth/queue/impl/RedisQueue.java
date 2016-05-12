@@ -398,7 +398,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
     @Override
     public int queueSize() {
         try (Jedis jedis = jedisPool.getResource()) {
-            Long result = jedis.hlen(redisHashName);
+            Long result = jedis.llen(redisListName);
             return result != null ? result.intValue() : 0;
         }
     }

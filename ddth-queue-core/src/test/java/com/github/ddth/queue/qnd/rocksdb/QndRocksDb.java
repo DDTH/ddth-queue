@@ -1,10 +1,17 @@
 package com.github.ddth.queue.qnd.rocksdb;
 
 import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.DBOptions;
 import org.rocksdb.Env;
+import org.rocksdb.MergeOperator;
 import org.rocksdb.Options;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
@@ -21,12 +28,15 @@ public class QndRocksDb {
     private static String storageDir = "/tmp/rocksdb";
     private static RocksDB rocksDb;
     private static Options rocksOptions;
+    private static DBOptions dbOptions;
     private static WriteOptions writeOptions;
     private static ReadOptions readOptions;
     private static IdGenerator idGen = IdGenerator.getInstance(IdGenerator.getMacAddr());
+    private static ColumnFamilyHandle cfMetadata;
 
     private static void init() throws Exception {
         File STORAGE_DIR = new File(storageDir);
+        FileUtils.deleteQuietly(STORAGE_DIR);
         FileUtils.forceMkdir(STORAGE_DIR);
 
         RocksDB.loadLibrary();
@@ -37,10 +47,15 @@ public class QndRocksDb {
         rocksOptions.setMaxBackgroundFlushes(1).setMaxBackgroundCompactions(4);
         rocksOptions.setWriteBufferSize(32 * 1024L * 1024L).setMinWriteBufferNumberToMerge(2)
                 .setLevelZeroFileNumCompactionTrigger(512).setTargetFileSizeBase(16 * 1024 * 1024);
-
         rocksOptions.setMemTableConfig(new SkipListMemTableConfig());
         // rocksOptions.setMemTableConfig(new HashSkipListMemTableConfig());
         // rocksOptions.setMemTableConfig(new HashLinkedListMemTableConfig());
+
+        dbOptions = new DBOptions();
+        dbOptions.setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
+        dbOptions.setMaxBackgroundCompactions(2).setMaxBackgroundFlushes(2);
+        dbOptions.setAllowMmapReads(true).setAllowMmapWrites(true).setAllowOsBuffer(true);
+        dbOptions.setIncreaseParallelism(Runtime.getRuntime().availableProcessors());
 
         writeOptions = new WriteOptions().setSync(false).setDisableWAL(false);
 
@@ -48,7 +63,28 @@ public class QndRocksDb {
         readOptions.setTailing(true);
 
         try {
-            rocksDb = RocksDB.open(rocksOptions, STORAGE_DIR.getAbsolutePath());
+            ColumnFamilyOptions cfOptions = new ColumnFamilyOptions();
+            cfOptions.setMergeOperatorName("uint64add");
+            cfOptions.setMergeOperator(new MergeOperator() {
+                @Override
+                public long newMergeOperatorHandle() {
+                    long value = 0;
+                    System.out.println("===" + value);
+                    return value;
+                }
+            });
+            ColumnFamilyDescriptor cfDesc = new ColumnFamilyDescriptor("metadata".getBytes(),
+                    cfOptions);
+
+            List<ColumnFamilyDescriptor> cfdList = new ArrayList<>();
+            cfdList.add(cfDesc);
+            cfdList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
+
+            List<ColumnFamilyHandle> cfhList = new ArrayList<>();
+            // rocksDb = RocksDB.open(rocksOptions,
+            // STORAGE_DIR.getAbsolutePath(), cfdList, null);
+            rocksDb = RocksDB.open(dbOptions, STORAGE_DIR.getAbsolutePath(), cfdList, cfhList);
+            cfMetadata = cfhList.get(0);
         } catch (RocksDBException e) {
             destroy();
             throw new RuntimeException(e);
@@ -127,35 +163,57 @@ public class QndRocksDb {
 
     public static void main(String[] args) throws Exception {
         init();
-
-        Options options = new Options();
         try {
-            List<byte[]> cfList = RocksDB.listColumnFamilies(options, storageDir);
-            for (byte[] cf : cfList) {
-                System.out.println(new String(cf));
+            Options options = new Options();
+            try {
+                List<byte[]> cfList = RocksDB.listColumnFamilies(options, storageDir);
+                for (byte[] cf : cfList) {
+                    System.out.println(new String(cf));
+                }
+            } finally {
+                options.dispose();
             }
+
+            byte[] key = "key".getBytes();
+            byte[] value = ByteBuffer.allocate(8).putLong(1).array();
+            byte[] data;
+            rocksDb.put(cfMetadata, key, value);
+            data = rocksDb.get(cfMetadata, key);
+            System.out.println(data.length + " / " + new String(data) + " / "
+                    + ByteBuffer.wrap(data).getLong());
+
+            byte[] value2 = ByteBuffer.allocate(8).putLong(2).array();
+            rocksDb.merge(cfMetadata, key, value2);
+            data = rocksDb.get(cfMetadata, key);
+            System.out.println(data.length + " / " + new String(data) + " / "
+                    + ByteBuffer.wrap(data).getLong());
+
+            byte[] value3 = ByteBuffer.allocate(8).putLong(-2).array();
+            rocksDb.merge(cfMetadata, key, value3);
+            data = rocksDb.get(cfMetadata, key);
+            System.out.println(data.length + " / " + new String(data) + " / "
+                    + ByteBuffer.wrap(data).getLong());
+
+            // RocksIterator it = rocksDb.newIterator(readOptions);
+            // byte[][] record = poll(it);
+            // printRecord(record);
+            //
+            // String key = put("1");
+            // record = poll(it);
+            // printRecord(record);
+            //
+            // remove(key);
+            // record = poll(it);
+            // printRecord(record);
+            //
+            // key = put("2");
+            // record = poll(it);
+            // printRecord(record);
+
+            // it.dispose();
         } finally {
-            options.dispose();
+            destroy();
         }
-
-        RocksIterator it = rocksDb.newIterator(readOptions);
-        byte[][] record = poll(it);
-        printRecord(record);
-
-        String key = put("1");
-        record = poll(it);
-        printRecord(record);
-
-        remove(key);
-        record = poll(it);
-        printRecord(record);
-
-        key = put("2");
-        record = poll(it);
-        printRecord(record);
-
-        it.dispose();
-        destroy();
     }
 
 }

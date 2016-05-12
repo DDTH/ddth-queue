@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.io.FileUtils;
 
 import com.github.ddth.queue.IQueue;
+import com.github.ddth.queue.impl.RocksDbQueue;
 import com.github.ddth.queue.impl.universal.UniversalRocksDbQueue;
 
 import junit.framework.Test;
@@ -33,6 +34,8 @@ public class TestRocksDbQueueLong extends BaseTest {
 
         File tempDir = FileUtils.getTempDirectory();
         File testDir = new File(tempDir, String.valueOf(System.currentTimeMillis()));
+        // File testDir = new File(tempDir, this.getClass().getSimpleName());
+        // System.out.println(testDir);
 
         UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
         queue.setStorageDir(testDir.getAbsolutePath()).init();
@@ -41,10 +44,12 @@ public class TestRocksDbQueueLong extends BaseTest {
 
     @Override
     protected void destroyQueueInstance(IQueue queue) {
-        if (queue instanceof UniversalRocksDbQueue) {
-            File dir = new File(((UniversalRocksDbQueue) queue).getStorageDir());
-            ((UniversalRocksDbQueue) queue).destroy();
+        if (queue instanceof RocksDbQueue) {
+            File dir = new File(((RocksDbQueue) queue).getStorageDir());
+            ((RocksDbQueue) queue).destroy();
             FileUtils.deleteQuietly(dir);
+        } else {
+            throw new RuntimeException("[queue] is not closed!");
         }
     }
     /*----------------------------------------------------------------------*/
