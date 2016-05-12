@@ -147,11 +147,11 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 | JDBC           | No           | Yes        | Yes               | Yes           |
 | Kafka          | No           | Yes        | No                | Yes           |
 | Redis          | No           | Yes (1)    | Yes               | Yes           |
-| RocksDB        | No           | Yes        | No                | No            |
+| RocksDB        | No           | Yes        | Yes               | No            |
 
 - *Bounded Size*: queue's size is bounded.
   - Currently only in-memory queue(s) support bounded queue size
-  - Databases, Kafka, Redis and RocksDB are virtually limited only by hardware's capability
+  - Databases (JDBC), Kafka, Redis and RocksDB queues are virtually limited only by hardware's capability
 - *Persistent*: queue's items are persistent between JVM restarts.
   - Redis backend: persistency depends on Redis server's configurations
 - *Ephemeral Storage*: supports retrieval of orphan messages.
