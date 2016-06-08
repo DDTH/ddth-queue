@@ -1,6 +1,12 @@
 ddth-queue release notes
 ========================
 
+0.4.1 - 2016-06-08
+------------------
+
+- Factories to create queue instances.
+
+
 0.4.0.1 - 2016-05-12
 --------------------
 

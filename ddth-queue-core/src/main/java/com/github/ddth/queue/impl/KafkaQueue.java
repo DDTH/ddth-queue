@@ -82,10 +82,12 @@ public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
      * Sets Kafka producer's custom configuration properties.
      * 
      * @param kafkaProducerConfigs
+     * @return
      * @since 0.4.0
      */
-    public void setKafkaProducerProperties(Properties kafkaProducerConfigs) {
+    public KafkaQueue setKafkaProducerProperties(Properties kafkaProducerConfigs) {
         this.producerProps = kafkaProducerConfigs;
+        return this;
     }
 
     /**
@@ -102,10 +104,12 @@ public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
      * Sets Kafka consumer's custom configuration properties.
      * 
      * @param kafkaConsumerConfigs
+     * @return
      * @since 0.4.0
      */
-    public void setKafkaConsumerProperties(Properties kafkaConsumerConfigs) {
+    public KafkaQueue setKafkaConsumerProperties(Properties kafkaConsumerConfigs) {
         this.consumerProps = kafkaConsumerConfigs;
+        return this;
     }
 
     /**
