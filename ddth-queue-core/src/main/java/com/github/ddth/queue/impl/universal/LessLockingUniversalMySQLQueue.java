@@ -69,20 +69,50 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
 
     private boolean fifo = true;
 
+    /**
+     * When set to {@code true}, queue message with lower id is ensured to be
+     * taken first. When set to {@code false}, order of taken queue messages
+     * depends on the DBMS (usually FIFO in most cases).
+     * 
+     * @param fifo
+     * @return
+     */
     public LessLockingUniversalMySQLQueue setFifo(boolean fifo) {
         this.fifo = fifo;
         return this;
     }
 
+    /**
+     * When set to {@code true}, queue message with lower id is ensured to be
+     * taken first. When set to {@code false}, order of taken queue messages
+     * depends on the DBMS (usually FIFO in most cases).
+     * 
+     * @param fifo
+     * @return
+     */
     public LessLockingUniversalMySQLQueue markFifo(boolean fifo) {
         this.fifo = fifo;
         return this;
     }
 
+    /**
+     * If {@code true}, queue message with lower id is ensured to be taken
+     * first. Otherwise, order of taken queue messages depends on the DBMS
+     * (usually FIFO in most cases).
+     * 
+     * @return
+     */
     public boolean isFifo() {
         return fifo;
     }
 
+    /**
+     * If {@code true}, queue message with lower id is ensured to be taken
+     * first. Otherwise, order of taken queue messages depends on the DBMS
+     * (usually FIFO in most cases).
+     * 
+     * @return
+     */
     public boolean getFifo() {
         return fifo;
     }
@@ -108,44 +138,68 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
     public LessLockingUniversalMySQLQueue init() {
         super.init();
 
+        /*
+         * Sets column COL_EPHEMERAL_ID's value to nil, increases value of
+         * column COL_NUM_REQUEUES, also updates value of column COL_TIMESTAMP
+         */
         SQL_REQUEUE = "UPDATE {0} SET {1}=0, {2}={2}+1, {3}=? WHERE {4}=?";
         SQL_REQUEUE = MessageFormat.format(SQL_REQUEUE, getTableName(), COL_EPHEMERAL_ID,
                 COL_NUM_REQUEUES, COL_TIMESTAMP, COL_QUEUE_ID);
 
+        /*
+         * Sets column COL_EPHEMERAL_ID's value to nil
+         */
         SQL_REQUEUE_SILENT = "UPDATE {0} SET {1}=0 WHERE {2}=?";
         SQL_REQUEUE_SILENT = MessageFormat.format(SQL_REQUEUE_SILENT, getTableName(),
                 COL_EPHEMERAL_ID, COL_QUEUE_ID);
 
+        /*
+         * Sets value of column COL_EPHEMERAL_ID for taking a queue message
+         */
         SQL_UPDATE_EPHEMERAL_ID_TAKE = "UPDATE {0} SET {1}=? WHERE {1}=0"
-                + (fifo ? (" ORDER BY " + COL_QUEUE_ID + " DESC") : "") + " LIMIT 1";
+                + (fifo ? (" ORDER BY " + COL_QUEUE_ID) : "") + " LIMIT 1";
         SQL_UPDATE_EPHEMERAL_ID_TAKE = MessageFormat.format(SQL_UPDATE_EPHEMERAL_ID_TAKE,
                 getTableName(), COL_EPHEMERAL_ID);
 
+        /*
+         * Sets column COL_EPHEMERAL_ID's value to nil (used in action
+         * "move message from ephemeral storage to queue")
+         */
         SQL_CLEAR_EPHEMERAL_ID = "UPDATE {0} SET {1}=0 WHERE {2}=?";
         SQL_CLEAR_EPHEMERAL_ID = MessageFormat.format(SQL_CLEAR_EPHEMERAL_ID, getTableName(),
                 COL_EPHEMERAL_ID, COL_QUEUE_ID);
 
+        /*
+         * Reads a queue message by ephemeral id
+         */
         SQL_READ_BY_EPHEMERAL_ID = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE {6}=?";
         SQL_READ_BY_EPHEMERAL_ID = MessageFormat.format(SQL_READ_BY_EPHEMERAL_ID, getTableName(),
-                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT, COL_EPHEMERAL_ID);
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT, COL_EPHEMERAL_ID);
 
         SQL_GET_ORPHAN_MSGS = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE " + COL_EPHEMERAL_ID
                 + "!=0 AND " + COL_TIMESTAMP + "<?";
         SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS, getTableNameEphemeral(),
-                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT);
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT);
 
+        /*
+         * Puts a new message (message without pre-set queue id) to queue,
+         * assuming column COL_QUEUE_ID is auto-number
+         */
         SQL_PUT_NEW_TO_QUEUE = "INSERT INTO {0} ({1}, {2}, {3}, {4}) VALUES (?, ?, ?, ?)";
         SQL_PUT_NEW_TO_QUEUE = MessageFormat.format(SQL_PUT_NEW_TO_QUEUE, getTableName(),
                 COL_ORG_TIMESTAMP, COL_TIMESTAMP, COL_NUM_REQUEUES, COL_CONTENT);
 
+        /*
+         * Put a message with pre-set queue id to queue
+         */
         SQL_REPUT_TO_QUEUE = "INSERT INTO {0} ({1}, {2}, {3}, {4}, {5}) VALUES (?, ?, ?, ?, ?)";
         SQL_REPUT_TO_QUEUE = MessageFormat.format(SQL_REPUT_TO_QUEUE, getTableName(), COL_QUEUE_ID,
                 COL_ORG_TIMESTAMP, COL_TIMESTAMP, COL_NUM_REQUEUES, COL_CONTENT);
@@ -156,18 +210,6 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
 
         return this;
     }
-
-    // private static Charset UTF8 = Charset.forName("UTF-8");
-
-    // private static void ensureContentIsByteArray(Map<String, Object> dbRow) {
-    // Object content = dbRow.get(UniversalQueueMessage.FIELD_CONTENT);
-    // if (content != null) {
-    // if (!(content instanceof byte[])) {
-    // content = content.toString().getBytes(UTF8);
-    // dbRow.put(UniversalQueueMessage.FIELD_CONTENT, content);
-    // }
-    // }
-    // }
 
     /**
      * {@inheritDoc}
@@ -195,8 +237,8 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
     protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             long thresholdTimestampMs) {
         final Date threshold = new Date(thresholdTimestampMs);
-        List<Map<String, Object>> dbRows = jdbcTemplate
-                .queryForList(SQL_GET_ORPHAN_MSGS, threshold);
+        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_GET_ORPHAN_MSGS,
+                threshold);
         if (dbRows != null && dbRows.size() > 0) {
             Collection<IQueueMessage> result = new ArrayList<IQueueMessage>();
             for (Map<String, Object> dbRow : dbRows) {
@@ -400,8 +442,8 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
             long ephemeralId = QueueUtils.IDGEN.generateId64();
             int numRows = jdbcTemplate.update(SQL_UPDATE_EPHEMERAL_ID_TAKE, ephemeralId);
             if (numRows > 0) {
-                List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(
-                        SQL_READ_BY_EPHEMERAL_ID, ephemeralId);
+                List<Map<String, Object>> dbRows = jdbcTemplate
+                        .queryForList(SQL_READ_BY_EPHEMERAL_ID, ephemeralId);
                 if (dbRows != null && dbRows.size() > 0) {
                     Map<String, Object> dbRow = dbRows.get(0);
                     // ensureContentIsByteArray(dbRow);
