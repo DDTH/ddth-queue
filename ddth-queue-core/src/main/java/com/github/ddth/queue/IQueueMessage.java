@@ -86,6 +86,23 @@ public interface IQueueMessage extends Cloneable {
     public IQueueMessage qIncNumRequeues();
 
     /**
+     * Data/content attached to the queue message.
+     * 
+     * @return
+     * @since 0.4.2
+     */
+    public Object qData();
+
+    /**
+     * Attaches data/content to the queue message.
+     * 
+     * @param data
+     * @return
+     * @since 0.4.2
+     */
+    public IQueueMessage qData(Object data);
+
+    /**
      * An empty queue message.
      * 
      * @author Thanh Nguyen <btnguyen2k@gmail.com>
@@ -111,7 +128,7 @@ public interface IQueueMessage extends Cloneable {
 
         @Override
         public IQueueMessage qId(Object queueId) {
-            return null;
+            return this;
         }
 
         @Override
@@ -121,7 +138,7 @@ public interface IQueueMessage extends Cloneable {
 
         @Override
         public IQueueMessage qOriginalTimestamp(Date timestamp) {
-            return null;
+            return this;
         }
 
         @Override
@@ -131,7 +148,7 @@ public interface IQueueMessage extends Cloneable {
 
         @Override
         public IQueueMessage qTimestamp(Date timestamp) {
-            return null;
+            return this;
         }
 
         @Override
@@ -146,7 +163,17 @@ public interface IQueueMessage extends Cloneable {
 
         @Override
         public IQueueMessage qIncNumRequeues() {
+            return this;
+        }
+
+        @Override
+        public Object qData() {
             return null;
+        }
+
+        @Override
+        public IQueueMessage qData(Object data) {
+            return this;
         }
 
     }

@@ -141,6 +141,33 @@ public abstract class BaseUniversalQueueMessage extends BaseBo implements IQueue
     }
 
     /**
+     * {@inheritDoc}
+     * 
+     * @since 0.4.2
+     */
+    public byte[] qData() {
+        return content();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.4.2
+     */
+    public BaseUniversalQueueMessage qData(Object data) {
+        if (data instanceof byte[]) {
+            return content((byte[]) data);
+        }
+        if (data instanceof String) {
+            return content((String) data);
+        }
+        if (data == null) {
+            return content((byte[]) null);
+        }
+        return content(data.toString());
+    }
+
+    /**
      * Gets message's content.
      * 
      * @return

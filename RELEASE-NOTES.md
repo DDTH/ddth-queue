@@ -1,6 +1,14 @@
 ddth-queue release notes
 ========================
 
+0.4.2 - 2016-06-23
+------------------
+
+- New methods:
+  - `IQueueMessage IQueueMessage.qData(Object)`: attach content/data to the queue message.
+  - `Object IQueueMessage.qData()`: retrieve the attached content/data from queue message.
+
+
 0.4.1.1 - 2016-06-14
 --------------------
 
