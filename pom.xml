@@ -22,6 +22,7 @@
 		<module>ddth-queue-jdbc</module>
 		<module>ddth-queue-kafka</module>
 		<module>ddth-queue-redis</module>
+		<module>ddth-queue-rocksdb</module>
 	</modules>
 
 	<licenses>
@@ -52,7 +53,6 @@
 		<version.ddth_dao>0.7.0</version.ddth_dao>
 		<version.ddth_kafka>1.3.2</version.ddth_kafka>
 		<version.jedis>2.9.0</version.jedis>
-		<version.log4j>1.2.17</version.log4j>
 		<version.disruptor>3.3.6</version.disruptor>
 		<version.rocksdb>5.0.1</version.rocksdb>
 	</properties>
@@ -126,8 +126,6 @@
 			<version>${version.jedis}</version>
 			<optional>true</optional>
 		</dependency>
-		<!-- <dependency> <groupId>log4j</groupId> <artifactId>log4j</artifactId> 
-			<version>${version.log4j}</version> <optional>true</optional> </dependency> -->
 
 		<!-- for Kafka-based queue -->
 		<dependency>

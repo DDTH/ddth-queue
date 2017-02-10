@@ -78,6 +78,17 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 </dependency>
 ```
 
+`ddth-queue-rocksdb`: include `ddth-queue-core` and [`RocksDB`](https://github.com/facebook/rocksdb) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-rocskdb</artifactId>
+    <version>0.5.0</version>
+    <type>pom</type>
+</dependency>
+```
+
 ## Usage ##
 
 `ddth-queue` provides a unified and simple APIs to interact with various queue implementations:

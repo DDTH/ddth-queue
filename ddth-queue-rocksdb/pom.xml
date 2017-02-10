@@ -8,10 +8,10 @@
 		<version>0.4.3-SNAPSHOT</version>
 	</parent>
 
-	<artifactId>ddth-queue-redis</artifactId>
+	<artifactId>ddth-queue-rocksdb</artifactId>
 	<packaging>pom</packaging>
 
-	<name>ddth-queue-redis</name>
+	<name>ddth-queue-rocksdb</name>
 	<description>DDTH's Libary to interact with various queue implementations</description>
 	<url>https://github.com/DDTH/ddth-queue</url>
 
@@ -34,13 +34,11 @@
 			<version>0.4.3-SNAPSHOT</version>
 		</dependency>
 
-		<!-- for Redis-based queues -->
+		<!-- for RocksDb-based queue -->
 		<dependency>
-			<groupId>redis.clients</groupId>
-			<artifactId>jedis</artifactId>
-			<version>${version.jedis}</version>
+			<groupId>org.rocksdb</groupId>
+			<artifactId>rocksdbjni</artifactId>
+			<version>${version.rocksdb}</version>
 		</dependency>
-		<!-- <dependency> <groupId>log4j</groupId> <artifactId>log4j</artifactId> 
-			<version>${version.log4j}</version> </dependency> -->
 	</dependencies>
 </project>
