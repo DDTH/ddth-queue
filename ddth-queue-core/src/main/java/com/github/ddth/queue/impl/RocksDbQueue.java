@@ -1,32 +1,29 @@
 package com.github.ddth.queue.impl;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.io.FileUtils;
-import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.DBOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
-import org.rocksdb.RocksObject;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.rocksdb.RocksDbUtils;
+import com.github.ddth.queue.impl.rocksdb.RocksDbWrapper;
+import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.utils.QueueUtils;
 
 /**
  * RocksDB implementation of {@link IQueue}.
@@ -41,111 +38,27 @@ import com.github.ddth.queue.IQueueMessage;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.0
  */
-public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
+public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
+
+    static {
+        RocksDB.loadLibrary();
+    }
 
     private Logger LOGGER = LoggerFactory.getLogger(RocksDbQueue.class);
 
-    private String storageDir = "/tmp/ddth-rocksdb-queue";
-    private RocksDB rocksDb;
-    private RocksIterator itQueue;
-    // private Options rocksOptions;
-    private DBOptions dbOptions;
-    private WriteOptions writeOptions;
-    private ReadOptions readOptions;
-    private IdGenerator idGen = IdGenerator.getInstance(IdGenerator.getMacAddr());
     private byte[] lastFetchedId = null;
     private Lock lockPut = new ReentrantLock(), lockTake = new ReentrantLock();
 
-    private boolean ephemeralDisabled = false;
-
-    private WriteBatch batchPutToQueue, batchTake;
-
+    private String storageDir = "/tmp/ddth-rocksdb-queue";
     private String cfNameQueue = "queue", cfNameMetadata = "metadata",
             cfNameEphemeral = "ephemeral";
+    private DBOptions dbOptions;
+    private ReadOptions readOptions;
+    private WriteOptions writeOptions;
+    private RocksDbWrapper rocksDbWrapper;
+    private WriteBatch batchPutToQueue, batchTake;
     private ColumnFamilyHandle cfQueue, cfMetadata, cfEphemeral;
-    private List<ColumnFamilyHandle> cfHandleList = new ArrayList<>();
-
-    /**
-     * @return
-     * @since 0.4.0.1
-     */
-    protected RocksDB getRocksDb() {
-        return rocksDb;
-    }
-
-    /**
-     * @return
-     * @since 0.4.0.1
-     */
-    protected ColumnFamilyHandle getCfQueue() {
-        return cfQueue;
-    }
-
-    /**
-     * @return
-     * @since 0.4.0.1
-     */
-    protected ColumnFamilyHandle getCfMetadata() {
-        return cfMetadata;
-    }
-
-    /**
-     * @return
-     * @since 0.4.0.1
-     */
-    protected ColumnFamilyHandle getCfEphemeral() {
-        return cfEphemeral;
-    }
-
-    /**
-     * @return
-     * @since 0.4.0.1
-     */
-    protected ReadOptions getReadOptions() {
-        return readOptions;
-    }
-
-    /**
-     * @return
-     * @since 0.4.0.1
-     */
-    protected WriteOptions getWriteOptions() {
-        return writeOptions;
-    }
-
-    /**
-     * Is ephemeral storage disabled?
-     * 
-     * @return
-     * @since 0.4.0.1
-     */
-    public boolean getEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    /**
-     * Is ephemeral storage disabled?
-     * 
-     * @return
-     * @since 0.4.0.1
-     */
-    public boolean isEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    /**
-     * Disables/Enables ephemeral storage.
-     * 
-     * @param ephemeralDisabled
-     *            {@code true} to disable ephemeral storage, {@code false}
-     *            otherwise.
-     * @return
-     * @since 0.4.0.1
-     */
-    public RocksDbQueue setEphemeralDisabled(boolean ephemeralDisabled) {
-        this.ephemeralDisabled = ephemeralDisabled;
-        return this;
-    }
+    private RocksIterator itQueue;
 
     /**
      * RocksDB's storage directory.
@@ -249,72 +162,28 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
             throw new RuntimeException(e);
         }
 
-        RocksDB.loadLibrary();
-
-        batchPutToQueue = new WriteBatch();
-        batchTake = new WriteBatch();
-
-        // rocksOptions = new Options();
-        // rocksOptions.setCreateIfMissing(true).getEnv().setBackgroundThreads(2,
-        // Env.FLUSH_POOL)
-        // .setBackgroundThreads(4, Env.COMPACTION_POOL);
-        // rocksOptions.setMaxBackgroundFlushes(2).setMaxBackgroundCompactions(4);
-        // rocksOptions.setWriteBufferSize(8 * 1024L *
-        // 1024L).setMinWriteBufferNumberToMerge(2)
-        // .setLevelZeroFileNumCompactionTrigger(512).setTargetFileSizeBase(16 *
-        // 1024 * 1024);
-        //
-        // rocksOptions.setMemTableConfig(new SkipListMemTableConfig());
-        // // rocksOptions.setMemTableConfig(new HashSkipListMemTableConfig());
-        // // rocksOptions.setMemTableConfig(new
-        // HashLinkedListMemTableConfig());
-
-        dbOptions = new DBOptions();
-        dbOptions.setCreateIfMissing(true).setCreateMissingColumnFamilies(true)
-                .setMaxBackgroundFlushes(2).setMaxBackgroundCompactions(2);
-        dbOptions.setAllowMmapReads(true).setAllowMmapWrites(true).setAllowOsBuffer(true);
-
-        /*
-         * As of RocksDB v3.10.1, no data lost if process crashes even if
-         * sync==false. Data lost only when server/OS crashes. So it's
-         * relatively safe to set sync=false for fast write.
-         */
-        writeOptions = new WriteOptions().setSync(false).setDisableWAL(false);
-
-        readOptions = new ReadOptions().setTailing(true);
-
         try {
-            List<ColumnFamilyDescriptor> cfDescList = new ArrayList<>();
-            cfDescList.add(new ColumnFamilyDescriptor(cfNameEphemeral.getBytes()));
-            cfDescList.add(new ColumnFamilyDescriptor(cfNameMetadata.getBytes()));
-            cfDescList.add(new ColumnFamilyDescriptor(cfNameQueue.getBytes()));
-            cfDescList.add(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY));
+            batchPutToQueue = new WriteBatch();
+            batchTake = new WriteBatch();
 
-            rocksDb = RocksDB.open(dbOptions, STORAGE_DIR.getAbsolutePath(), cfDescList,
-                    cfHandleList);
+            dbOptions = RocksDbUtils.buildDbOptions();
+            rocksDbWrapper = RocksDbWrapper.openReadWrite(STORAGE_DIR, dbOptions, null, null,
+                    new String[] { cfNameEphemeral, cfNameMetadata, cfNameQueue });
+            readOptions = rocksDbWrapper.getReadOptions();
+            writeOptions = rocksDbWrapper.getWriteOptions();
 
-            cfEphemeral = cfHandleList.get(0);
-            cfMetadata = cfHandleList.get(1);
-            cfQueue = cfHandleList.get(2);
+            cfEphemeral = rocksDbWrapper.getColumnFamilyHandle(cfNameEphemeral);
+            cfMetadata = rocksDbWrapper.getColumnFamilyHandle(cfNameMetadata);
+            cfQueue = rocksDbWrapper.getColumnFamilyHandle(cfNameQueue);
 
-            itQueue = rocksDb.newIterator(cfQueue, readOptions);
+            itQueue = rocksDbWrapper.getIterator(cfNameQueue);
             lastFetchedId = loadLastFetchedId();
-        } catch (RocksDBException e) {
+        } catch (Exception e) {
             destroy();
-            throw new RuntimeException(e);
+            throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
         }
 
         return this;
-    }
-
-    private void disposeRocksObject(RocksObject ro) {
-        if (ro != null) {
-            try {
-                ro.dispose();
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage(), e);
-            }
-        }
     }
 
     /**
@@ -323,24 +192,17 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
     public void destroy() {
         try {
             saveLastFetchedId(lastFetchedId);
-        } catch (RocksDBException e) {
+        } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }
 
-        disposeRocksObject(batchPutToQueue);
-        disposeRocksObject(batchTake);
+        try {
+            rocksDbWrapper.close();
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+        }
 
-        disposeRocksObject(cfEphemeral);
-        disposeRocksObject(cfMetadata);
-        disposeRocksObject(cfQueue);
-
-        disposeRocksObject(itQueue);
-
-        disposeRocksObject(rocksDb);
-        // disposeRocksObject(rocksOptions);
-        disposeRocksObject(dbOptions);
-        disposeRocksObject(readOptions);
-        disposeRocksObject(writeOptions);
+        RocksDbUtils.closeRocksObjects(batchPutToQueue, batchTake, dbOptions);
     }
 
     /**
@@ -351,17 +213,16 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
         destroy();
     }
 
-    private final static byte[] keyLastFetchedId = "last-fetched-id".getBytes();
+    private final static byte[] keyLastFetchedId = "last-fetched-id".getBytes(QueueUtils.UTF8);
 
     /**
      * Loads last saved last-fetched-id.
      * 
      * @return
      * @since 0.4.0.1
-     * @throws RocksDBException
      */
-    private byte[] loadLastFetchedId() throws RocksDBException {
-        return rocksDb.get(cfMetadata, readOptions, keyLastFetchedId);
+    private byte[] loadLastFetchedId() {
+        return rocksDbWrapper.get(cfMetadata, readOptions, keyLastFetchedId);
     }
 
     /**
@@ -369,11 +230,10 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
      * 
      * @param lastFetchedId
      * @since 0.4.0.1
-     * @throws RocksDBException
      */
-    private void saveLastFetchedId(byte[] lastFetchedId) throws RocksDBException {
+    private void saveLastFetchedId(byte[] lastFetchedId) {
         if (lastFetchedId != null) {
-            rocksDb.put(cfMetadata, writeOptions, keyLastFetchedId, lastFetchedId);
+            rocksDbWrapper.put(cfMetadata, writeOptions, keyLastFetchedId, lastFetchedId);
         }
     }
 
@@ -397,22 +257,19 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
         byte[] value = serialize(msg);
         lockPut.lock();
         try {
-            byte[] key = idGen.generateId128Hex().toLowerCase().getBytes();
+            byte[] key = QueueUtils.IDGEN.generateId128Hex().toLowerCase()
+                    .getBytes(QueueUtils.UTF8);
             try {
-                try {
-                    batchPutToQueue.put(cfQueue, key, value);
-                    if (removeFromEphemeral && !ephemeralDisabled) {
-                        byte[] _key = msg.qId().toString().getBytes();
-                        batchPutToQueue.remove(cfEphemeral, _key);
-                    }
-                    rocksDb.write(writeOptions, batchPutToQueue);
-                } finally {
-                    batchPutToQueue.clear();
+                batchPutToQueue.put(cfQueue, key, value);
+                if (removeFromEphemeral && !isEphemeralDisabled()) {
+                    byte[] _key = msg.qId().toString().getBytes(QueueUtils.UTF8);
+                    batchPutToQueue.remove(cfEphemeral, _key);
                 }
-                return true;
-            } catch (RocksDBException e) {
-                throw new RuntimeException(e);
+                rocksDbWrapper.write(writeOptions, batchPutToQueue);
+            } finally {
+                batchPutToQueue.clear();
             }
+            return true;
         } finally {
             lockPut.unlock();
         }
@@ -445,7 +302,7 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean requeueSilent(IQueueMessage msg) {
-        return putToQueue(msg, true);
+        return putToQueue(msg.clone(), true);
     }
 
     /**
@@ -453,21 +310,26 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public void finish(IQueueMessage msg) {
-        if (!ephemeralDisabled) {
-            byte[] key = msg.qId().toString().getBytes();
-            try {
-                rocksDb.remove(cfEphemeral, writeOptions, key);
-            } catch (RocksDBException e) {
-                throw new RuntimeException(e);
-            }
+        if (!isEphemeralDisabled()) {
+            byte[] key = msg.qId().toString().getBytes(QueueUtils.UTF8);
+            rocksDbWrapper.delete(cfEphemeral, writeOptions, key);
         }
     }
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.EphemeralIsFull
+     *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() {
+    public IQueueMessage take() throws QueueException.EphemeralIsFull {
+        if (!isEphemeralDisabled()) {
+            int ephemeralMaxSize = getEphemeralMaxSize();
+            if (ephemeralMaxSize > 0 && ephemeralSize() >= ephemeralMaxSize) {
+                throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
+            }
+        }
         lockTake.lock();
         try {
             if (lastFetchedId == null) {
@@ -482,19 +344,15 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
             byte[] value = itQueue.value();
             IQueueMessage msg = deserialize(value);
             try {
-                try {
-                    batchTake.remove(cfQueue, lastFetchedId);
-                    batchTake.put(cfMetadata, keyLastFetchedId, lastFetchedId);
-                    if (!ephemeralDisabled && msg != null) {
-                        byte[] _key = msg.qId().toString().getBytes();
-                        batchTake.put(cfEphemeral, _key, value);
-                    }
-                    rocksDb.write(writeOptions, batchTake);
-                } finally {
-                    batchTake.clear();
+                batchTake.remove(cfQueue, lastFetchedId);
+                batchTake.put(cfMetadata, keyLastFetchedId, lastFetchedId);
+                if (!isEphemeralDisabled() && msg != null) {
+                    byte[] _key = msg.qId().toString().getBytes(QueueUtils.UTF8);
+                    batchTake.put(cfEphemeral, _key, value);
                 }
-            } catch (RocksDBException e) {
-                LOGGER.error(e.getMessage(), e);
+                rocksDbWrapper.write(writeOptions, batchTake);
+            } finally {
+                batchTake.clear();
             }
             itQueue.next();
             return msg;
@@ -504,14 +362,14 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
     }
 
     /**
-     * {@inheritDoc}
+     * This method throws {@link QueueException.OperationNotSupported}.
      * 
-     * @param thresholdTimestampMs
      * @return
      */
     @Override
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
-        return null;
+    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs)
+            throws QueueException.OperationNotSupported {
+        throw new QueueException.OperationNotSupported();
     }
 
     /**
@@ -526,37 +384,15 @@ public abstract class RocksDbQueue implements IQueue, Closeable, AutoCloseable {
      * {@inheritDoc}
      */
     @Override
-    synchronized public int queueSize() {
-        RocksIterator it = getRocksDb().newIterator(cfQueue, readOptions);
-        try {
-            int count = 0;
-            it.seekToFirst();
-            while (it.isValid()) {
-                count++;
-                it.next();
-            }
-            return count;
-        } finally {
-            it.dispose();
-        }
+    public int queueSize() {
+        return (int) rocksDbWrapper.getEstimateNumKeys(cfNameQueue);
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    synchronized public int ephemeralSize() {
-        RocksIterator it = getRocksDb().newIterator(getCfEphemeral(), getReadOptions());
-        try {
-            int count = 0;
-            it.seekToFirst();
-            while (it.isValid()) {
-                count++;
-                it.next();
-            }
-            return count;
-        } finally {
-            it.dispose();
-        }
+    public int ephemeralSize() {
+        return (int) rocksDbWrapper.getEstimateNumKeys(cfNameEphemeral);
     }
 }

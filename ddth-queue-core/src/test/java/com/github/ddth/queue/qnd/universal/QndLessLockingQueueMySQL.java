@@ -13,7 +13,7 @@ public class QndLessLockingQueueMySQL {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("com.mysql.jdbc.Driver");
         dataSource.setUrl(
-                "jdbc:mysql://localhost:3306/temp?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
+                "jdbc:mysql://localhost:3306/test?autoReconnect=true&useUnicode=true&characterEncoding=UTF-8");
         dataSource.setUsername("test");
         dataSource.setPassword("test");
 

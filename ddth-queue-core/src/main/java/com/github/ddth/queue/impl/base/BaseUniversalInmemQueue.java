@@ -1,4 +1,6 @@
-package com.github.ddth.queue.impl;
+package com.github.ddth.queue.impl.base;
+
+import com.github.ddth.queue.impl.InmemQueue;
 
 /**
  * Base class for universal in-memory queue implementations.

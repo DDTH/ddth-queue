@@ -27,6 +27,10 @@ public abstract class RedisQueueFactory<T extends RedisQueue> extends AbstractQu
         if (ephemeralDisabled != null) {
             queue.setEphemeralDisabled(ephemeralDisabled.booleanValue());
         }
+        Integer maxEphemeralSize = spec.getField(QueueSpec.FIELD_EPHEMERAL_MAX_SIZE, Integer.class);
+        if (maxEphemeralSize != null) {
+            queue.setEphemeralMaxSize(maxEphemeralSize.intValue());
+        }
 
         String redisHashName = spec.getField(SPEC_FIELD_HASH_NAME);
         String redisListName = spec.getField(SPEC_FIELD_LIST_NAME);
@@ -49,15 +53,6 @@ public abstract class RedisQueueFactory<T extends RedisQueue> extends AbstractQu
         }
 
         queue.init();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean disposeQueue(T queue) {
-        queue.destroy();
-        return true;
     }
 
 }

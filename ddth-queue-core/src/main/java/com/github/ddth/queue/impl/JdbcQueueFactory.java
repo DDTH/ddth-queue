@@ -37,6 +37,16 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue> extends AbstractQueu
     protected void initQueue(T queue, QueueSpec spec) {
         queue.setDataSource(getDefaultDataSource());
 
+        Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
+                Boolean.class);
+        if (ephemeralDisabled != null) {
+            queue.setEphemeralDisabled(ephemeralDisabled.booleanValue());
+        }
+        Integer maxEphemeralSize = spec.getField(QueueSpec.FIELD_EPHEMERAL_MAX_SIZE, Integer.class);
+        if (maxEphemeralSize != null) {
+            queue.setEphemeralMaxSize(maxEphemeralSize.intValue());
+        }
+
         String tableName = spec.getField(SPEC_FIELD_TABLE_NAME);
         if (!StringUtils.isBlank(tableName)) {
             queue.setTableName(tableName);
@@ -59,15 +69,6 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue> extends AbstractQueu
         }
 
         queue.init();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean disposeQueue(T queue) {
-        queue.destroy();
-        return true;
     }
 
 }

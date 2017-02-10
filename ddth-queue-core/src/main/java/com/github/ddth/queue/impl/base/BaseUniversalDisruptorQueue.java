@@ -1,4 +1,6 @@
-package com.github.ddth.queue.impl;
+package com.github.ddth.queue.impl.base;
+
+import com.github.ddth.queue.impl.DisruptorQueue;
 
 /**
  * Base class for universal LMAX Disruptor queue implementations.

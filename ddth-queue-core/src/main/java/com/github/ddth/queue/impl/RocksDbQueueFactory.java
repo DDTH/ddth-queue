@@ -38,6 +38,10 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue> extends Abstra
         if (ephemeralDisabled != null) {
             queue.setEphemeralDisabled(ephemeralDisabled.booleanValue());
         }
+        Integer maxEphemeralSize = spec.getField(QueueSpec.FIELD_EPHEMERAL_MAX_SIZE, Integer.class);
+        if (maxEphemeralSize != null) {
+            queue.setEphemeralMaxSize(maxEphemeralSize.intValue());
+        }
 
         String storageDir = spec.getField(SPEC_FIELD_STORAGE_DIR);
         if (!StringUtils.isEmpty(storageDir)) {
@@ -63,15 +67,6 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue> extends Abstra
         }
 
         queue.init();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean disposeQueue(T queue) {
-        queue.destroy();
-        return true;
     }
 
 }

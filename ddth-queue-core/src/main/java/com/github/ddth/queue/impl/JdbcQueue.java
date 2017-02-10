@@ -1,19 +1,22 @@
 package com.github.ddth.queue.impl;
 
-import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
-import com.github.ddth.dao.jdbc.BaseJdbcDao;
+import com.github.ddth.dao.jdbc.IJdbcHelper;
+import com.github.ddth.dao.jdbc.jdbctemplate.JdbcTemplateJdbcHelper;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -32,7 +35,7 @@ import com.github.ddth.queue.utils.QueueException;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.1.0
  */
-public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable, AutoCloseable {
+public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
 
     public static int DEFAULT_MAX_RETRIES = 3;
 
@@ -42,10 +45,9 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     private String SQL_COUNT = "SELECT COUNT(*) AS num_entries FROM {0}";
     private String SQL_COUNT_EPHEMERAL = "SELECT COUNT(*) AS num_entries FROM {0}";
 
+    private DataSource dataSource;
+    private JdbcTemplateJdbcHelper jdbcHelper;
     private int maxRetries = DEFAULT_MAX_RETRIES;
-
-    // private int transactionIsolationLevel =
-    // Connection.TRANSACTION_REPEATABLE_READ;
     private int transactionIsolationLevel = Connection.TRANSACTION_READ_COMMITTED;
 
     /*----------------------------------------------------------------------*/
@@ -76,6 +78,35 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
         return transactionIsolationLevel;
     }
 
+    /**
+     * 
+     * @param dataSource
+     * @return
+     * @since 0.5.0
+     */
+    public JdbcQueue setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
+        return this;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.5.0
+     */
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.5.0
+     */
+    protected IJdbcHelper getJdbcHelper() {
+        return jdbcHelper;
+    }
+
     public JdbcQueue setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
         return this;
@@ -94,7 +125,8 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     public JdbcQueue init() {
         SQL_COUNT = MessageFormat.format(SQL_COUNT, tableName);
         SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, tableNameEphemeral);
-        return (JdbcQueue) super.init();
+        jdbcHelper = new JdbcTemplateJdbcHelper().setDataSource(dataSource).init();
+        return this;
     }
 
     /**
@@ -102,17 +134,21 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
      */
     @Override
     public void destroy() {
-        super.destroy();
+        jdbcHelper.destroy();
     }
 
     /**
-     * {@inheritDoc}
+     * Gets {@link JdbcTemplate} instance for a given {@link Connection}.
      * 
-     * @since 0.4.0
+     * Note: the returned {@link JdbcTemplate} will not automatically close the
+     * {@link Connection}.
+     * 
+     * @param conn
+     * @return
      */
-    @Override
-    public void close() {
-        destroy();
+    protected JdbcTemplate jdbcTemplate(Connection conn) {
+        DataSource ds = new SingleConnectionDataSource(conn, true);
+        return new JdbcTemplate(ds);
     }
 
     /*----------------------------------------------------------------------*/
@@ -221,7 +257,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
         } catch (DuplicateKeyException dke) {
             LOGGER.warn(dke.getMessage(), dke);
             return true;
-        } catch (PessimisticLockingFailureException ex) {
+        } catch (ConcurrencyFailureException ex) {
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
@@ -241,12 +277,12 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
             return false;
         }
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
                 boolean result = _queueWithRetries(conn, msg.clone(), 0, this.maxRetries);
                 return result;
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(queue) Exception [" + e.getClass().getName() + "]: "
@@ -284,22 +320,24 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     protected boolean _requeueWithRetries(final Connection conn, final IQueueMessage msg,
             final int numRetries, final int maxRetries) throws SQLException {
         try {
-            startTransaction(conn);
+            jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
-            removeFromEphemeralStorage(jdbcTemplate, msg);
+            if (!isEphemeralDisabled()) {
+                removeFromEphemeralStorage(jdbcTemplate, msg);
+            }
             Date now = new Date();
             msg.qIncNumRequeues().qTimestamp(now);
             boolean result = putToQueueStorage(jdbcTemplate, msg);
 
-            commitTransaction(conn);
+            jdbcHelper.commitTransaction(conn);
             return result;
         } catch (DuplicateKeyException dke) {
             LOGGER.warn(dke.getMessage(), dke);
             return true;
-        } catch (PessimisticLockingFailureException ex) {
-            rollbackTransaction(conn);
+        } catch (ConcurrencyFailureException ex) {
+            jdbcHelper.rollbackTransaction(conn);
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
@@ -311,7 +349,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
                 return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
             }
         } catch (Exception e) {
-            rollbackTransaction(conn);
+            jdbcHelper.rollbackTransaction(conn);
             throw new QueueException(e);
         }
     }
@@ -325,12 +363,12 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
             return false;
         }
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
                 boolean result = _requeueWithRetries(conn, msg.clone(), 0, this.maxRetries);
                 return result;
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(requeue) Exception [" + e.getClass().getName() + "]: "
@@ -368,27 +406,29 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     protected boolean _requeueSilentWithRetries(final Connection conn, final IQueueMessage msg,
             final int numRetries, final int maxRetries) throws SQLException {
         try {
-            startTransaction(conn);
+            jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
-            removeFromEphemeralStorage(jdbcTemplate, msg);
+            if (!isEphemeralDisabled()) {
+                removeFromEphemeralStorage(jdbcTemplate, msg);
+            }
             boolean result = putToQueueStorage(jdbcTemplate, msg);
 
-            commitTransaction(conn);
+            jdbcHelper.commitTransaction(conn);
             return result;
         } catch (DuplicateKeyException dke) {
             LOGGER.warn(dke.getMessage(), dke);
             return true;
-        } catch (PessimisticLockingFailureException ex) {
-            rollbackTransaction(conn);
+        } catch (ConcurrencyFailureException ex) {
+            jdbcHelper.rollbackTransaction(conn);
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
                 return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
             }
         } catch (Exception e) {
-            rollbackTransaction(conn);
+            jdbcHelper.rollbackTransaction(conn);
             throw new QueueException(e);
         }
     }
@@ -402,12 +442,12 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
             return false;
         }
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
                 boolean result = _requeueSilentWithRetries(conn, msg.clone(), 0, this.maxRetries);
                 return result;
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(requeueSilent) Exception [" + e.getClass().getName() + "]: "
@@ -444,9 +484,11 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     protected void _finishWithRetries(final Connection conn, final IQueueMessage msg,
             final int numRetries, final int maxRetries) throws SQLException {
         try {
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-            removeFromEphemeralStorage(jdbcTemplate, msg);
-        } catch (PessimisticLockingFailureException ex) {
+            if (!isEphemeralDisabled()) {
+                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+                removeFromEphemeralStorage(jdbcTemplate, msg);
+            }
+        } catch (ConcurrencyFailureException ex) {
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
@@ -466,11 +508,11 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
             return;
         }
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
                 _finishWithRetries(conn, msg, 0, this.maxRetries);
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(finish) Exception [" + e.getClass().getName() + "]: "
@@ -507,7 +549,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     protected IQueueMessage _takeWithRetries(final Connection conn, final int numRetries,
             final int maxRetries) throws SQLException {
         try {
-            startTransaction(conn);
+            jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
@@ -515,45 +557,56 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
             IQueueMessage msg = readFromQueueStorage(jdbcTemplate);
             if (msg != null) {
                 result = result && removeFromQueueStorage(jdbcTemplate, msg);
-                try {
-                    result = result && putToEphemeralStorage(jdbcTemplate, msg);
-                } catch (DuplicateKeyException dke) {
-                    LOGGER.warn(dke.getMessage(), dke);
+                if (!isEphemeralDisabled()) {
+                    try {
+                        result = result && putToEphemeralStorage(jdbcTemplate, msg);
+                    } catch (DuplicateKeyException dke) {
+                        LOGGER.warn(dke.getMessage(), dke);
+                    }
                 }
             }
 
             if (result) {
-                commitTransaction(conn);
+                jdbcHelper.commitTransaction(conn);
                 return msg;
             } else {
-                rollbackTransaction(conn);
+                jdbcHelper.rollbackTransaction(conn);
                 return null;
             }
-        } catch (PessimisticLockingFailureException ex) {
-            rollbackTransaction(conn);
+        } catch (ConcurrencyFailureException ex) {
+            jdbcHelper.rollbackTransaction(conn);
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
                 return _takeWithRetries(conn, numRetries + 1, maxRetries);
             }
         } catch (Exception e) {
-            rollbackTransaction(conn);
+            jdbcHelper.rollbackTransaction(conn);
             throw new QueueException(e);
         }
     }
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.EphemeralIsFull
+     *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() {
+    public IQueueMessage take() throws QueueException.EphemeralIsFull {
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
+            if (!isEphemeralDisabled()) {
+                int ephemeralMaxSize = getEphemeralMaxSize();
+                if (ephemeralMaxSize > 0 && ephemeralSize(conn) >= ephemeralMaxSize) {
+                    throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
+                }
+            }
             try {
                 IQueueMessage result = _takeWithRetries(conn, 0, this.maxRetries);
                 return result;
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(take) Exception [" + e.getClass().getName() + "]: "
@@ -594,17 +647,15 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
             final long thresholdTimestampMs, final Connection conn, final int numRetries,
             final int maxRetries) throws SQLException {
         try {
-            startTransaction(conn);
+            jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
             Collection<IQueueMessage> msgs = getOrphanFromEphemeralStorage(jdbcTemplate,
                     thresholdTimestampMs);
-
-            commitTransaction(conn);
+            jdbcHelper.commitTransaction(conn);
             return msgs;
-        } catch (PessimisticLockingFailureException ex) {
-            rollbackTransaction(conn);
+        } catch (ConcurrencyFailureException ex) {
+            jdbcHelper.rollbackTransaction(conn);
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
@@ -612,7 +663,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
                         maxRetries);
             }
         } catch (Exception e) {
-            rollbackTransaction(conn);
+            jdbcHelper.rollbackTransaction(conn);
             throw new QueueException(e);
         }
     }
@@ -623,13 +674,13 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
                 Collection<IQueueMessage> result = _getOrphanMessagesWithRetries(
                         thresholdTimestampMs, conn, 0, this.maxRetries);
                 return result;
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(getOrphanMessages) Exception [" + e.getClass().getName() + "]: "
@@ -667,7 +718,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     protected boolean _moveFromEphemeralToQueueStorageWithRetries(final IQueueMessage msg,
             final Connection conn, final int numRetries, final int maxRetries) throws SQLException {
         try {
-            startTransaction(conn);
+            jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
             JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
@@ -676,14 +727,14 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
                 removeFromEphemeralStorage(jdbcTemplate, msg);
                 boolean result = putToQueueStorage(jdbcTemplate, msg);
 
-                commitTransaction(conn);
+                jdbcHelper.commitTransaction(conn);
                 return result;
             }
 
-            rollbackTransaction(conn);
+            jdbcHelper.rollbackTransaction(conn);
             return false;
-        } catch (PessimisticLockingFailureException ex) {
-            rollbackTransaction(conn);
+        } catch (ConcurrencyFailureException ex) {
+            jdbcHelper.rollbackTransaction(conn);
             if (numRetries > maxRetries) {
                 throw new QueueException(ex);
             } else {
@@ -691,7 +742,7 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
                         maxRetries);
             }
         } catch (Exception e) {
-            rollbackTransaction(conn);
+            jdbcHelper.rollbackTransaction(conn);
             throw new QueueException(e);
         }
     }
@@ -701,14 +752,17 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+        if (isEphemeralDisabled()) {
+            return true;
+        }
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
                 boolean result = _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0,
                         this.maxRetries);
                 return result;
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(moveFromEphemeralToQueueStorage) Exception ["
@@ -723,24 +777,45 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
     }
 
     /**
+     * Gets number of items currently in queue storage.
+     * 
+     * @param conn
+     * @return
+     * @since 0.5.0
+     */
+    protected int queueSize(Connection conn) {
+        JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+        Integer result = jdbcTemplate.queryForObject(SQL_COUNT, null, Integer.class);
+        return result != null ? result.intValue() : 0;
+    }
+
+    /**
+     * Gets number of items currently in ephemeral storage.
+     * 
+     * @param conn
+     * @return
+     * @since 0.5.0
+     */
+    protected int ephemeralSize(Connection conn) {
+        JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
+        Integer result = jdbcTemplate.queryForObject(SQL_COUNT_EPHEMERAL, null, Integer.class);
+        return result != null ? result.intValue() : 0;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public int queueSize() {
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-                Integer result = jdbcTemplate.queryForObject(SQL_COUNT, null, Integer.class);
-                return result != null ? result.intValue() : 0;
+                return queueSize(conn);
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
-            final String logMsg = "(queueSize) Exception [" + e.getClass().getName() + "]: "
-                    + e.getMessage();
-            LOGGER.error(logMsg, e);
-            return -1;
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -749,21 +824,18 @@ public abstract class JdbcQueue extends BaseJdbcDao implements IQueue, Closeable
      */
     @Override
     public int ephemeralSize() {
+        if (isEphemeralDisabled()) {
+            return 0;
+        }
         try {
-            Connection conn = connection();
+            Connection conn = jdbcHelper.getConnection();
             try {
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-                Integer result = jdbcTemplate.queryForObject(SQL_COUNT_EPHEMERAL, null,
-                        Integer.class);
-                return result != null ? result.intValue() : 0;
+                return ephemeralSize(conn);
             } finally {
-                returnConnection(conn);
+                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
-            final String logMsg = "(ephemeralSize) Exception [" + e.getClass().getName() + "]: "
-                    + e.getMessage();
-            LOGGER.error(logMsg, e);
-            return -1;
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 }

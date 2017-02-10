@@ -7,7 +7,7 @@ import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.UniversalKafkaQueue;
 import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
 
-public class QueueKafka {
+public class QndQueueKafka {
 
     private static void emptyQueue(IQueue queue) {
         IQueueMessage msg = queue.take();

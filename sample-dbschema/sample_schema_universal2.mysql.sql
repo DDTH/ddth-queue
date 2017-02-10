@@ -1,6 +1,6 @@
 -- Sample table schema for universal2 MySQL queue
 
-DROP TABLE IF EXISTS queue;
+DROP TABLE IF EXISTS queue2;
 CREATE TABLE queue (
     queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
@@ -10,8 +10,8 @@ CREATE TABLE queue (
     msg_content                 BLOB                                    COMMENT "Message's content"
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
 
-DROP TABLE IF EXISTS queue_ephemeral;
-CREATE TABLE queue_ephemeral (
+DROP TABLE IF EXISTS queue_ephemeral2;
+CREATE TABLE queue_ephemeral2 (
     queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     msg_org_timestamp           DATETIME            NOT NULL,

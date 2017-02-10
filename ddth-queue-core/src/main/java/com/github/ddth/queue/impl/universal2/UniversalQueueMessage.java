@@ -4,7 +4,7 @@ import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.github.ddth.queue.impl.BaseUniversalQueueMessage;
+import com.github.ddth.queue.impl.base.BaseUniversalQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
@@ -42,7 +42,8 @@ public class UniversalQueueMessage extends BaseUniversalQueueMessage {
      */
     @Override
     public String qId() {
-        return getAttribute(FIELD_QUEUE_ID, String.class);
+        Object qId = super.qId();
+        return qId != null ? qId.toString() : null;
     }
 
     /**
@@ -50,7 +51,8 @@ public class UniversalQueueMessage extends BaseUniversalQueueMessage {
      */
     @Override
     public UniversalQueueMessage qId(Object queueId) {
-        return (UniversalQueueMessage) setAttribute(FIELD_QUEUE_ID, queueId);
+        super.qId(queueId != null ? queueId.toString() : null);
+        return this;
     }
 
     /**

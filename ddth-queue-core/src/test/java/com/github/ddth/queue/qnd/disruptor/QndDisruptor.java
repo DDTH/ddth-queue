@@ -83,7 +83,7 @@ public class QndDisruptor {
     }
 
     public static void main(String[] args) throws Exception {
-        ringBuffer = RingBuffer.createSingleProducer(LongEvent.FACTORY, 2);
+        ringBuffer = RingBuffer.createSingleProducer(LongEvent.FACTORY, 4);
         consumedSeq = new Sequence();
         ringBuffer.addGatingSequences(consumedSeq);
         barrier = ringBuffer.newBarrier();

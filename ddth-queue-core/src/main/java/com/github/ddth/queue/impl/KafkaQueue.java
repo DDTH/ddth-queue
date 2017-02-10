@@ -1,6 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.io.Closeable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Properties;
@@ -12,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.github.ddth.kafka.KafkaClient;
 import com.github.ddth.kafka.KafkaClient.ProducerType;
 import com.github.ddth.kafka.KafkaMessage;
+import com.github.ddth.queue.IPartitionSupport;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -22,7 +22,7 @@ import com.github.ddth.queue.utils.QueueException;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.2
  */
-public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
+public abstract class KafkaQueue extends AbstractQueue {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaQueue.class);
 
@@ -34,6 +34,28 @@ public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
     private String consumerGroupId = "kafkaqueue-" + System.currentTimeMillis();
     private ProducerType producerType = ProducerType.SYNC_LEADER_ACK;
     private Properties producerProps, consumerProps;
+    private boolean sendAsync = true;
+
+    /**
+     * Sends message to Kafka asynchronously or not (default {@code true}).
+     * 
+     * @return
+     * @since 0.5.0
+     */
+    public boolean isSendAsync() {
+        return sendAsync;
+    }
+
+    /**
+     * Sends message to Kafka asynchronously or not.
+     * 
+     * @param value
+     * @return
+     */
+    public KafkaQueue setSendAsync(boolean value) {
+        this.sendAsync = value;
+        return this;
+    }
 
     public ProducerType getProducerType() {
         return producerType;
@@ -238,11 +260,18 @@ public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
      */
     protected boolean putToQueue(IQueueMessage msg) {
         byte[] msgData = serialize(msg);
-        Object qId = msg.qId();
-        KafkaMessage kMsg = qId != null ? new KafkaMessage(topicName, qId.toString(), msgData)
+        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).qPartitionKey()
+                : msg.qId();
+        if (pKey == null) {
+            pKey = msg.qId();
+        }
+        KafkaMessage kMsg = pKey != null ? new KafkaMessage(topicName, pKey.toString(), msgData)
                 : new KafkaMessage(topicName, msgData);
-        kafkaClient.sendMessage(producerType, kMsg);
-        return true;
+        if (sendAsync) {
+            return kafkaClient.sendMessageRaw(producerType, kMsg) != null;
+        } else {
+            return kafkaClient.sendMessage(producerType, kMsg) != null;
+        }
     }
 
     /**
@@ -271,7 +300,8 @@ public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(IQueueMessage msg) {
+    public boolean requeueSilent(IQueueMessage _msg) {
+        IQueueMessage msg = _msg.clone();
         return putToQueue(msg);
     }
 
@@ -326,4 +356,5 @@ public abstract class KafkaQueue implements IQueue, Closeable, AutoCloseable {
     public int ephemeralSize() {
         return -1;
     }
+
 }

@@ -1,8 +1,8 @@
 package com.github.ddth.queue.impl.universal2;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.BaseUniversalRocksDbQueue;
 import com.github.ddth.queue.impl.RocksDbQueue;
+import com.github.ddth.queue.impl.base.BaseUniversalRocksDbQueue;
 import com.github.ddth.queue.utils.QueueException;
 
 /**

@@ -1,10 +1,6 @@
 package com.github.ddth.queue.test.universal;
 
 import java.io.File;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.io.FileUtils;
 
@@ -15,7 +11,7 @@ import com.github.ddth.queue.impl.universal.UniversalRocksDbQueue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-public class TestRocksDbQueueLong extends BaseTest {
+public class TestRocksDbQueueLong extends BaseQueueLongTest {
     public TestRocksDbQueueLong(String testName) {
         super(testName);
     }
@@ -25,20 +21,14 @@ public class TestRocksDbQueueLong extends BaseTest {
     }
 
     @Override
-    protected IQueue initQueueInstance() {
-        NUM_SENT = new AtomicLong(0);
-        NUM_TAKEN = new AtomicLong(0);
-        SIGNAL = new AtomicBoolean(false);
-        SENT = new ConcurrentHashMap<Object, Object>();
-        RECEIVE = new ConcurrentHashMap<Object, Object>();
-
+    protected IQueue initQueueInstance() throws Exception {
+        // if (System.getProperty("skipTestsRocksDb") != null) {
+        // return null;
+        // }
         File tempDir = FileUtils.getTempDirectory();
         File testDir = new File(tempDir, String.valueOf(System.currentTimeMillis()));
-        // File testDir = new File(tempDir, this.getClass().getSimpleName());
-        // System.out.println(testDir);
-
         UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
-        queue.setStorageDir(testDir.getAbsolutePath()).init();
+        queue.setStorageDir(testDir.getAbsolutePath()).setEphemeralDisabled(false).init();
         return queue;
     }
 
@@ -52,158 +42,10 @@ public class TestRocksDbQueueLong extends BaseTest {
             throw new RuntimeException("[queue] is not closed!");
         }
     }
-    /*----------------------------------------------------------------------*/
 
-    private static AtomicLong NUM_SENT = new AtomicLong(0);
-    private static AtomicLong NUM_TAKEN = new AtomicLong(0);
-    private static AtomicBoolean SIGNAL = new AtomicBoolean(false);
-    private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
-    private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
-
-    // to make a very long queue
-    private final static int NUM_MSGS = 1024 * 1024;
-
-    @org.junit.Test
-    public void test1P1C() throws Exception {
-        int NUM_PRODUCERS = 1;
-        int NUM_CONSUMER = 1;
-
-        long t1 = System.currentTimeMillis();
-        Thread[] producers = createProducerThreads(NUM_PRODUCERS, NUM_MSGS / NUM_PRODUCERS,
-                NUM_SENT, SENT);
-        for (Thread t : producers) {
-            t.start();
-        }
-
-        while (NUM_SENT.get() < NUM_MSGS) {
-            Thread.sleep(1);
-        }
-
-        Thread[] consumers = createConsumerThreads(NUM_CONSUMER, SIGNAL, NUM_TAKEN, RECEIVE);
-        for (Thread t : consumers) {
-            t.start();
-        }
-
-        long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
-            Thread.sleep(1);
-            t = System.currentTimeMillis();
-        }
-        SIGNAL.set(true);
-        long d = t - t1;
-        boolean checkResult = SENT.equals(RECEIVE);
-        System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 1P / 1C");
-        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
-                + checkResult + " / Rate: " + d + "ms / "
-                + String.format("%,.1f", NUM_TAKEN.get() * 1000.0 / d) + " msg/s");
-        assertTrue(checkResult);
+    protected int numTestMessages() {
+        // to make a very long queue
+        return 1024 * 1024;
     }
 
-    @org.junit.Test
-    public void test1P4C() throws Exception {
-        int NUM_PRODUCERS = 1;
-        int NUM_CONSUMER = 4;
-
-        long t1 = System.currentTimeMillis();
-        Thread[] producers = createProducerThreads(NUM_PRODUCERS, NUM_MSGS / NUM_PRODUCERS,
-                NUM_SENT, SENT);
-        for (Thread t : producers) {
-            t.start();
-        }
-
-        while (NUM_SENT.get() < NUM_MSGS) {
-            Thread.sleep(1);
-        }
-
-        Thread[] consumers = createConsumerThreads(NUM_CONSUMER, SIGNAL, NUM_TAKEN, RECEIVE);
-        for (Thread t : consumers) {
-            t.start();
-        }
-
-        long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
-            Thread.sleep(1);
-            t = System.currentTimeMillis();
-        }
-        SIGNAL.set(true);
-        long d = t - t1;
-        boolean checkResult = SENT.equals(RECEIVE);
-        System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 1P / 4C");
-        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
-                + checkResult + " / Rate: " + d + "ms / "
-                + String.format("%,.1f", NUM_TAKEN.get() * 1000.0 / d) + " msg/s");
-        assertTrue(checkResult);
-    }
-
-    @org.junit.Test
-    public void test4P1C() throws Exception {
-        int NUM_PRODUCERS = 4;
-        int NUM_CONSUMER = 1;
-
-        long t1 = System.currentTimeMillis();
-        Thread[] producers = createProducerThreads(NUM_PRODUCERS, NUM_MSGS / NUM_PRODUCERS,
-                NUM_SENT, SENT);
-        for (Thread t : producers) {
-            t.start();
-        }
-
-        while (NUM_SENT.get() < NUM_MSGS) {
-            Thread.sleep(1);
-        }
-
-        Thread[] consumers = createConsumerThreads(NUM_CONSUMER, SIGNAL, NUM_TAKEN, RECEIVE);
-        for (Thread t : consumers) {
-            t.start();
-        }
-
-        long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
-            Thread.sleep(1);
-            t = System.currentTimeMillis();
-        }
-        SIGNAL.set(true);
-        long d = t - t1;
-        boolean checkResult = SENT.equals(RECEIVE);
-        System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 4P / 1C");
-        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
-                + checkResult + " / Rate: " + d + "ms / "
-                + String.format("%,.1f", NUM_TAKEN.get() * 1000.0 / d) + " msg/s");
-        assertTrue(checkResult);
-    }
-
-    @org.junit.Test
-    public void test4P4C() throws Exception {
-        int NUM_PRODUCERS = 4;
-        int NUM_CONSUMER = 4;
-
-        long t1 = System.currentTimeMillis();
-        Thread[] producers = createProducerThreads(NUM_PRODUCERS, NUM_MSGS / NUM_PRODUCERS,
-                NUM_SENT, SENT);
-        for (Thread t : producers) {
-            t.start();
-        }
-
-        while (NUM_SENT.get() < NUM_MSGS) {
-            Thread.sleep(1);
-        }
-
-        Thread[] consumers = createConsumerThreads(NUM_CONSUMER, SIGNAL, NUM_TAKEN, RECEIVE);
-        for (Thread t : consumers) {
-            t.start();
-        }
-
-        long t = System.currentTimeMillis();
-        while (NUM_TAKEN.get() < NUM_MSGS && t - t1 < 120000) {
-            Thread.sleep(1);
-            t = System.currentTimeMillis();
-        }
-        SIGNAL.set(true);
-        long d = t - t1;
-        boolean checkResult = SENT.equals(RECEIVE);
-        System.out.println("== [" + this.getClass().getSimpleName() + "] TEST - 4P / 4C");
-        System.out.println("  Msgs: " + NUM_MSGS + " / " + NUM_SENT + " / " + NUM_TAKEN + " / "
-                + checkResult + " / Rate: " + d + "ms / "
-                + String.format("%,.1f", NUM_TAKEN.get() * 1000.0 / d) + " msg/s");
-        assertTrue(checkResult);
-    }
 }

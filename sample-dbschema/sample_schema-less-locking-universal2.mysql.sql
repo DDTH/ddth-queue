@@ -1,7 +1,7 @@
 -- Sample table schema for less-locking universal2 MySQL queue
 
-DROP TABLE IF EXISTS queuell;
-CREATE TABLE queuell (
+DROP TABLE IF EXISTS queuell2;
+CREATE TABLE queuell2 (
     queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     ephemeral_id                VARCHAR(32),

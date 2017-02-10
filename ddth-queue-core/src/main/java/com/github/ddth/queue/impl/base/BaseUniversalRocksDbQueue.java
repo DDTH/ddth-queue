@@ -1,6 +1,7 @@
-package com.github.ddth.queue.impl;
+package com.github.ddth.queue.impl.base;
 
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.RocksDbQueue;
 import com.github.ddth.queue.utils.QueueException;
 
 /**

@@ -17,22 +17,32 @@ public class QueueSpec {
     private SortedMap<String, Object> fieldData = new TreeMap<String, Object>();
     public final static String FIELD_EPHEMERAL_DISABLED = "ephemeral_disabled";
     public final static String FIELD_MAX_SIZE = "max_size";
+    public final static String FIELD_EPHEMERAL_MAX_SIZE = "ephemeral_max_size";
 
     public QueueSpec() {
-        this(false, NO_BOUNDARY);
+        this(false, NO_BOUNDARY, NO_BOUNDARY);
     }
 
     public QueueSpec(boolean ephemeralDisabled) {
-        this(ephemeralDisabled, NO_BOUNDARY);
+        this(ephemeralDisabled, NO_BOUNDARY, NO_BOUNDARY);
     }
 
     public QueueSpec(int maxSize) {
-        this(false, maxSize);
+        this(false, maxSize, NO_BOUNDARY);
+    }
+
+    public QueueSpec(int maxSize, int ephemeralMaxSize) {
+        this(false, maxSize, ephemeralMaxSize);
     }
 
     public QueueSpec(boolean ephemeralDisabled, int maxSize) {
+        this(false, maxSize, NO_BOUNDARY);
+    }
+
+    public QueueSpec(boolean ephemeralDisabled, int maxSize, int ephemeralMaxSize) {
         setField(FIELD_EPHEMERAL_DISABLED, ephemeralDisabled);
         setField(FIELD_MAX_SIZE, maxSize);
+        setField(FIELD_EPHEMERAL_MAX_SIZE, ephemeralMaxSize);
     }
 
     /**

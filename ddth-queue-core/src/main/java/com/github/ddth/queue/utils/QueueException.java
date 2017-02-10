@@ -1,5 +1,7 @@
 package com.github.ddth.queue.utils;
 
+import java.text.MessageFormat;
+
 /**
  * Thrown to indicate that there has been an error with queue oeration.
  * 
@@ -31,6 +33,53 @@ public class QueueException extends RuntimeException {
     }
 
     /*----------------------------------------------------------------------*/
+
+    /**
+     * Thrown to indicate that the queue implementation does not support the
+     * invoked operation.
+     * 
+     * @author Thanh Nguyen <btnguyen2k@gmail.com>
+     * @since 0.5.0
+     */
+    public static class OperationNotSupported extends QueueException {
+        private static final long serialVersionUID = 1L;
+
+        public OperationNotSupported() {
+        }
+
+        public OperationNotSupported(String msg) {
+            super(msg);
+        }
+    }
+
+    /**
+     * Thrown to indicate that the queue storage is full.
+     * 
+     * @author Thanh Nguyen <btnguyen2k@gmail.com>
+     * @since 0.5.0
+     */
+    public static class QueueIsFull extends QueueException {
+        private static final long serialVersionUID = 1L;
+
+        public QueueIsFull(int maxSize) {
+            super(MessageFormat.format("Queue storage is full (max size: {0})!", maxSize));
+        }
+    }
+
+    /**
+     * Thrown to indicate that the ephemeral storage is full.
+     * 
+     * @author Thanh Nguyen <btnguyen2k@gmail.com>
+     * @since 0.5.0
+     */
+    public static class EphemeralIsFull extends QueueException {
+        private static final long serialVersionUID = 1L;
+
+        public EphemeralIsFull(int maxSize) {
+            super(MessageFormat.format("Ephemeral storage is full (max size: {0})!", maxSize));
+        }
+    }
+
     /**
      * Thrown to indicate that the queue message can not be serialized.
      * 

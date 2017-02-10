@@ -1,10 +1,12 @@
 package com.github.ddth.queue.impl.universal;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Date;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.github.ddth.queue.impl.BaseUniversalQueueMessage;
+import com.github.ddth.queue.impl.base.BaseUniversalQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
@@ -44,22 +46,39 @@ public class UniversalQueueMessage extends BaseUniversalQueueMessage {
      */
     @Override
     public Long qId() {
-        Long value = getAttribute(FIELD_QUEUE_ID, Long.class);
-        return value != null ? value : ZERO;
+        Object qId = super.qId();
+        if (qId instanceof Number) {
+            return ((Number) qId).longValue();
+        }
+        if (qId instanceof BigInteger) {
+            return ((BigInteger) qId).longValue();
+        }
+        if (qId instanceof BigDecimal) {
+            return ((BigDecimal) qId).longValue();
+        }
+        return ZERO;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public UniversalQueueMessage qId(Object queueId) {
-        long value = (queueId instanceof Number) ? ((Number) queueId).longValue() : 0;
-        return (UniversalQueueMessage) setAttribute(FIELD_QUEUE_ID, value);
+    public UniversalQueueMessage qId(Object qId) {
+        if (qId instanceof Number) {
+            super.qId(((Number) qId).longValue());
+        } else if (qId instanceof BigInteger) {
+            super.qId(((BigInteger) qId).longValue());
+        } else if (qId instanceof BigDecimal) {
+            super.qId(((BigDecimal) qId).longValue());
+        } else {
+            super.qId(ZERO);
+        }
+        return this;
     }
 
     /**
      * Deserializes from a {@code byte[]}.
-     * 
+     *
      * @param msgData
      * @return
      * @since 0.3.2
@@ -72,7 +91,7 @@ public class UniversalQueueMessage extends BaseUniversalQueueMessage {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
         msg.content("content".getBytes());
 
@@ -81,7 +100,7 @@ public class UniversalQueueMessage extends BaseUniversalQueueMessage {
         System.out.println("Content: " + new String(msg.content()));
 
         byte[] data = msg.toBytes();
-        msg = UniversalQueueMessage.fromBytes(data);
+        msg = BaseUniversalQueueMessage.fromBytes(data, UniversalQueueMessage.class);
 
         String json2 = msg.toJson();
         System.out.println("Json: " + json2);

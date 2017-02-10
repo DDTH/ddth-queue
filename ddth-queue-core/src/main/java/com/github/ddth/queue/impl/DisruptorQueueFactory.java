@@ -21,17 +21,18 @@ public abstract class DisruptorQueueFactory<T extends DisruptorQueue>
         if (ephemeralDisabled != null) {
             queue.setEphemeralDisabled(ephemeralDisabled.booleanValue());
         }
+
         Integer maxSize = spec.getField(QueueSpec.FIELD_MAX_SIZE, Integer.class);
         if (maxSize != null) {
             queue.setRingSize(maxSize.intValue());
         }
-        queue.init();
-    }
 
-    @Override
-    protected boolean disposeQueue(T queue) {
-        disposeQueue(queue);
-        return true;
+        Integer maxEphemeralSize = spec.getField(QueueSpec.FIELD_EPHEMERAL_MAX_SIZE, Integer.class);
+        if (maxEphemeralSize != null) {
+            queue.setEphemeralMaxSize(maxEphemeralSize.intValue());
+        }
+
+        queue.init();
     }
 
 }

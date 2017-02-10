@@ -1,7 +1,7 @@
 package com.github.ddth.queue.impl.universal;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.BaseUniversalInmemQueue;
+import com.github.ddth.queue.impl.base.BaseUniversalInmemQueue;
 
 /**
  * Universal in-memory implementation of {@link IQueue}.

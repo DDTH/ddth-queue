@@ -1,6 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.io.Closeable;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -14,6 +13,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.QueueSpec;
+import com.github.ddth.queue.utils.QueueException;
 
 /**
  * In-Memory implementation of {@link IQueue}.
@@ -29,53 +30,21 @@ import com.github.ddth.queue.IQueueMessage;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.0
  */
-public class InmemQueue implements IQueue, Closeable, AutoCloseable {
+public class InmemQueue extends AbstractEphemeralSupportQueue {
 
     private Queue<IQueueMessage> queue;
     private ConcurrentMap<Object, IQueueMessage> ephemeralStorage;
-    private boolean ephemeralDisabled = false;
 
     /**
      * A value less than {@code 1} mean "no boundary".
      */
-    private int boundary = -1;
+    private int boundary = QueueSpec.NO_BOUNDARY;
 
     public InmemQueue() {
     }
 
     public InmemQueue(int boundary) {
         setBoundary(boundary);
-    }
-
-    /**
-     * Is ephemeral storage disabled?
-     * 
-     * @return
-     */
-    public boolean getEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    /**
-     * Is ephemeral storage disabled?
-     * 
-     * @return
-     */
-    public boolean isEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    /**
-     * Disables/Enables ephemeral storage.
-     * 
-     * @param ephemeralDisabled
-     *            {@code true} to disable ephemeral storage, {@code false}
-     *            otherwise.
-     * @return
-     */
-    public InmemQueue setEphemeralDisabled(boolean ephemeralDisabled) {
-        this.ephemeralDisabled = ephemeralDisabled;
-        return this;
     }
 
     /**
@@ -134,7 +103,7 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     public InmemQueue init() {
         queue = createQueue(boundary);
-        if (!ephemeralDisabled) {
+        if (!isEphemeralDisabled()) {
             ephemeralStorage = new ConcurrentHashMap<>();
         }
         return this;
@@ -144,6 +113,7 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      * Destroy method.
      */
     public void destroy() {
+        // EMPTY
     }
 
     /**
@@ -155,55 +125,66 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
     }
 
     /**
-     * Puts a message to the internal queue.
+     * Puts a message to the queue buffer.
      * 
      * @param msg
-     * @return
+     * @throws QueueException.QueueIsFull
+     *             if the ring buffer is full
+     * 
      */
-    protected boolean putToQueue(IQueueMessage msg) {
-        return queue.offer(msg);
+    protected void putToQueue(IQueueMessage msg) throws QueueException.QueueIsFull {
+        if (!queue.offer(msg)) {
+            throw new QueueException.QueueIsFull(getBoundary());
+        }
     }
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.QueueIsFull
+     *             if queue buffer is full
      */
     @Override
-    public boolean queue(IQueueMessage _msg) {
+    public boolean queue(IQueueMessage _msg) throws QueueException.QueueIsFull {
         IQueueMessage msg = _msg.clone();
         Date now = new Date();
         msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
-        return putToQueue(msg);
+        putToQueue(msg);
+        return true;
     }
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.QueueIsFull
+     *             if queue buffer is full
      */
     @Override
-    public boolean requeue(IQueueMessage _msg) {
+    public boolean requeue(IQueueMessage _msg) throws QueueException.QueueIsFull {
         IQueueMessage msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
-        if (putToQueue(msg)) {
-            if (!ephemeralDisabled) {
-                ephemeralStorage.remove(msg.qId());
-            }
-            return true;
+        putToQueue(msg);
+        if (!isEphemeralDisabled()) {
+            ephemeralStorage.remove(msg.qId());
         }
-        return false;
+        return true;
     }
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.QueueIsFull
+     *             if queue buffer is full
      */
     @Override
-    public boolean requeueSilent(IQueueMessage msg) {
-        if (putToQueue(msg)) {
-            if (!ephemeralDisabled) {
-                ephemeralStorage.remove(msg.qId());
-            }
-            return true;
+    public boolean requeueSilent(IQueueMessage _msg) throws QueueException.QueueIsFull {
+        IQueueMessage msg = _msg.clone();
+        putToQueue(msg);
+        if (!isEphemeralDisabled()) {
+            ephemeralStorage.remove(msg.qId());
         }
-        return false;
+        return true;
     }
 
     /**
@@ -211,7 +192,7 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public void finish(IQueueMessage msg) {
-        if (!ephemeralDisabled) {
+        if (!isEphemeralDisabled()) {
             ephemeralStorage.remove(msg.qId());
         }
     }
@@ -227,11 +208,20 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.EphemeralIsFull
+     *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() {
+    public IQueueMessage take() throws QueueException.EphemeralIsFull {
+        if (!isEphemeralDisabled()) {
+            int ephemeralMaxSize = getEphemeralMaxSize();
+            if (ephemeralMaxSize > 0 && ephemeralStorage.size() >= ephemeralMaxSize) {
+                throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
+            }
+        }
         IQueueMessage msg = takeFromQueue();
-        if (msg != null && !ephemeralDisabled) {
+        if (msg != null && !isEphemeralDisabled()) {
             ephemeralStorage.putIfAbsent(msg.qId(), msg);
         }
         return msg;
@@ -245,7 +235,7 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
-        if (ephemeralDisabled) {
+        if (isEphemeralDisabled()) {
             return null;
         }
         Collection<IQueueMessage> orphanMessages = new HashSet<>();
@@ -264,17 +254,19 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage _msg) {
-        if (!ephemeralDisabled) {
+        if (!isEphemeralDisabled()) {
             IQueueMessage msg = ephemeralStorage.remove(_msg.qId());
             if (msg != null) {
-                if (putToQueue(msg)) {
+                try {
+                    putToQueue(msg);
                     return true;
-                } else {
+                } catch (QueueException.QueueIsFull e) {
                     ephemeralStorage.putIfAbsent(msg.qId(), msg);
+                    return false;
                 }
             }
         }
-        return false;
+        return true;
     }
 
     /**
@@ -290,6 +282,6 @@ public class InmemQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public int ephemeralSize() {
-        return ephemeralDisabled ? -1 : ephemeralStorage.size();
+        return !isEphemeralDisabled() ? ephemeralStorage.size() : 0;
     }
 }

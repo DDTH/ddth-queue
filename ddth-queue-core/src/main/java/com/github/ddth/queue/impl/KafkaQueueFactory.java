@@ -100,21 +100,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue> extends AbstractQu
         try {
             queue.init();
         } catch (Exception e) {
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
-            }
+            throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean disposeQueue(T queue) {
-        queue.destroy();
-        return true;
     }
 
 }

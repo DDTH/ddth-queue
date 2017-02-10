@@ -1,6 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.io.Closeable;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
@@ -9,6 +8,7 @@ import java.util.Set;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.utils.QueueException;
 import com.github.ddth.queue.utils.QueueUtils;
 
 import redis.clients.jedis.Jedis;
@@ -35,7 +35,7 @@ import redis.clients.jedis.Transaction;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.1
  */
-public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
+public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
 
     private JedisPool jedisPool;
     private boolean myOwnJedisPool = true;
@@ -49,42 +49,6 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
 
     private String _redisSortedSetName = "queue_s";
     private byte[] redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
-
-    private boolean ephemeralDisabled = false;
-
-    /**
-     * Is ephemeral storage disabled?
-     * 
-     * @return
-     * @since 0.4.0
-     */
-    public boolean getEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    /**
-     * Is ephemeral storage disabled?
-     * 
-     * @return
-     * @since 0.4.0
-     */
-    public boolean isEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    /**
-     * Disables/Enables ephemeral storage.
-     * 
-     * @param ephemeralDisabled
-     *            {@code true} to disable ephemeral storage, {@code false}
-     *            otherwise.
-     * @return
-     * @since 0.4.0
-     */
-    public RedisQueue setEphemeralDisabled(boolean ephemeralDisabled) {
-        this.ephemeralDisabled = ephemeralDisabled;
-        return this;
-    }
 
     /**
      * Redis' host and port scheme (format {@code host:port}).
@@ -172,7 +136,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
             myOwnJedisPool = true;
         }
 
-        if (ephemeralDisabled) {
+        if (isEphemeralDisabled()) {
             SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
                     + "local qcontent=redis.call(\"hget\", \"{2}\", qid); "
                     + "redis.call(\"hdel\", \"{2}\", qid); return qcontent "
@@ -235,7 +199,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      * @return
      */
     protected boolean remove(IQueueMessage msg) {
-        if (ephemeralDisabled) {
+        if (isEphemeralDisabled()) {
             return true;
         }
         try (Jedis jedis = jedisPool.getResource()) {
@@ -312,7 +276,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
         IQueueMessage msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
-        return ephemeralDisabled ? storeNew(msg) : storeOld(msg);
+        return isEphemeralDisabled() ? storeNew(msg) : storeOld(msg);
     }
 
     /**
@@ -320,7 +284,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean requeueSilent(IQueueMessage msg) {
-        return ephemeralDisabled ? storeNew(msg) : storeOld(msg);
+        return isEphemeralDisabled() ? storeNew(msg.clone()) : storeOld(msg.clone());
     }
 
     /**
@@ -328,16 +292,23 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public void finish(IQueueMessage msg) {
-        if (!ephemeralDisabled) {
-            remove(msg);
-        }
+        remove(msg);
     }
 
     /**
      * {@inheritDoc}
+     * 
+     * @throws QueueException.EphemeralIsFull
+     *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() {
+    public IQueueMessage take() throws QueueException.EphemeralIsFull {
+        if (!isEphemeralDisabled()) {
+            int ephemeralMaxSize = getEphemeralMaxSize();
+            if (ephemeralMaxSize > 0 && ephemeralSize() >= ephemeralMaxSize) {
+                throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
+            }
+        }
         try (Jedis jedis = jedisPool.getResource()) {
             long timestamp = System.currentTimeMillis();
             Object response = jedis.eval(SCRIPT_TAKE, 0, String.valueOf(timestamp));
@@ -357,12 +328,11 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
-        if (ephemeralDisabled) {
+        if (isEphemeralDisabled()) {
             return null;
         }
         try (Jedis jedis = jedisPool.getResource()) {
             Collection<IQueueMessage> result = new HashSet<IQueueMessage>();
-
             byte[] min = "0".getBytes();
             byte[] max = String.valueOf(thresholdTimestampMs).getBytes();
             Set<byte[]> fields = jedis.zrangeByScore(redisSortedSetName, min, max, 0, 100);
@@ -373,7 +343,6 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
                     result.add(msg);
                 }
             }
-
             return result;
         }
     }
@@ -383,7 +352,7 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
-        if (ephemeralDisabled) {
+        if (isEphemeralDisabled()) {
             return true;
         }
         try (Jedis jedis = jedisPool.getResource()) {
@@ -408,8 +377,8 @@ public abstract class RedisQueue implements IQueue, Closeable, AutoCloseable {
      */
     @Override
     public int ephemeralSize() {
-        if (ephemeralDisabled) {
-            return -1;
+        if (isEphemeralDisabled()) {
+            return 0;
         }
         try (Jedis jedis = jedisPool.getResource()) {
             Long result = jedis.zcard(redisSortedSetName);

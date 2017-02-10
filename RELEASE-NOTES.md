@@ -1,6 +1,18 @@
 ddth-queue release notes
 ========================
 
+0.5.0 - 2017-02-10
+------------------
+
+- Bump to `com.github.ddth:ddth-parent:6`, now requires Java 8+.
+- Upgrade RocksDb version to 5.0.1, LMAX Disruptor to 3.3.6, ddtj-kafka to 1.3.2
+- Refactor & Enhancements:
+  - New interface `IPartitionSupport`
+  - New abstract classes `AbstractQueue` and `AbstractEphemeralSupportQueue`
+  - Move base class for universal queues to a separated package `com.github.ddth.queue.impl.base`
+- Add more unit tests.
+
+
 0.4.2 - 2016-06-23
 ------------------
 

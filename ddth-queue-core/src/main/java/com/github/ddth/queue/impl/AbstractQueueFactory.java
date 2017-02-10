@@ -3,11 +3,10 @@ package com.github.ddth.queue.impl;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueFactory;
 import com.github.ddth.queue.QueueSpec;
 
-public abstract class AbstractQueueFactory<T extends IQueue> implements IQueueFactory {
+public abstract class AbstractQueueFactory<T extends AbstractQueue> implements IQueueFactory {
 
     protected ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<QueueSpec, T>();
 
@@ -59,10 +58,13 @@ public abstract class AbstractQueueFactory<T extends IQueue> implements IQueueFa
         return queue;
     }
 
-    protected abstract boolean disposeQueue(T queue);
+    protected void disposeQueue(T queue) {
+        queue.destroy();
+    }
 
-    protected boolean disposeQueue(QueueSpec id, T queue) {
-        return queueInstances.remove(id, queue);
+    protected void disposeQueue(QueueSpec id, T queue) {
+        queueInstances.remove(id, queue);
+        disposeQueue(queue);
     }
 
     /**
