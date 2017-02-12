@@ -1,4 +1,4 @@
-package com.github.ddth.queue.test.universal;
+package com.github.ddth.queue.test.universal2;
 
 import java.util.Collection;
 
@@ -9,7 +9,7 @@ import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.AbstractEphemeralSupportQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal2.UniversalQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 import junit.framework.TestCase;

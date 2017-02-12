@@ -1,4 +1,4 @@
-package com.github.ddth.queue.test.universal;
+package com.github.ddth.queue.test.universal2;
 
 import java.io.File;
 
@@ -6,22 +6,21 @@ import org.apache.commons.io.FileUtils;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RocksDbQueue;
-import com.github.ddth.queue.impl.universal.UniversalRocksDbQueue;
+import com.github.ddth.queue.impl.universal2.UniversalRocksDbQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-public class TestRocksDbQueueLong extends BaseQueueLongTest {
-    public TestRocksDbQueueLong(String testName) {
+public class TestRocksDbQueue1 extends BaseQueueFunctionalTest {
+    public TestRocksDbQueue1(String testName) {
         super(testName);
     }
 
     public static Test suite() {
-        return new TestSuite(TestRocksDbQueueLong.class);
+        return new TestSuite(TestRocksDbQueue1.class);
     }
 
-    @Override
-    protected IQueue initQueueInstance() throws Exception {
+    protected IQueue initQueueInstance(int ephemeralMaxSize) throws Exception {
         if (System.getProperty("enableTestsRocksDb") == null
                 && System.getProperty("enableTestsRocksDB") == null) {
             return null;
@@ -29,24 +28,17 @@ public class TestRocksDbQueueLong extends BaseQueueLongTest {
         File tempDir = FileUtils.getTempDirectory();
         File testDir = new File(tempDir, String.valueOf(System.currentTimeMillis()));
         UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
-        queue.setStorageDir(testDir.getAbsolutePath()).setEphemeralDisabled(false).init();
+        queue.setStorageDir(testDir.getAbsolutePath()).setEphemeralDisabled(false)
+                .setEphemeralMaxSize(ephemeralMaxSize).init();
         return queue;
     }
 
-    @Override
     protected void destroyQueueInstance(IQueue queue) {
         if (queue instanceof RocksDbQueue) {
-            File dir = new File(((RocksDbQueue) queue).getStorageDir());
             ((RocksDbQueue) queue).destroy();
-            FileUtils.deleteQuietly(dir);
         } else {
             throw new RuntimeException("[queue] is not closed!");
         }
-    }
-
-    protected int numTestMessages() {
-        // to make a very long queue
-        return 1024 * 1024;
     }
 
 }

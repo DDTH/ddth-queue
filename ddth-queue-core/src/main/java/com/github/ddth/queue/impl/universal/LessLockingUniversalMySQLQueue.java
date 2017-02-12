@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -236,7 +237,7 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
     @Override
     protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             long thresholdTimestampMs) {
-        final Date threshold = new Date(thresholdTimestampMs);
+        final Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
         List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_GET_ORPHAN_MSGS,
                 threshold);
         if (dbRows != null && dbRows.size() > 0) {
@@ -249,7 +250,7 @@ public class LessLockingUniversalMySQLQueue extends JdbcQueue {
             }
             return result;
         }
-        return null;
+        return Arrays.asList();
     }
 
     /**

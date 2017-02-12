@@ -1,7 +1,7 @@
 -- Sample table schema for universal2 MySQL queue
 
 DROP TABLE IF EXISTS queue2;
-CREATE TABLE queue (
+CREATE TABLE queue2 (
     queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     msg_org_timestamp           DATETIME            NOT NULL            COMMENT "Message's original timestamp; when requeued original timestamp will not be changed",

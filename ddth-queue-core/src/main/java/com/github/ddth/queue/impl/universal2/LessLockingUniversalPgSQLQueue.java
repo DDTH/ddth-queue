@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -33,7 +34,8 @@ import com.github.ddth.queue.utils.QueueUtils;
  * <ul>
  * <li>{@code queue_id}: {@code varchar(32)}, see {@link IQueueMessage#qId()},
  * {@link #COL_QUEUE_ID}</li>
- * <li>{@code ephemeral_id}: {@code varchar(32)}, see {@link #COL_EPHEMERAL_ID}</li>
+ * <li>{@code ephemeral_id}: {@code varchar(32)}, see {@link #COL_EPHEMERAL_ID}
+ * </li>
  * <li>{@code msg_org_timestamp}: {@code datetime}, see
  * {@link IQueueMessage#qOriginalTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
  * <li>{@code msg_timestamp}: {@code datetime}, see
@@ -129,20 +131,20 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
 
         SQL_READ_BY_EPHEMERAL_ID = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE {6}=?";
         SQL_READ_BY_EPHEMERAL_ID = MessageFormat.format(SQL_READ_BY_EPHEMERAL_ID, getTableName(),
-                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT, COL_EPHEMERAL_ID);
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT, COL_EPHEMERAL_ID);
 
         SQL_GET_ORPHAN_MSGS = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE " + COL_EPHEMERAL_ID
                 + " IS NOT null AND " + COL_TIMESTAMP + "<?";
         SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS, getTableNameEphemeral(),
-                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT);
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT);
 
         SQL_PUT_NEW_TO_QUEUE = "INSERT INTO {0} ({1}, {2}, {3}, {4}) VALUES (?, ?, ?, ?)";
         SQL_PUT_NEW_TO_QUEUE = MessageFormat.format(SQL_PUT_NEW_TO_QUEUE, getTableName(),
@@ -196,9 +198,9 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
     @Override
     protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             long thresholdTimestampMs) {
-        final Date threshold = new Date(thresholdTimestampMs);
-        List<Map<String, Object>> dbRows = jdbcTemplate
-                .queryForList(SQL_GET_ORPHAN_MSGS, threshold);
+        final Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
+        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_GET_ORPHAN_MSGS,
+                threshold);
         if (dbRows != null && dbRows.size() > 0) {
             Collection<IQueueMessage> result = new ArrayList<IQueueMessage>();
             for (Map<String, Object> dbRow : dbRows) {
@@ -209,7 +211,7 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
             }
             return result;
         }
-        return null;
+        return Arrays.asList();
     }
 
     /**
@@ -399,8 +401,8 @@ public class LessLockingUniversalPgSQLQueue extends JdbcQueue {
             String ephemeralId = QueueUtils.IDGEN.generateId128Hex();
             int numRows = jdbcTemplate.update(SQL_UPDATE_EPHEMERAL_ID_TAKE, ephemeralId);
             if (numRows > 0) {
-                List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(
-                        SQL_READ_BY_EPHEMERAL_ID, ephemeralId);
+                List<Map<String, Object>> dbRows = jdbcTemplate
+                        .queryForList(SQL_READ_BY_EPHEMERAL_ID, ephemeralId);
                 if (dbRows != null && dbRows.size() > 0) {
                     Map<String, Object> dbRow = dbRows.get(0);
                     // ensureContentIsByteArray(dbRow);

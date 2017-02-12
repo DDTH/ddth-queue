@@ -673,6 +673,9 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+        if (isEphemeralDisabled()) {
+            return null;
+        }
         try {
             Connection conn = jdbcHelper.getConnection();
             try {

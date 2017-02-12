@@ -2,6 +2,7 @@ package com.github.ddth.queue.impl.universal;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -83,7 +84,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
     public final static String COL_CONTENT = "msg_content";
 
     private boolean fifo = true;
-    private boolean ephemeralDisabled = false;
 
     /**
      * When set to {@code true}, queue message with lower id is ensured to be
@@ -131,24 +131,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
      */
     public boolean getFifo() {
         return fifo;
-    }
-
-    public UniversalJdbcQueue setEphemeralDisabled(boolean ephemeralDisabled) {
-        this.ephemeralDisabled = ephemeralDisabled;
-        return this;
-    }
-
-    public UniversalJdbcQueue markEphemeralDisabled(boolean setEphemeralDisabled) {
-        this.ephemeralDisabled = setEphemeralDisabled;
-        return this;
-    }
-
-    public boolean isEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    public boolean getEphemeralDisabled() {
-        return ephemeralDisabled;
     }
 
     /*----------------------------------------------------------------------*/
@@ -245,9 +227,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
     @Override
     protected UniversalQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             IQueueMessage msg) {
-        if (ephemeralDisabled) {
-            return null;
-        }
         List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_READ_FROM_EPHEMERAL,
                 msg.qId());
         if (dbRows != null && dbRows.size() > 0) {
@@ -265,10 +244,7 @@ public class UniversalJdbcQueue extends JdbcQueue {
     @Override
     protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             long thresholdTimestampMs) {
-        if (ephemeralDisabled) {
-            return null;
-        }
-        final Date threshold = new Date(thresholdTimestampMs);
+        final Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
         List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_GET_ORPHAN_MSGS,
                 threshold);
         if (dbRows != null && dbRows.size() > 0) {
@@ -281,7 +257,7 @@ public class UniversalJdbcQueue extends JdbcQueue {
             }
             return result;
         }
-        return null;
+        return Arrays.asList();
     }
 
     /**
@@ -312,10 +288,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
      */
     @Override
     protected boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
-        if (ephemeralDisabled) {
-            return true;
-        }
-
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");
@@ -347,10 +319,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
      */
     @Override
     protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
-        if (ephemeralDisabled) {
-            return true;
-        }
-
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");

@@ -11,13 +11,13 @@ import com.github.ddth.queue.impl.universal.UniversalRocksDbQueue;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-public class TestRocksDbQueueLong extends BaseQueueLongTest {
-    public TestRocksDbQueueLong(String testName) {
+public class TestRocksDbQueueLongEphemeralDisabled extends BaseQueueLongTest {
+    public TestRocksDbQueueLongEphemeralDisabled(String testName) {
         super(testName);
     }
 
     public static Test suite() {
-        return new TestSuite(TestRocksDbQueueLong.class);
+        return new TestSuite(TestRocksDbQueueLongEphemeralDisabled.class);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class TestRocksDbQueueLong extends BaseQueueLongTest {
         File tempDir = FileUtils.getTempDirectory();
         File testDir = new File(tempDir, String.valueOf(System.currentTimeMillis()));
         UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
-        queue.setStorageDir(testDir.getAbsolutePath()).setEphemeralDisabled(false).init();
+        queue.setStorageDir(testDir.getAbsolutePath()).setEphemeralDisabled(true).init();
         return queue;
     }
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -58,7 +59,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
     private RocksDbWrapper rocksDbWrapper;
     private WriteBatch batchPutToQueue, batchTake;
     private ColumnFamilyHandle cfQueue, cfMetadata, cfEphemeral;
-    private RocksIterator itQueue;
+    private RocksIterator itQueue, itEphemeral;
 
     /**
      * RocksDB's storage directory.
@@ -177,6 +178,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
             cfQueue = rocksDbWrapper.getColumnFamilyHandle(cfNameQueue);
 
             itQueue = rocksDbWrapper.getIterator(cfNameQueue);
+            itEphemeral = rocksDbWrapper.getIterator(cfNameEphemeral);
             lastFetchedId = loadLastFetchedId();
         } catch (Exception e) {
             destroy();
@@ -362,14 +364,27 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
     }
 
     /**
-     * This method throws {@link QueueException.OperationNotSupported}.
-     * 
-     * @return
+     * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs)
-            throws QueueException.OperationNotSupported {
-        throw new QueueException.OperationNotSupported();
+    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+        if (isEphemeralDisabled()) {
+            return null;
+        }
+        synchronized (itEphemeral) {
+            Collection<IQueueMessage> orphanMessages = new HashSet<>();
+            long now = System.currentTimeMillis();
+            itEphemeral.seekToFirst();
+            while (itEphemeral.isValid()) {
+                byte[] value = itEphemeral.value();
+                IQueueMessage msg = deserialize(value);
+                if (msg.qTimestamp().getTime() + thresholdTimestampMs < now) {
+                    orphanMessages.add(msg);
+                }
+                itEphemeral.next();
+            }
+            return orphanMessages;
+        }
     }
 
     /**

@@ -111,8 +111,15 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
     }
 
     /*----------------------------------------------------------------------*/
+    /**
+     * LUA script to take a message out of queue.
+     */
+    private String SCRIPT_TAKE;
 
-    private String SCRIPT_TAKE, SCRIPT_MOVE;
+    /**
+     * LUA script to move a message from ephemeral storage to queue storage.
+     */
+    private String SCRIPT_MOVE;
 
     /**
      * Init method.
@@ -137,11 +144,25 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
         }
 
         if (isEphemeralDisabled()) {
+            /*
+             * Script details (ephemeral is disabled): lpop qId from the List
+             * and hget message's content from the Hash and remove it from the
+             * Hash, atomically. Finally, the message's content is returned.
+             * 
+             * Script's first argument (ARGV[1]) is the qId's associated
+             * timestamp to be used as score value for the SortedSet entry.
+             */
             SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
                     + "local qcontent=redis.call(\"hget\", \"{2}\", qid); "
                     + "redis.call(\"hdel\", \"{2}\", qid); return qcontent "
                     + "else return nil end";
         } else {
+            /*
+             * Script details (ephemeral is enabled): lpop qId from the List and
+             * zadd {ARGV[1]:qId} to the SortedSet and hget message's content
+             * from the Hash, atomically. Finally, the message's content is
+             * returned.
+             */
             SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
                     + "redis.call(\"zadd\", \"{1}\", ARGV[1], qid); return redis.call(\"hget\", \"{2}\", qid) "
                     + "else return nil end";
@@ -149,6 +170,12 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
         SCRIPT_TAKE = MessageFormat.format(SCRIPT_TAKE, _redisListName, _redisSortedSetName,
                 _redisHashName);
 
+        /*
+         * Script details: remove qId from the SortedSet and rpush it to the
+         * List, atomically.
+         * 
+         * Script's first argument (ARGV[1]) is qId.
+         */
         SCRIPT_MOVE = "local result=redis.call(\"zrem\",\"{0}\",ARGV[1]); if result then "
                 + "redis.call(\"rpush\", \"{1}\",  ARGV[1]); return 1; else return 0; end";
         SCRIPT_MOVE = MessageFormat.format(SCRIPT_MOVE, _redisSortedSetName, _redisListName);
@@ -310,8 +337,8 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
             }
         }
         try (Jedis jedis = jedisPool.getResource()) {
-            long timestamp = System.currentTimeMillis();
-            Object response = jedis.eval(SCRIPT_TAKE, 0, String.valueOf(timestamp));
+            long now = System.currentTimeMillis();
+            Object response = jedis.eval(SCRIPT_TAKE, 0, String.valueOf(now));
             if (response == null) {
                 return null;
             }
@@ -322,9 +349,6 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
 
     /**
      * {@inheritDoc}
-     * 
-     * @param thresholdTimestampMs
-     * @return
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
@@ -332,9 +356,10 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
             return null;
         }
         try (Jedis jedis = jedisPool.getResource()) {
+            long now = System.currentTimeMillis();
             Collection<IQueueMessage> result = new HashSet<IQueueMessage>();
             byte[] min = "0".getBytes();
-            byte[] max = String.valueOf(thresholdTimestampMs).getBytes();
+            byte[] max = String.valueOf(now - thresholdTimestampMs).getBytes();
             Set<byte[]> fields = jedis.zrangeByScore(redisSortedSetName, min, max, 0, 100);
             for (byte[] field : fields) {
                 byte[] data = jedis.hget(redisHashName, field);

@@ -32,7 +32,7 @@ public abstract class KafkaQueue extends AbstractQueue {
     private String bootstrapServers = "localhost:9092";
     private String topicName = "ddth-queue";
     private String consumerGroupId = "kafkaqueue-" + System.currentTimeMillis();
-    private ProducerType producerType = ProducerType.SYNC_LEADER_ACK;
+    private ProducerType producerType = ProducerType.LEADER_ACK;
     private Properties producerProps, consumerProps;
     private boolean sendAsync = true;
 
@@ -324,12 +324,11 @@ public abstract class KafkaQueue extends AbstractQueue {
     /**
      * {@inheritDoc}
      * 
-     * @param thresholdTimestampMs
-     * @return
+     * This method throws {@link QueueException.OperationNotSupported}
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
-        return null;
+        throw new QueueException.OperationNotSupported();
     }
 
     /**

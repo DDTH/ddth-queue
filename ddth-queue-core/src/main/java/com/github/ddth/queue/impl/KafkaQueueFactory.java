@@ -22,7 +22,7 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue> extends AbstractQu
     public final static String SPEC_FIELD_PRODUCER_PROPERTIES = "producer_properties";
     public final static String SPEC_FIELD_CONSUMER_PROPERTIES = "consumer_properties";
 
-    private ProducerType defaultProducerType = ProducerType.SYNC_LEADER_ACK;
+    private ProducerType defaultProducerType = ProducerType.LEADER_ACK;
     private Properties defaultProducerProps, defaultConsumerProps;
 
     public ProducerType getDefaultProducerType() {

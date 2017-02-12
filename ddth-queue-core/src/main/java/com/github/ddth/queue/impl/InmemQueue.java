@@ -229,9 +229,6 @@ public class InmemQueue extends AbstractEphemeralSupportQueue {
 
     /**
      * {@inheritDoc}
-     * 
-     * @param thresholdTimestampMs
-     * @return
      */
     @Override
     public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
@@ -242,7 +239,7 @@ public class InmemQueue extends AbstractEphemeralSupportQueue {
         long now = System.currentTimeMillis();
         for (Entry<?, IQueueMessage> entry : ephemeralStorage.entrySet()) {
             IQueueMessage msg = entry.getValue();
-            if (msg.qOriginalTimestamp().getTime() + thresholdTimestampMs < now) {
+            if (msg.qTimestamp().getTime() + thresholdTimestampMs < now) {
                 orphanMessages.add(msg);
             }
         }

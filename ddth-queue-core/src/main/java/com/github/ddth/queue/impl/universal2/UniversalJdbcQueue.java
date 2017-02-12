@@ -2,6 +2,7 @@ package com.github.ddth.queue.impl.universal2;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
@@ -85,7 +86,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
     public final static String COL_CONTENT = "msg_content";
 
     private boolean fifo = true;
-    private boolean ephemeralDisabled = false;
 
     public UniversalJdbcQueue setFifo(boolean fifo) {
         this.fifo = fifo;
@@ -105,24 +105,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
         return fifo;
     }
 
-    public UniversalJdbcQueue setEphemeralDisabled(boolean ephemeralDisabled) {
-        this.ephemeralDisabled = ephemeralDisabled;
-        return this;
-    }
-
-    public UniversalJdbcQueue markEphemeralDisabled(boolean setEphemeralDisabled) {
-        this.ephemeralDisabled = setEphemeralDisabled;
-        return this;
-    }
-
-    public boolean isEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
-    public boolean getEphemeralDisabled() {
-        return ephemeralDisabled;
-    }
-
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -136,30 +118,30 @@ public class UniversalJdbcQueue extends JdbcQueue {
         SQL_READ_FROM_QUEUE = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0}"
                 + (fifo ? (" ORDER BY " + COL_QUEUE_ID + " DESC") : "") + " LIMIT 1";
         SQL_READ_FROM_QUEUE = MessageFormat.format(SQL_READ_FROM_QUEUE, getTableName(),
-                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT);
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT);
 
         SQL_READ_FROM_EPHEMERAL = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE " + COL_QUEUE_ID
                 + "=?";
         SQL_READ_FROM_EPHEMERAL = MessageFormat.format(SQL_READ_FROM_EPHEMERAL,
-                getTableNameEphemeral(), COL_QUEUE_ID + " AS "
-                        + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP + " AS "
-                        + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP + " AS "
-                        + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT);
+                getTableNameEphemeral(),
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT);
 
         SQL_GET_ORPHAN_MSGS = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE " + COL_TIMESTAMP
                 + "<?";
         SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS, getTableNameEphemeral(),
-                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID, COL_ORG_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP, COL_TIMESTAMP
-                        + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP, COL_NUM_REQUEUES + " AS "
-                        + UniversalQueueMessage.FIELD_NUM_REQUEUES, COL_CONTENT + " AS "
-                        + UniversalQueueMessage.FIELD_CONTENT);
+                COL_QUEUE_ID + " AS " + UniversalQueueMessage.FIELD_QUEUE_ID,
+                COL_ORG_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_ORG_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalQueueMessage.FIELD_TIMESTAMP,
+                COL_NUM_REQUEUES + " AS " + UniversalQueueMessage.FIELD_NUM_REQUEUES,
+                COL_CONTENT + " AS " + UniversalQueueMessage.FIELD_CONTENT);
 
         SQL_PUT_NEW_TO_QUEUE = "INSERT INTO {0} ({1}, {2}, {3}, {4}) VALUES (?, ?, ?, ?)";
         SQL_PUT_NEW_TO_QUEUE = MessageFormat.format(SQL_PUT_NEW_TO_QUEUE, getTableName(),
@@ -204,9 +186,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
     @Override
     protected UniversalQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             IQueueMessage msg) {
-        if (ephemeralDisabled) {
-            return null;
-        }
         List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_READ_FROM_EPHEMERAL,
                 msg.qId());
         if (dbRows != null && dbRows.size() > 0) {
@@ -224,12 +203,9 @@ public class UniversalJdbcQueue extends JdbcQueue {
     @Override
     protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
             long thresholdTimestampMs) {
-        if (ephemeralDisabled) {
-            return null;
-        }
-        final Date threshold = new Date(thresholdTimestampMs);
-        List<Map<String, Object>> dbRows = jdbcTemplate
-                .queryForList(SQL_GET_ORPHAN_MSGS, threshold);
+        final Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
+        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_GET_ORPHAN_MSGS,
+                threshold);
         if (dbRows != null && dbRows.size() > 0) {
             Collection<IQueueMessage> result = new ArrayList<IQueueMessage>();
             for (Map<String, Object> dbRow : dbRows) {
@@ -240,7 +216,7 @@ public class UniversalJdbcQueue extends JdbcQueue {
             }
             return result;
         }
-        return null;
+        return Arrays.asList();
     }
 
     /**
@@ -268,18 +244,14 @@ public class UniversalJdbcQueue extends JdbcQueue {
      */
     @Override
     protected boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
-        if (ephemeralDisabled) {
-            return true;
-        }
-
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");
         }
 
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        int numRows = jdbcTemplate.update(SQL_PUT_TO_EPHEMERAL, msg.qId(),
-                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        int numRows = jdbcTemplate.update(SQL_PUT_TO_EPHEMERAL, msg.qId(), msg.qOriginalTimestamp(),
+                msg.qTimestamp(), msg.qNumRequeues(), msg.content());
         return numRows > 0;
     }
 
@@ -303,10 +275,6 @@ public class UniversalJdbcQueue extends JdbcQueue {
      */
     @Override
     protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
-        if (ephemeralDisabled) {
-            return true;
-        }
-
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");

@@ -157,8 +157,11 @@ public interface IQueue {
      * for a long time).
      * 
      * @param thresholdTimestampMs
-     *            get all orphan messages that were queued
-     *            <strong>before</strong> this timestamp
+     *            message is orphan if
+     *            {@code message's timestampMillis + thresholdTimestampMs < now}
+     *            . Which means {@code getOrphanMessages(10000)} will return
+     *            orphan messages that have stayed in ephemeral storage for more
+     *            than 10000 milliseconds.
      * @return {@code null} or empty collection if there is no orphan message
      * @since 0.2.0
      * @throws QueueException.OperationNotSupported

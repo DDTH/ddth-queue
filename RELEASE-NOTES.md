@@ -1,6 +1,14 @@
 ddth-queue release notes
 ========================
 
+0.5.1 - 2017-02-12
+------------------
+
+- Upgrade `ddthk-kafka` to v1.3.3
+- Bug fixes & enhancements.
+- Add more unit tests.
+
+
 0.5.0 - 2017-02-10
 ------------------
 
