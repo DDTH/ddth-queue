@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.github.ddth</groupId>
 		<artifactId>ddth-queue</artifactId>
-		<version>0.5.2-SNAPSHOT</version>
+		<version>0.5.1.1</version>
 	</parent>
 
 	<artifactId>ddth-queue-core</artifactId>
