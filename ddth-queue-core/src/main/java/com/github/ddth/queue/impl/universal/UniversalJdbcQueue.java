@@ -1,5 +1,6 @@
 package com.github.ddth.queue.impl.universal;
 
+import java.sql.Connection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -7,8 +8,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
@@ -210,8 +209,8 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected UniversalQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate) {
-        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_READ_FROM_QUEUE);
+    protected UniversalQueueMessage readFromQueueStorage(Connection conn) {
+        List<Map<String, Object>> dbRows = getJdbcHelper().executeSelect(conn, SQL_READ_FROM_QUEUE);
         if (dbRows != null && dbRows.size() > 0) {
             Map<String, Object> dbRow = dbRows.get(0);
             // ensureContentIsByteArray(dbRow);
@@ -225,10 +224,9 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected UniversalQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate,
-            IQueueMessage msg) {
-        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_READ_FROM_EPHEMERAL,
-                msg.qId());
+    protected UniversalQueueMessage readFromEphemeralStorage(Connection conn, IQueueMessage msg) {
+        List<Map<String, Object>> dbRows = getJdbcHelper().executeSelect(conn,
+                SQL_READ_FROM_EPHEMERAL, msg.qId());
         if (dbRows != null && dbRows.size() > 0) {
             Map<String, Object> dbRow = dbRows.get(0);
             // ensureContentIsByteArray(dbRow);
@@ -242,10 +240,10 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(JdbcTemplate jdbcTemplate,
+    protected Collection<IQueueMessage> getOrphanFromEphemeralStorage(Connection conn,
             long thresholdTimestampMs) {
         final Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
-        List<Map<String, Object>> dbRows = jdbcTemplate.queryForList(SQL_GET_ORPHAN_MSGS,
+        List<Map<String, Object>> dbRows = getJdbcHelper().executeSelect(conn, SQL_GET_ORPHAN_MSGS,
                 threshold);
         if (dbRows != null && dbRows.size() > 0) {
             Collection<IQueueMessage> result = new ArrayList<IQueueMessage>();
@@ -264,21 +262,20 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean putToQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
+    protected boolean putToQueueStorage(Connection conn, IQueueMessage _msg) {
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");
         }
-
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
         Long qid = msg.qId();
         if (qid == null || qid.longValue() == 0) {
-            int numRows = jdbcTemplate.update(SQL_PUT_NEW_TO_QUEUE, msg.qOriginalTimestamp(),
-                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+            int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE,
+                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
             return numRows > 0;
         } else {
-            int numRows = jdbcTemplate.update(SQL_REPUT_TO_QUEUE, qid, msg.qOriginalTimestamp(),
-                    msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+            int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, qid,
+                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
             return numRows > 0;
         }
     }
@@ -287,15 +284,14 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
+    protected boolean putToEphemeralStorage(Connection conn, IQueueMessage _msg) {
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");
         }
-
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        int numRows = jdbcTemplate.update(SQL_PUT_TO_EPHEMERAL, msg.qId(), msg.qOriginalTimestamp(),
-                msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, msg.qId(),
+                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
         return numRows > 0;
     }
 
@@ -303,14 +299,13 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean removeFromQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
+    protected boolean removeFromQueueStorage(Connection conn, IQueueMessage _msg) {
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");
         }
-
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        int numRows = jdbcTemplate.update(SQL_REMOVE_FROM_QUEUE, msg.qId());
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE, msg.qId());
         return numRows > 0;
     }
 
@@ -318,14 +313,13 @@ public class UniversalJdbcQueue extends JdbcQueue {
      * {@inheritDoc}
      */
     @Override
-    protected boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage _msg) {
+    protected boolean removeFromEphemeralStorage(Connection conn, IQueueMessage _msg) {
         if (!(_msg instanceof UniversalQueueMessage)) {
             throw new IllegalArgumentException("This method requires an argument of type ["
                     + UniversalQueueMessage.class.getName() + "]!");
         }
-
         UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
-        int numRows = jdbcTemplate.update(SQL_REMOVE_FROM_EPHEMERAL, msg.qId());
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, msg.qId());
         return numRows > 0;
     }
 

@@ -49,11 +49,11 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<skipTests>true</skipTests>
 
-		<version.ddth_dao>0.7.0</version.ddth_dao>
+		<version.ddth_dao>0.8.2</version.ddth_dao>
 		<version.ddth_kafka>1.3.3</version.ddth_kafka>
 		<version.jedis>2.9.0</version.jedis>
-		<version.disruptor>3.3.6</version.disruptor>
-		<version.rocksdb>5.0.1</version.rocksdb>
+		<version.disruptor>3.3.7</version.disruptor>
+		<version.rocksdb>5.8.0</version.rocksdb>
 	</properties>
 
 	<repositories>
@@ -98,7 +98,7 @@
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
-			<version>1.10</version>
+			<version>1.11</version>
 		</dependency>
 
 		<!-- for LMAX Disruptor-based queues -->

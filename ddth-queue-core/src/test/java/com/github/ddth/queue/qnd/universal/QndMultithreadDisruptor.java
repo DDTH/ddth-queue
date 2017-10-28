@@ -16,12 +16,12 @@ public class QndMultithreadDisruptor {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 102400;
-    private static int NUM_THREADS = 4;
+    private static long NUM_ITEMS = 10240000;
+    private static int NUM_THREADS = 8;
 
     public static void main(String[] args) throws Exception {
         try (final UniversalDisruptorQueue queue = new UniversalDisruptorQueue()) {
-            queue.setRingSize(8192);
+            queue.setRingSize(81920);
             queue.init();
 
             for (int i = 0; i < NUM_THREADS; i++) {

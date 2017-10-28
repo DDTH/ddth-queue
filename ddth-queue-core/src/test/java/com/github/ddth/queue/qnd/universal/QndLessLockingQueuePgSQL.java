@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
+import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
+import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.queue.impl.universal.LessLockingUniversalPgSQLQueue;
 import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
 
@@ -17,21 +19,25 @@ public class QndLessLockingQueuePgSQL {
         dataSource.setUsername("test");
         dataSource.setPassword("test");
 
-        try (final LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue()) {
-            queue.setTableName("queuell").setDataSource(dataSource).init();
+        try (AbstractJdbcHelper jdbcHelper = new DdthJdbcHelper()) {
+            jdbcHelper.setDataSource(dataSource).init();
 
-            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
-            msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
-            System.out.println("Queue: " + queue.queue(msg));
+            try (LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue()) {
+                queue.setTableName("queuell").setJdbcHelper(jdbcHelper).init();
 
-            msg = queue.take();
-            while (msg.qNumRequeues() < 2) {
-                System.out.println(msg);
-                System.out.println("Requeue: " + queue.requeue(msg));
+                UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
+                System.out.println("Queue: " + queue.queue(msg));
+
                 msg = queue.take();
-            }
+                while (msg.qNumRequeues() < 2) {
+                    System.out.println(msg);
+                    System.out.println("Requeue: " + queue.requeue(msg));
+                    msg = queue.take();
+                }
 
-            queue.finish(msg);
+                queue.finish(msg);
+            }
         }
     }
 }

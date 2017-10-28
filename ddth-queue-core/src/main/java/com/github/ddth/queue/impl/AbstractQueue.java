@@ -18,12 +18,16 @@ public abstract class AbstractQueue implements IQueue, Closeable, AutoCloseable 
      * @return
      * @throws Exception
      */
-    public abstract AbstractQueue init() throws Exception;
+    public AbstractQueue init() throws Exception {
+        return this;
+    }
 
     /**
      * Destroy method.
      */
-    public abstract void destroy();
+    public void destroy() {
+        // EMPTY
+    }
 
     /**
      * {@inheritDoc}

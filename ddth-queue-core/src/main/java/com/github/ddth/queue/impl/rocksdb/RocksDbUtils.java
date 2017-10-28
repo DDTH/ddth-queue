@@ -55,9 +55,11 @@ public class RocksDbUtils {
         rocksOptions.setWriteBufferSize(writeBufferSize).setMinWriteBufferNumberToMerge(2)
                 .setLevelZeroFileNumCompactionTrigger(levelZeloFileNumCompactionTrigger)
                 .setTargetFileSizeBase(targetFileSizeBase);
+
         rocksOptions.setMemTableConfig(new SkipListMemTableConfig());
         // rocksOptions.setMemTableConfig(new HashSkipListMemTableConfig());
         // rocksOptions.setMemTableConfig(new HashLinkedListMemTableConfig());
+
         return rocksOptions;
     }
 
@@ -79,7 +81,7 @@ public class RocksDbUtils {
      * @param maxBackgroundCompactions
      *            low priority threads, between 1 - num_cpu_cores
      * @param maxBackgroundThreads
-     *            {@code >= maxBackgroundFlushes, maxBackgroundCompressions}
+     *            {@code >= maxBackgroundFlushes, maxBackgroundCompactions}
      * @param maxLogFileSize
      * @return
      */
@@ -91,7 +93,7 @@ public class RocksDbUtils {
         dbOptions.setMaxBackgroundFlushes(maxBackgroundFlushes)
                 .setMaxBackgroundCompactions(maxBackgroundCompactions)
                 .setIncreaseParallelism(maxBackgroundThreads);
-        dbOptions.setAllowMmapReads(true).setAllowMmapWrites(true).setAllowOsBuffer(true);
+        dbOptions.setAllowMmapReads(true).setAllowMmapWrites(true);
         dbOptions.setMaxOpenFiles(-1);
         dbOptions.setKeepLogFileNum(100).setLogFileTimeToRoll(3600)
                 .setMaxLogFileSize(maxLogFileSize);

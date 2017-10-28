@@ -4,6 +4,8 @@ import java.util.Date;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
+import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
+import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.queue.impl.universal.LessLockingUniversalMySQLQueue;
 import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
 
@@ -17,22 +19,26 @@ public class QndLessLockingQueueMySQL {
         dataSource.setUsername("test");
         dataSource.setPassword("test");
 
-        try (final LessLockingUniversalMySQLQueue queue = new LessLockingUniversalMySQLQueue()) {
-            queue.setTableName("queuell").setDataSource(dataSource).init();
+        try (AbstractJdbcHelper jdbcHelper = new DdthJdbcHelper()) {
+            jdbcHelper.setDataSource(dataSource).init();
 
-            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
-            msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
-            System.out.println("Queue: " + queue.queue(msg));
+            try (LessLockingUniversalMySQLQueue queue = new LessLockingUniversalMySQLQueue()) {
+                queue.setTableName("queuell").setJdbcHelper(jdbcHelper).init();
 
-            msg = queue.take();
-            while (msg.qNumRequeues() < 2) {
-                System.out.println("Message: " + msg);
-                System.out.println("Content: " + new String(msg.content()));
-                System.out.println("Requeue: " + queue.requeue(msg));
+                UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
+                System.out.println("Queue: " + queue.queue(msg));
+
                 msg = queue.take();
-            }
+                while (msg.qNumRequeues() < 2) {
+                    System.out.println("Message: " + msg);
+                    System.out.println("Content: " + new String(msg.content()));
+                    System.out.println("Requeue: " + queue.requeue(msg));
+                    msg = queue.take();
+                }
 
-            queue.finish(msg);
+                queue.finish(msg);
+            }
         }
     }
 }

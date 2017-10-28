@@ -1,5 +1,8 @@
 -- Sample table schema for less-locking universal PgSQL queue
 
+CREATE USER test PASSWORD 'test';
+CREATE DATABASE temp OWNER='test' TEMPLATE='template0';
+
 DROP TABLE IF EXISTS queuell;
 CREATE TABLE queuell (
     queue_id                    BIGSERIAL,

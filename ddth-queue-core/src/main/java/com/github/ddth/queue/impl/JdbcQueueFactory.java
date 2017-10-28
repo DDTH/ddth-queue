@@ -1,9 +1,8 @@
 package com.github.ddth.queue.impl;
 
-import javax.sql.DataSource;
-
 import org.apache.commons.lang3.StringUtils;
 
+import com.github.ddth.dao.jdbc.IJdbcHelper;
 import com.github.ddth.queue.QueueSpec;
 
 /**
@@ -19,14 +18,25 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue> extends AbstractQueu
     public final static String SPEC_FIELD_MAX_RETRIES = "max_retries";
     public final static String SPEC_FIELD_TRANSACTION_ISOLATION_LEVEL = "tranx_isolation_level";
 
-    private DataSource defaultDataSource;
+    private IJdbcHelper defaultJdbcHelper;
 
-    public DataSource getDefaultDataSource() {
-        return defaultDataSource;
+    /**
+     * 
+     * @return
+     * @since 0.5.1.1
+     */
+    public IJdbcHelper getDefaultJdbcHeper() {
+        return defaultJdbcHelper;
     }
 
-    public JdbcQueueFactory<T> setDefaultDataSource(DataSource dataSource) {
-        this.defaultDataSource = dataSource;
+    /**
+     * 
+     * @param jdbcHelper
+     * @return
+     * @since 0.5.1.1
+     */
+    public JdbcQueueFactory<T> setDefaultJdbcHeper(IJdbcHelper jdbcHelper) {
+        this.defaultJdbcHelper = jdbcHelper;
         return this;
     }
 
@@ -35,7 +45,7 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue> extends AbstractQueu
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) {
-        queue.setDataSource(getDefaultDataSource());
+        queue.setJdbcHelper(defaultJdbcHelper);
 
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
                 Boolean.class);

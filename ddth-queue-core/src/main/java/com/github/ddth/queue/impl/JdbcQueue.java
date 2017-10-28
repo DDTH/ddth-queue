@@ -1,22 +1,20 @@
 package com.github.ddth.queue.impl;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Date;
-
-import javax.sql.DataSource;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.datasource.SingleConnectionDataSource;
 
+import com.github.ddth.commons.utils.DPathUtils;
 import com.github.ddth.dao.jdbc.IJdbcHelper;
-import com.github.ddth.dao.jdbc.jdbctemplate.JdbcTemplateJdbcHelper;
+import com.github.ddth.dao.utils.DaoException;
+import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -41,12 +39,12 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
 
     private Logger LOGGER = LoggerFactory.getLogger(JdbcQueue.class);
 
+    private final static String FIELD_COUNT = "num_entries";
     private String tableName, tableNameEphemeral;
-    private String SQL_COUNT = "SELECT COUNT(*) AS num_entries FROM {0}";
-    private String SQL_COUNT_EPHEMERAL = "SELECT COUNT(*) AS num_entries FROM {0}";
+    private String SQL_COUNT = "SELECT COUNT(*) AS " + FIELD_COUNT + " FROM {0}";
+    private String SQL_COUNT_EPHEMERAL = "SELECT COUNT(*) AS " + FIELD_COUNT + " FROM {0}";
 
-    private DataSource dataSource;
-    private JdbcTemplateJdbcHelper jdbcHelper;
+    private IJdbcHelper jdbcHelper;
     private int maxRetries = DEFAULT_MAX_RETRIES;
     private int transactionIsolationLevel = Connection.TRANSACTION_READ_COMMITTED;
 
@@ -80,31 +78,22 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
 
     /**
      * 
-     * @param dataSource
      * @return
      * @since 0.5.0
      */
-    public JdbcQueue setDataSource(DataSource dataSource) {
-        this.dataSource = dataSource;
-        return this;
-    }
-
-    /**
-     * 
-     * @return
-     * @since 0.5.0
-     */
-    public DataSource getDataSource() {
-        return dataSource;
-    }
-
-    /**
-     * 
-     * @return
-     * @since 0.5.0
-     */
-    protected IJdbcHelper getJdbcHelper() {
+    public IJdbcHelper getJdbcHelper() {
         return jdbcHelper;
+    }
+
+    /**
+     * 
+     * @param jdbcHelper
+     * @return
+     * @since 0.5.1.1
+     */
+    public JdbcQueue setJdbcHelper(IJdbcHelper jdbcHelper) {
+        this.jdbcHelper = jdbcHelper;
+        return this;
     }
 
     public JdbcQueue setMaxRetries(int maxRetries) {
@@ -125,30 +114,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
     public JdbcQueue init() {
         SQL_COUNT = MessageFormat.format(SQL_COUNT, tableName);
         SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, tableNameEphemeral);
-        jdbcHelper = new JdbcTemplateJdbcHelper().setDataSource(dataSource).init();
         return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void destroy() {
-        jdbcHelper.destroy();
-    }
-
-    /**
-     * Gets {@link JdbcTemplate} instance for a given {@link Connection}.
-     * 
-     * Note: the returned {@link JdbcTemplate} will not automatically close the
-     * {@link Connection}.
-     * 
-     * @param conn
-     * @return
-     */
-    protected JdbcTemplate jdbcTemplate(Connection conn) {
-        DataSource ds = new SingleConnectionDataSource(conn, true);
-        return new JdbcTemplate(ds);
     }
 
     /*----------------------------------------------------------------------*/
@@ -156,72 +122,70 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
     /**
      * Reads a message from head of queue storage.
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @return
      */
-    protected abstract IQueueMessage readFromQueueStorage(JdbcTemplate jdbcTemplate);
+    protected abstract IQueueMessage readFromQueueStorage(Connection conn);
 
     /**
      * Reads a message from the ephemeral storage.
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @return
      * @since 0.2.1
      */
-    protected abstract IQueueMessage readFromEphemeralStorage(JdbcTemplate jdbcTemplate,
-            IQueueMessage msg);
+    protected abstract IQueueMessage readFromEphemeralStorage(Connection conn, IQueueMessage msg);
 
     /**
      * Gets all orphan messages (messages that were left in ephemeral storage
      * for a long time).
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param thresholdTimestampMs
      *            get all orphan messages that were queued
      *            <strong>before</strong> this timestamp
      * @return
      * @since 0.2.0
      */
-    protected abstract Collection<IQueueMessage> getOrphanFromEphemeralStorage(
-            JdbcTemplate jdbcTemplate, long thresholdTimestampMs);
+    protected abstract Collection<IQueueMessage> getOrphanFromEphemeralStorage(Connection conn,
+            long thresholdTimestampMs);
 
     /**
      * Puts a message to tail of the queue storage.
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @return
      */
-    protected abstract boolean putToQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg);
+    protected abstract boolean putToQueueStorage(Connection conn, IQueueMessage msg);
 
     /**
      * Puts a message to the ephemeral storage.
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @return
      */
-    protected abstract boolean putToEphemeralStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg);
+    protected abstract boolean putToEphemeralStorage(Connection conn, IQueueMessage msg);
 
     /**
      * Removes a message from the queue storage.
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @return
      */
-    protected abstract boolean removeFromQueueStorage(JdbcTemplate jdbcTemplate, IQueueMessage msg);
+    protected abstract boolean removeFromQueueStorage(Connection conn, IQueueMessage msg);
 
     /**
-     * Removes a message from the ephemeral storage.
+     * Removes a message from the queue storage.
      * 
-     * @param jdbcTemplate
+     * @param conn
      * @param msg
      * @return
      */
-    protected abstract boolean removeFromEphemeralStorage(JdbcTemplate jdbcTemplate,
-            IQueueMessage msg);
+    protected abstract boolean removeFromEphemeralStorage(Connection conn, IQueueMessage msg);
 
     /**
      * Queues a message, retry if deadlock.
@@ -237,34 +201,40 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * deleted.
      * </p>
      * 
+     * <p>
+     * Note: the supplied queue message is mutable.
+     * </p>
+     * 
      * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
      * @return
-     * @throws SQLException
      */
-    protected boolean _queueWithRetries(final Connection conn, final IQueueMessage msg,
-            final int numRetries, final int maxRetries) throws SQLException {
+    protected boolean _queueWithRetries(Connection conn, IQueueMessage msg, int numRetries,
+            int maxRetries) {
         try {
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
             Date now = new Date();
             msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
-            boolean result = putToQueueStorage(jdbcTemplate, msg);
-
-            return result;
-        } catch (DuplicateKeyException dke) {
-            LOGGER.warn(dke.getMessage(), dke);
+            return putToQueueStorage(conn, msg);
+        } catch (DuplicatedValueException dve) {
+            LOGGER.warn(dve.getMessage(), dve);
             return true;
-        } catch (ConcurrencyFailureException ex) {
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                return _queueWithRetries(conn, msg, numRetries + 1, maxRetries);
+        } catch (DaoException de) {
+            if (de.getCause() instanceof DuplicateKeyException) {
+                LOGGER.warn(de.getMessage(), de);
+                return true;
             }
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    return _queueWithRetries(conn, msg, numRetries + 1, maxRetries);
+                }
+            }
+            throw de;
         } catch (Exception e) {
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -272,27 +242,19 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(final IQueueMessage msg) {
+    public boolean queue(IQueueMessage msg) {
         if (msg == null) {
             return false;
         }
         try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                boolean result = _queueWithRetries(conn, msg.clone(), 0, this.maxRetries);
-                return result;
-            } finally {
-                jdbcHelper.returnConnection(conn);
+            try (Connection conn = jdbcHelper.getConnection()) {
+                return _queueWithRetries(conn, msg.clone(), 0, this.maxRetries);
             }
         } catch (Exception e) {
             final String logMsg = "(queue) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -310,47 +272,56 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * deleted.
      * </p>
      * 
+     * <p>
+     * Note: the supplied queue message is mutable.
+     * </p>
+     * 
      * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
      * @return
-     * @throws SQLException
      */
-    protected boolean _requeueWithRetries(final Connection conn, final IQueueMessage msg,
-            final int numRetries, final int maxRetries) throws SQLException {
+    protected boolean _requeueWithRetries(Connection conn, IQueueMessage msg, int numRetries,
+            int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
             if (!isEphemeralDisabled()) {
-                removeFromEphemeralStorage(jdbcTemplate, msg);
+                removeFromEphemeralStorage(conn, msg);
             }
             Date now = new Date();
             msg.qIncNumRequeues().qTimestamp(now);
-            boolean result = putToQueueStorage(jdbcTemplate, msg);
-
+            boolean result = putToQueueStorage(conn, msg);
             jdbcHelper.commitTransaction(conn);
             return result;
-        } catch (DuplicateKeyException dke) {
-            LOGGER.warn(dke.getMessage(), dke);
-            return true;
-        } catch (ConcurrencyFailureException ex) {
+        } catch (DuplicatedValueException dve) {
             jdbcHelper.rollbackTransaction(conn);
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                /*
-                 * call _requeueSilentWithRetries(...) here is correct because
-                 * we do not want message's num-requeues is increased with every
-                 * retry
-                 */
-                return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
+            LOGGER.warn(dve.getMessage(), dve);
+            return true;
+        } catch (DaoException de) {
+            if (de.getCause() instanceof DuplicateKeyException) {
+                jdbcHelper.rollbackTransaction(conn);
+                LOGGER.warn(de.getMessage(), de);
+                return true;
             }
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                jdbcHelper.rollbackTransaction(conn);
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    /*
+                     * call _requeueSilentWithRetries(...) here is correct
+                     * because we do not want message's num-requeues is
+                     * increased with every retry
+                     */
+                    return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
+                }
+            }
+            throw de;
         } catch (Exception e) {
             jdbcHelper.rollbackTransaction(conn);
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -358,27 +329,19 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeue(final IQueueMessage msg) {
+    public boolean requeue(IQueueMessage msg) {
         if (msg == null) {
             return false;
         }
         try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                boolean result = _requeueWithRetries(conn, msg.clone(), 0, this.maxRetries);
-                return result;
-            } finally {
-                jdbcHelper.returnConnection(conn);
+            try (Connection conn = jdbcHelper.getConnection()) {
+                return _requeueWithRetries(conn, msg.clone(), 0, this.maxRetries);
             }
         } catch (Exception e) {
             final String logMsg = "(requeue) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -396,40 +359,49 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * deleted.
      * </p>
      * 
+     * <p>
+     * Note: the supplied queue message is mutable.
+     * </p>
+     * 
      * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
      * @return
-     * @throws SQLException
      */
-    protected boolean _requeueSilentWithRetries(final Connection conn, final IQueueMessage msg,
-            final int numRetries, final int maxRetries) throws SQLException {
+    protected boolean _requeueSilentWithRetries(Connection conn, IQueueMessage msg, int numRetries,
+            int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
             if (!isEphemeralDisabled()) {
-                removeFromEphemeralStorage(jdbcTemplate, msg);
+                removeFromEphemeralStorage(conn, msg);
             }
-            boolean result = putToQueueStorage(jdbcTemplate, msg);
-
+            boolean result = putToQueueStorage(conn, msg);
             jdbcHelper.commitTransaction(conn);
             return result;
-        } catch (DuplicateKeyException dke) {
-            LOGGER.warn(dke.getMessage(), dke);
-            return true;
-        } catch (ConcurrencyFailureException ex) {
+        } catch (DuplicatedValueException dve) {
             jdbcHelper.rollbackTransaction(conn);
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
+            LOGGER.warn(dve.getMessage(), dve);
+            return true;
+        } catch (DaoException de) {
+            if (de.getCause() instanceof DuplicateKeyException) {
+                jdbcHelper.rollbackTransaction(conn);
+                LOGGER.warn(de.getMessage(), de);
+                return true;
             }
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                jdbcHelper.rollbackTransaction(conn);
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
+                }
+            }
+            throw de;
         } catch (Exception e) {
             jdbcHelper.rollbackTransaction(conn);
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -437,27 +409,19 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(final IQueueMessage msg) {
+    public boolean requeueSilent(IQueueMessage msg) {
         if (msg == null) {
             return false;
         }
         try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                boolean result = _requeueSilentWithRetries(conn, msg.clone(), 0, this.maxRetries);
-                return result;
-            } finally {
-                jdbcHelper.returnConnection(conn);
+            try (Connection conn = jdbcHelper.getConnection()) {
+                return _requeueSilentWithRetries(conn, msg.clone(), 0, this.maxRetries);
             }
         } catch (Exception e) {
             final String logMsg = "(requeueSilent) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -475,27 +439,32 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * deleted.
      * </p>
      * 
+     * <p>
+     * Note: the supplied queue message is mutable.
+     * </p>
+     * 
      * @param conn
      * @param msg
      * @param numRetries
      * @param maxRetries
-     * @throws SQLException
      */
-    protected void _finishWithRetries(final Connection conn, final IQueueMessage msg,
-            final int numRetries, final int maxRetries) throws SQLException {
+    protected void _finishWithRetries(Connection conn, IQueueMessage msg, int numRetries,
+            int maxRetries) {
         try {
             if (!isEphemeralDisabled()) {
-                JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-                removeFromEphemeralStorage(jdbcTemplate, msg);
+                removeFromEphemeralStorage(conn, msg);
             }
-        } catch (ConcurrencyFailureException ex) {
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                _finishWithRetries(conn, msg, numRetries + 1, maxRetries);
+        } catch (DaoException de) {
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    _finishWithRetries(conn, msg, numRetries + 1, maxRetries);
+                }
             }
+            throw de;
         } catch (Exception e) {
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -503,26 +472,19 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public void finish(final IQueueMessage msg) {
+    public void finish(IQueueMessage msg) {
         if (msg == null) {
             return;
         }
         try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
+            try (Connection conn = jdbcHelper.getConnection()) {
                 _finishWithRetries(conn, msg, 0, this.maxRetries);
-            } finally {
-                jdbcHelper.returnConnection(conn);
             }
         } catch (Exception e) {
             final String logMsg = "(finish) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -544,28 +506,30 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param numRetries
      * @param maxRetries
      * @return
-     * @throws SQLException
      */
-    protected IQueueMessage _takeWithRetries(final Connection conn, final int numRetries,
-            final int maxRetries) throws SQLException {
+    protected IQueueMessage _takeWithRetries(Connection conn, int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
 
             boolean result = true;
-            IQueueMessage msg = readFromQueueStorage(jdbcTemplate);
+            IQueueMessage msg = readFromQueueStorage(conn);
             if (msg != null) {
-                result = result && removeFromQueueStorage(jdbcTemplate, msg);
+                result = result && removeFromQueueStorage(conn, msg);
                 if (!isEphemeralDisabled()) {
                     try {
-                        result = result && putToEphemeralStorage(jdbcTemplate, msg);
-                    } catch (DuplicateKeyException dke) {
-                        LOGGER.warn(dke.getMessage(), dke);
+                        result = result && putToEphemeralStorage(conn, msg);
+                    } catch (DuplicatedValueException dve) {
+                        LOGGER.warn(dve.getMessage(), dve);
+                    } catch (DaoException de) {
+                        if (de.getCause() instanceof DuplicatedValueException) {
+                            LOGGER.warn(de.getMessage(), de);
+                        } else {
+                            throw de;
+                        }
                     }
                 }
             }
-
             if (result) {
                 jdbcHelper.commitTransaction(conn);
                 return msg;
@@ -573,16 +537,19 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
                 jdbcHelper.rollbackTransaction(conn);
                 return null;
             }
-        } catch (ConcurrencyFailureException ex) {
-            jdbcHelper.rollbackTransaction(conn);
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                return _takeWithRetries(conn, numRetries + 1, maxRetries);
+        } catch (DaoException de) {
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                jdbcHelper.rollbackTransaction(conn);
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    return _takeWithRetries(conn, numRetries + 1, maxRetries);
+                }
             }
+            throw de;
         } catch (Exception e) {
             jdbcHelper.rollbackTransaction(conn);
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -595,28 +562,20 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
     @Override
     public IQueueMessage take() throws QueueException.EphemeralIsFull {
         try {
-            Connection conn = jdbcHelper.getConnection();
-            if (!isEphemeralDisabled()) {
-                int ephemeralMaxSize = getEphemeralMaxSize();
-                if (ephemeralMaxSize > 0 && ephemeralSize(conn) >= ephemeralMaxSize) {
-                    throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
+            try (Connection conn = jdbcHelper.getConnection()) {
+                if (!isEphemeralDisabled()) {
+                    int ephemeralMaxSize = getEphemeralMaxSize();
+                    if (ephemeralMaxSize > 0 && ephemeralSize(conn) >= ephemeralMaxSize) {
+                        throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
+                    }
                 }
-            }
-            try {
-                IQueueMessage result = _takeWithRetries(conn, 0, this.maxRetries);
-                return result;
-            } finally {
-                jdbcHelper.returnConnection(conn);
+                return _takeWithRetries(conn, 0, this.maxRetries);
             }
         } catch (Exception e) {
             final String logMsg = "(take) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -640,31 +599,31 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param numRetries
      * @param maxRetries
      * @return
-     * @throws SQLException
      * @since 0.2.0
      */
-    protected Collection<IQueueMessage> _getOrphanMessagesWithRetries(
-            final long thresholdTimestampMs, final Connection conn, final int numRetries,
-            final int maxRetries) throws SQLException {
+    protected Collection<IQueueMessage> _getOrphanMessagesWithRetries(long thresholdTimestampMs,
+            Connection conn, int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-            Collection<IQueueMessage> msgs = getOrphanFromEphemeralStorage(jdbcTemplate,
+            Collection<IQueueMessage> msgs = getOrphanFromEphemeralStorage(conn,
                     thresholdTimestampMs);
             jdbcHelper.commitTransaction(conn);
             return msgs;
-        } catch (ConcurrencyFailureException ex) {
-            jdbcHelper.rollbackTransaction(conn);
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                return _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, numRetries + 1,
-                        maxRetries);
+        } catch (DaoException de) {
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                jdbcHelper.rollbackTransaction(conn);
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    return _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, numRetries + 1,
+                            maxRetries);
+                }
             }
+            throw de;
         } catch (Exception e) {
             jdbcHelper.rollbackTransaction(conn);
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -676,24 +635,13 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
         if (isEphemeralDisabled()) {
             return null;
         }
-        try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                Collection<IQueueMessage> result = _getOrphanMessagesWithRetries(
-                        thresholdTimestampMs, conn, 0, this.maxRetries);
-                return result;
-            } finally {
-                jdbcHelper.returnConnection(conn);
-            }
+        try (Connection conn = jdbcHelper.getConnection()) {
+            return _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, 0, this.maxRetries);
         } catch (Exception e) {
             final String logMsg = "(getOrphanMessages) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -716,37 +664,35 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param numRetries
      * @param maxRetries
      * @return
-     * @throws SQLException
      */
-    protected boolean _moveFromEphemeralToQueueStorageWithRetries(final IQueueMessage msg,
-            final Connection conn, final int numRetries, final int maxRetries) throws SQLException {
+    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage msg,
+            Connection conn, int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-
-            IQueueMessage orphanMsg = readFromEphemeralStorage(jdbcTemplate, msg);
+            IQueueMessage orphanMsg = readFromEphemeralStorage(conn, msg);
             if (orphanMsg != null) {
-                removeFromEphemeralStorage(jdbcTemplate, msg);
-                boolean result = putToQueueStorage(jdbcTemplate, msg);
-
+                removeFromEphemeralStorage(conn, msg);
+                boolean result = putToQueueStorage(conn, msg);
                 jdbcHelper.commitTransaction(conn);
                 return result;
             }
-
             jdbcHelper.rollbackTransaction(conn);
             return false;
-        } catch (ConcurrencyFailureException ex) {
-            jdbcHelper.rollbackTransaction(conn);
-            if (numRetries > maxRetries) {
-                throw new QueueException(ex);
-            } else {
-                return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
-                        maxRetries);
+        } catch (DaoException de) {
+            if (de.getCause() instanceof ConcurrencyFailureException) {
+                jdbcHelper.rollbackTransaction(conn);
+                if (numRetries > maxRetries) {
+                    throw new QueueException(de);
+                } else {
+                    return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
+                            maxRetries);
+                }
             }
+            throw de;
         } catch (Exception e) {
             jdbcHelper.rollbackTransaction(conn);
-            throw new QueueException(e);
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -758,24 +704,13 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
         if (isEphemeralDisabled()) {
             return true;
         }
-        try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                boolean result = _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0,
-                        this.maxRetries);
-                return result;
-            } finally {
-                jdbcHelper.returnConnection(conn);
-            }
+        try (Connection conn = jdbcHelper.getConnection()) {
+            return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0, this.maxRetries);
         } catch (Exception e) {
             final String logMsg = "(moveFromEphemeralToQueueStorage) Exception ["
                     + e.getClass().getName() + "]: " + e.getMessage();
             LOGGER.error(logMsg, e);
-            if (e instanceof QueueException) {
-                throw (QueueException) e;
-            } else {
-                throw new QueueException(e);
-            }
+            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
 
@@ -787,8 +722,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @since 0.5.0
      */
     protected int queueSize(Connection conn) {
-        JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-        Integer result = jdbcTemplate.queryForObject(SQL_COUNT, null, Integer.class);
+        Map<String, Object> row = jdbcHelper.executeSelectOne(conn, SQL_COUNT);
+        Integer result = DPathUtils.getValue(row, FIELD_COUNT, Integer.class);
         return result != null ? result.intValue() : 0;
     }
 
@@ -800,8 +735,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @since 0.5.0
      */
     protected int ephemeralSize(Connection conn) {
-        JdbcTemplate jdbcTemplate = jdbcTemplate(conn);
-        Integer result = jdbcTemplate.queryForObject(SQL_COUNT_EPHEMERAL, null, Integer.class);
+        Map<String, Object> row = jdbcHelper.executeSelectOne(conn, SQL_COUNT_EPHEMERAL);
+        Integer result = DPathUtils.getValue(row, FIELD_COUNT, Integer.class);
         return result != null ? result.intValue() : 0;
     }
 
@@ -810,13 +745,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      */
     @Override
     public int queueSize() {
-        try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                return queueSize(conn);
-            } finally {
-                jdbcHelper.returnConnection(conn);
-            }
+        try (Connection conn = jdbcHelper.getConnection()) {
+            return queueSize(conn);
         } catch (Exception e) {
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
@@ -830,13 +760,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
         if (isEphemeralDisabled()) {
             return 0;
         }
-        try {
-            Connection conn = jdbcHelper.getConnection();
-            try {
-                return ephemeralSize(conn);
-            } finally {
-                jdbcHelper.returnConnection(conn);
-            }
+        try (Connection conn = jdbcHelper.getConnection()) {
+            return ephemeralSize(conn);
         } catch (Exception e) {
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }

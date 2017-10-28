@@ -3,7 +3,6 @@ package com.github.ddth.queue.impl;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
@@ -68,7 +67,7 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
     }
 
     /**
-     * Gets size of the ring buffer.
+     * Get size of the ring buffer.
      * 
      * @return
      */
@@ -96,7 +95,7 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
     }
 
     /**
-     * Sets size of the ring buffer, must be power of 2.
+     * Set size of the ring buffer, must be power of 2.
      * 
      * @param ringSize
      * @return
@@ -139,19 +138,23 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
     }
 
     /**
-     * Publishes (commits) the ring's sequence.
+     * Publish (commit) the ring's sequence.
      * 
      * @param value
      * @param seq
      */
     protected void publish(IQueueMessage value, long seq) {
-        Event holder = ringBuffer.get(seq);
-        holder.set(value);
-        ringBuffer.publish(seq);
+        try {
+            Event holder = ringBuffer.get(seq);
+            holder.set(value);
+        } finally {
+            knownPublishedSeq = seq;
+            ringBuffer.publish(seq);
+        }
     }
 
     /**
-     * Puts a message to the ring buffer.
+     * Put a message to the ring buffer.
      * 
      * @param msg
      * @throws QueueException.QueueIsFull
@@ -163,10 +166,10 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
             long seq;
             try {
                 seq = ringBuffer.tryNext();
+                publish(msg, seq);
             } catch (InsufficientCapacityException e1) {
                 throw new QueueException.QueueIsFull(getRingSize());
             }
-            publish(msg, seq);
         } finally {
             LOCK_PUT.unlock();
         }
@@ -231,23 +234,23 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
         }
     }
 
-    /**
-     * Updates the published sequence number after a message has been
-     * successfully taken from queue.
-     */
-    protected void updatePublishedSequence() {
-        long c = ringBuffer.getCursor();
-        if (c >= knownPublishedSeq + 1) {
-            long pos = c;
-            for (long sequence = knownPublishedSeq + 1; sequence <= c; sequence++) {
-                if (!ringBuffer.isPublished(sequence)) {
-                    pos = sequence - 1;
-                    break;
-                }
-            }
-            knownPublishedSeq = pos;
-        }
-    }
+//    /**
+//     * Updates the published sequence number after a message has been
+//     * successfully taken from queue.
+//     */
+//    protected void updatePublishedSequence() {
+//        long c = ringBuffer.getCursor();
+//        if (c >= knownPublishedSeq + 1) {
+//            long pos = c;
+//            for (long sequence = knownPublishedSeq + 1; sequence <= c; sequence++) {
+//                if (!ringBuffer.isPublished(sequence)) {
+//                    pos = sequence - 1;
+//                    break;
+//                }
+//            }
+//            knownPublishedSeq = pos;
+//        }
+//    }
 
     private Lock LOCK_TAKE = new ReentrantLock();
     private Lock LOCK_PUT = new ReentrantLock();
@@ -261,9 +264,9 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
         LOCK_TAKE.lock();
         try {
             long l = consumedSeq.get() + 1;
-            if (l > knownPublishedSeq) {
-                updatePublishedSequence();
-            }
+            // if (l > knownPublishedSeq) {
+            // updatePublishedSequence();
+            // }
             if (l <= knownPublishedSeq) {
                 Event eventHolder = ringBuffer.get(l);
                 IQueueMessage value = eventHolder.get();
@@ -307,12 +310,11 @@ public class DisruptorQueue extends AbstractEphemeralSupportQueue {
         }
         Collection<IQueueMessage> orphanMessages = new HashSet<>();
         long now = System.currentTimeMillis();
-        for (Entry<?, IQueueMessage> entry : ephemeralStorage.entrySet()) {
-            IQueueMessage msg = entry.getValue();
+        ephemeralStorage.forEach((key, msg) -> {
             if (msg.qTimestamp().getTime() + thresholdTimestampMs < now) {
                 orphanMessages.add(msg);
             }
-        }
+        });
         return orphanMessages;
     }
 

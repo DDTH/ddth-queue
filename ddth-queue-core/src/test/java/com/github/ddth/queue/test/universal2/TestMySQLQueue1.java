@@ -4,13 +4,19 @@ import java.sql.SQLException;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
+import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.IJdbcHelper;
+import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.JdbcQueue;
 import com.github.ddth.queue.impl.universal2.UniversalJdbcQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
+
+/*
+ * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal2.TestMySQLQueue1 -DenableTestsMySql=true
+ */
 
 /**
  * Test queue functionality.
@@ -55,21 +61,26 @@ public class TestMySQLQueue1 extends BaseQueueFunctionalTest {
         dataSource.setUsername(mysqlUser);
         dataSource.setPassword(mysqlPassword);
 
-        MyJdbcQueue queue = new MyJdbcQueue();
+        AbstractJdbcHelper jdbcHelper = new DdthJdbcHelper();
         try {
-            queue.setDataSource(dataSource).setTableName(tableQueue)
+            jdbcHelper.setDataSource(dataSource).init();
+            MyJdbcQueue queue = new MyJdbcQueue();
+            queue.setJdbcHelper(jdbcHelper).setTableName(tableQueue)
                     .setTableNameEphemeral(tableEphemeral).setEphemeralDisabled(false)
                     .setEphemeralMaxSize(ephemeralMaxSize).init();
             queue.flush();
             return queue;
         } catch (Exception e) {
-            queue.destroy();
             throw new RuntimeException(e);
         }
     }
 
     protected void destroyQueueInstance(IQueue queue) {
         if (queue instanceof JdbcQueue) {
+            IJdbcHelper jdbcHelper = ((JdbcQueue) queue).getJdbcHelper();
+            if (jdbcHelper instanceof AbstractJdbcHelper) {
+                ((AbstractJdbcHelper) jdbcHelper).destroy();
+            }
             ((JdbcQueue) queue).destroy();
         } else {
             throw new RuntimeException("[queue] is not closed!");
