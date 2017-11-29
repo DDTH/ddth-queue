@@ -22,7 +22,7 @@ import com.github.ddth.queue.utils.QueueException;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.2
  */
-public abstract class KafkaQueue extends AbstractQueue {
+public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaQueue.class);
 
@@ -52,7 +52,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @param value
      * @return
      */
-    public KafkaQueue setSendAsync(boolean value) {
+    public KafkaQueue<ID, DATA> setSendAsync(boolean value) {
         this.sendAsync = value;
         return this;
     }
@@ -61,7 +61,7 @@ public abstract class KafkaQueue extends AbstractQueue {
         return producerType;
     }
 
-    public KafkaQueue setProducerType(ProducerType producerType) {
+    public KafkaQueue<ID, DATA> setProducerType(ProducerType producerType) {
         this.producerType = producerType;
         return this;
     }
@@ -85,7 +85,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @return
      * @since 0.4.0
      */
-    public KafkaQueue setKafkaBootstrapServers(String kafkaBootstrapServers) {
+    public KafkaQueue<ID, DATA> setKafkaBootstrapServers(String kafkaBootstrapServers) {
         this.bootstrapServers = kafkaBootstrapServers;
         return this;
     }
@@ -107,7 +107,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @return
      * @since 0.4.0
      */
-    public KafkaQueue setKafkaProducerProperties(Properties kafkaProducerConfigs) {
+    public KafkaQueue<ID, DATA> setKafkaProducerProperties(Properties kafkaProducerConfigs) {
         this.producerProps = kafkaProducerConfigs;
         return this;
     }
@@ -129,7 +129,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @return
      * @since 0.4.0
      */
-    public KafkaQueue setKafkaConsumerProperties(Properties kafkaConsumerConfigs) {
+    public KafkaQueue<ID, DATA> setKafkaConsumerProperties(Properties kafkaConsumerConfigs) {
         this.consumerProps = kafkaConsumerConfigs;
         return this;
     }
@@ -143,7 +143,7 @@ public abstract class KafkaQueue extends AbstractQueue {
         return topicName;
     }
 
-    public KafkaQueue setTopicName(String topicName) {
+    public KafkaQueue<ID, DATA> setTopicName(String topicName) {
         this.topicName = topicName;
         return this;
     }
@@ -157,7 +157,7 @@ public abstract class KafkaQueue extends AbstractQueue {
         return consumerGroupId;
     }
 
-    public KafkaQueue setConsumerGroupId(String consumerGroupId) {
+    public KafkaQueue<ID, DATA> setConsumerGroupId(String consumerGroupId) {
         this.consumerGroupId = consumerGroupId;
         return this;
     }
@@ -174,7 +174,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @param kafkaClient
      * @return
      */
-    public KafkaQueue setKafkaClient(KafkaClient kafkaClient) {
+    public KafkaQueue<ID, DATA> setKafkaClient(KafkaClient kafkaClient) {
         this.kafkaClient = kafkaClient;
         myOwnKafkaClient = false;
         return this;
@@ -188,7 +188,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @return
      * @throws Exception
      */
-    public KafkaQueue init() throws Exception {
+    public KafkaQueue<ID, DATA> init() throws Exception {
         if (kafkaClient == null) {
             kafkaClient = new KafkaClient(bootstrapServers);
             kafkaClient.setProducerProperties(consumerProps).setConsumerProperties(consumerProps);
@@ -229,7 +229,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @param msg
      * @return
      */
-    protected abstract byte[] serialize(IQueueMessage msg) throws QueueException;
+    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg) throws QueueException;
 
     /**
      * Deserilizes a queue message.
@@ -237,7 +237,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @param msgData
      * @return
      */
-    protected abstract IQueueMessage deserialize(byte[] msgData) throws QueueException;
+    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData) throws QueueException;
 
     /**
      * Takes a message from Kafka queue.
@@ -245,7 +245,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @return
      * @since 0.3.3
      */
-    protected IQueueMessage takeFromQueue() {
+    protected IQueueMessage<ID, DATA> takeFromQueue() {
         KafkaMessage kMsg = kafkaClient.consumeMessage(consumerGroupId, true, topicName, 1000,
                 TimeUnit.MILLISECONDS);
         return kMsg != null ? deserialize(kMsg.content()) : null;
@@ -258,7 +258,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * @param msg
      * @return
      */
-    protected boolean putToQueue(IQueueMessage msg) {
+    protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
         byte[] msgData = serialize(msg);
         Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).qPartitionKey()
                 : msg.qId();
@@ -278,8 +278,8 @@ public abstract class KafkaQueue extends AbstractQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean queue(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
         return putToQueue(msg);
@@ -289,8 +289,8 @@ public abstract class KafkaQueue extends AbstractQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeue(final IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean requeue(final IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
         return putToQueue(msg);
@@ -300,8 +300,8 @@ public abstract class KafkaQueue extends AbstractQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         return putToQueue(msg);
     }
 
@@ -309,7 +309,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * {@inheritDoc}
      */
     @Override
-    public void finish(IQueueMessage msg) {
+    public void finish(IQueueMessage<ID, DATA> msg) {
         // EMPTY
     }
 
@@ -317,7 +317,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * {@inheritDoc}
      */
     @Override
-    public IQueueMessage take() {
+    public IQueueMessage<ID, DATA> take() {
         return takeFromQueue();
     }
 
@@ -327,7 +327,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * This method throws {@link QueueException.OperationNotSupported}
      */
     @Override
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
         throw new QueueException.OperationNotSupported();
     }
 
@@ -335,7 +335,7 @@ public abstract class KafkaQueue extends AbstractQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
         throw new UnsupportedOperationException(
                 "Method [moveFromEphemeralToQueueStorage] is not supported!");
     }

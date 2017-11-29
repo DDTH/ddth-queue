@@ -13,7 +13,8 @@ import com.github.ddth.queue.QueueSpec;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public abstract class KafkaQueueFactory<T extends KafkaQueue> extends AbstractQueueFactory<T> {
+public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA>
+        extends AbstractQueueFactory<T, ID, DATA> {
 
     public final static String SPEC_FIELD_CONSUMER_GROUP_ID = "consumer_group_id";
     public final static String SPEC_FIELD_BOOTSTRAP_SERVERS = "bootstrap_servers";

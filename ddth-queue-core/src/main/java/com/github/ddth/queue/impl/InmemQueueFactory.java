@@ -8,13 +8,14 @@ import com.github.ddth.queue.QueueSpec;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public abstract class InmemQueueFactory<T extends InmemQueue> extends AbstractQueueFactory<T> {
+public abstract class InmemQueueFactory<T extends InmemQueue<ID, DATA>, ID, DATA>
+        extends AbstractQueueFactory<T, ID, DATA> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected void initQueue(InmemQueue queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) {
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
                 Boolean.class);
         if (ephemeralDisabled != null) {

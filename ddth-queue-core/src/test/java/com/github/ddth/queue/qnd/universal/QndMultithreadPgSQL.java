@@ -9,8 +9,8 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
-import com.github.ddth.queue.impl.universal.UniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalJdbcQueue;
 
 public class QndMultithreadPgSQL {
 
@@ -47,7 +47,7 @@ public class QndMultithreadPgSQL {
                         public void run() {
                             while (true) {
                                 try {
-                                    UniversalQueueMessage msg = (UniversalQueueMessage) queue
+                                    UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) queue
                                             .take();
                                     if (msg != null) {
                                         // System.out.println(this + ": " +
@@ -79,7 +79,7 @@ public class QndMultithreadPgSQL {
 
                 long t1 = System.currentTimeMillis();
                 for (int i = 0; i < NUM_ITEMS; i++) {
-                    UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                    UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                     String content = "Content: [" + i + "] " + new Date();
                     msg.content(content);
                     // System.out.println("Sending: " + msg.toJson());

@@ -11,7 +11,8 @@ import com.github.ddth.queue.QueueSpec;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public abstract class JdbcQueueFactory<T extends JdbcQueue> extends AbstractQueueFactory<T> {
+public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
+        extends AbstractQueueFactory<T, ID, DATA> {
 
     public final static String SPEC_FIELD_TABLE_NAME = "table_name";
     public final static String SPEC_FIELD_TABLE_NAME_EPHEMERAL = "table_name_ephemeral";
@@ -35,7 +36,7 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue> extends AbstractQueu
      * @return
      * @since 0.5.1.1
      */
-    public JdbcQueueFactory<T> setDefaultJdbcHeper(IJdbcHelper jdbcHelper) {
+    public JdbcQueueFactory<T, ID, DATA> setDefaultJdbcHeper(IJdbcHelper jdbcHelper) {
         this.defaultJdbcHelper = jdbcHelper;
         return this;
     }

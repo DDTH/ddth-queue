@@ -35,7 +35,7 @@ import redis.clients.jedis.Transaction;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.1
  */
-public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
+public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
 
     private JedisPool jedisPool;
     private boolean myOwnJedisPool = true;
@@ -65,7 +65,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * @param redisHostAndPort
      * @return
      */
-    public RedisQueue setRedisHostAndPort(String redisHostAndPort) {
+    public RedisQueue<ID, DATA> setRedisHostAndPort(String redisHostAndPort) {
         this.redisHostAndPort = redisHostAndPort;
         return this;
     }
@@ -74,7 +74,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
         return _redisHashName;
     }
 
-    public RedisQueue setRedisHashName(String redisHashName) {
+    public RedisQueue<ID, DATA> setRedisHashName(String redisHashName) {
         _redisHashName = redisHashName;
         this.redisHashName = _redisHashName.getBytes(QueueUtils.UTF8);
         return this;
@@ -84,7 +84,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
         return _redisListName;
     }
 
-    public RedisQueue setRedisListName(String redisListName) {
+    public RedisQueue<ID, DATA> setRedisListName(String redisListName) {
         _redisListName = redisListName;
         this.redisListName = _redisListName.getBytes(QueueUtils.UTF8);
         return this;
@@ -94,7 +94,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
         return _redisSortedSetName;
     }
 
-    public RedisQueue setRedisSortedSetName(String redisSortedSetName) {
+    public RedisQueue<ID, DATA> setRedisSortedSetName(String redisSortedSetName) {
         _redisSortedSetName = redisSortedSetName;
         this.redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
         return this;
@@ -104,7 +104,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
         return jedisPool;
     }
 
-    public RedisQueue setJedisPool(JedisPool jedisPool) {
+    public RedisQueue<ID, DATA> setJedisPool(JedisPool jedisPool) {
         this.jedisPool = jedisPool;
         myOwnJedisPool = false;
         return this;
@@ -126,7 +126,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * 
      * @return
      */
-    public RedisQueue init() {
+    public RedisQueue<ID, DATA> init() {
         if (jedisPool == null) {
             JedisPoolConfig poolConfig = new JedisPoolConfig();
             poolConfig.setMaxTotal(32);
@@ -209,7 +209,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected abstract byte[] serialize(IQueueMessage msg);
+    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
 
     /**
      * Deserilizes a queue message.
@@ -217,7 +217,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * @param msgData
      * @return
      */
-    protected abstract IQueueMessage deserialize(byte[] msgData);
+    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
 
     /**
      * Removes a message completely.
@@ -225,7 +225,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected boolean remove(IQueueMessage msg) {
+    protected boolean remove(IQueueMessage<ID, DATA> msg) {
         if (isEphemeralDisabled()) {
             return true;
         }
@@ -248,7 +248,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected boolean storeNew(IQueueMessage msg) {
+    protected boolean storeNew(IQueueMessage<ID, DATA> msg) {
         try (Jedis jedis = jedisPool.getResource()) {
             Transaction jt = jedis.multi();
 
@@ -269,7 +269,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected boolean storeOld(IQueueMessage msg) {
+    protected boolean storeOld(IQueueMessage<ID, DATA> msg) {
         try (Jedis jedis = jedisPool.getResource()) {
             Transaction jt = jedis.multi();
 
@@ -288,8 +288,8 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean queue(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
         return storeNew(msg);
@@ -299,8 +299,8 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeue(IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
         return isEphemeralDisabled() ? storeNew(msg) : storeOld(msg);
@@ -310,7 +310,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(IQueueMessage msg) {
+    public boolean requeueSilent(IQueueMessage<ID, DATA> msg) {
         return isEphemeralDisabled() ? storeNew(msg.clone()) : storeOld(msg.clone());
     }
 
@@ -318,7 +318,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public void finish(IQueueMessage msg) {
+    public void finish(IQueueMessage<ID, DATA> msg) {
         remove(msg);
     }
 
@@ -329,7 +329,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() throws QueueException.EphemeralIsFull {
+    public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
         if (!isEphemeralDisabled()) {
             int ephemeralMaxSize = getEphemeralMaxSize();
             if (ephemeralMaxSize > 0 && ephemeralSize() >= ephemeralMaxSize) {
@@ -351,19 +351,19 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
         if (isEphemeralDisabled()) {
             return null;
         }
         try (Jedis jedis = jedisPool.getResource()) {
             long now = System.currentTimeMillis();
-            Collection<IQueueMessage> result = new HashSet<IQueueMessage>();
+            Collection<IQueueMessage<ID, DATA>> result = new HashSet<>();
             byte[] min = "0".getBytes();
             byte[] max = String.valueOf(now - thresholdTimestampMs).getBytes();
             Set<byte[]> fields = jedis.zrangeByScore(redisSortedSetName, min, max, 0, 100);
             for (byte[] field : fields) {
                 byte[] data = jedis.hget(redisHashName, field);
-                IQueueMessage msg = deserialize(data);
+                IQueueMessage<ID, DATA> msg = deserialize(data);
                 if (msg != null) {
                     result.add(msg);
                 }
@@ -376,7 +376,7 @@ public abstract class RedisQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
         if (isEphemeralDisabled()) {
             return true;
         }

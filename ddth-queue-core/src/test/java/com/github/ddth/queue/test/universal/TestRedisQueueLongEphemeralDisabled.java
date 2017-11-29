@@ -2,7 +2,7 @@ package com.github.ddth.queue.test.universal;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RedisQueue;
-import com.github.ddth.queue.impl.universal.UniversalRedisQueue;
+import com.github.ddth.queue.impl.universal.idint.UniversalRedisQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;

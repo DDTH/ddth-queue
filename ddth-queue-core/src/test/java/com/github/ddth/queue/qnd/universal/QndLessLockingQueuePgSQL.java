@@ -6,8 +6,8 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
-import com.github.ddth.queue.impl.universal.LessLockingUniversalPgSQLQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.LessLockingUniversalPgSQLQueue;
 
 public class QndLessLockingQueuePgSQL {
 
@@ -25,7 +25,7 @@ public class QndLessLockingQueuePgSQL {
             try (LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue()) {
                 queue.setTableName("queuell").setJdbcHelper(jdbcHelper).init();
 
-                UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                 msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
                 System.out.println("Queue: " + queue.queue(msg));
 

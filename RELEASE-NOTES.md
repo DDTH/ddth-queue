@@ -1,5 +1,10 @@
 # ddth-queue release notes
 
+## 0.5.2 - 2017-11-08
+
+
+
+
 ## 0.5.1.1 - 2017-10-29
 
 - Upgrade dependencies and libs.

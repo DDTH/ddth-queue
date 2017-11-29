@@ -39,7 +39,7 @@ import com.github.ddth.queue.utils.QueueUtils;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.0
  */
-public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
+public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
 
     static {
         RocksDB.loadLibrary();
@@ -76,7 +76,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * @param storageDir
      * @return
      */
-    public RocksDbQueue setStorageDir(String storageDir) {
+    public RocksDbQueue<ID, DATA> setStorageDir(String storageDir) {
         this.storageDir = storageDir;
         return this;
     }
@@ -98,7 +98,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.4.0.1
      */
-    public RocksDbQueue setCfNameQueue(String cfNameQueue) {
+    public RocksDbQueue<ID, DATA> setCfNameQueue(String cfNameQueue) {
         this.cfNameQueue = cfNameQueue;
         return this;
     }
@@ -120,7 +120,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.4.0.1
      */
-    public RocksDbQueue setCfNameMetadata(String cfNameMetadata) {
+    public RocksDbQueue<ID, DATA> setCfNameMetadata(String cfNameMetadata) {
         this.cfNameMetadata = cfNameMetadata;
         return this;
     }
@@ -142,7 +142,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.4.0.1
      */
-    public RocksDbQueue setCfNameEphemeral(String cfNameEphemeral) {
+    public RocksDbQueue<ID, DATA> setCfNameEphemeral(String cfNameEphemeral) {
         this.cfNameEphemeral = cfNameEphemeral;
         return this;
     }
@@ -154,7 +154,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * 
      * @return
      */
-    public RocksDbQueue init() {
+    public RocksDbQueue<ID, DATA> init() {
         File STORAGE_DIR = new File(storageDir);
         LOGGER.info("Storage Directory: " + STORAGE_DIR.getAbsolutePath());
         try {
@@ -245,7 +245,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected abstract byte[] serialize(IQueueMessage msg);
+    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
 
     /**
      * Deserilizes a queue message.
@@ -253,9 +253,9 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * @param msgData
      * @return
      */
-    protected abstract IQueueMessage deserialize(byte[] msgData);
+    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
 
-    protected boolean putToQueue(IQueueMessage msg, boolean removeFromEphemeral) {
+    protected boolean putToQueue(IQueueMessage<ID, DATA> msg, boolean removeFromEphemeral) {
         byte[] value = serialize(msg);
         lockPut.lock();
         try {
@@ -281,8 +281,8 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean queue(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
         return putToQueue(msg, false);
@@ -292,8 +292,8 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeue(IQueueMessage _msg) {
-        IQueueMessage msg = _msg.clone();
+    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
         return putToQueue(msg, true);
@@ -303,7 +303,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(IQueueMessage msg) {
+    public boolean requeueSilent(IQueueMessage<ID, DATA> msg) {
         return putToQueue(msg.clone(), true);
     }
 
@@ -311,7 +311,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public void finish(IQueueMessage msg) {
+    public void finish(IQueueMessage<ID, DATA> msg) {
         if (!isEphemeralDisabled()) {
             byte[] key = msg.qId().toString().getBytes(QueueUtils.UTF8);
             rocksDbWrapper.delete(cfEphemeral, writeOptions, key);
@@ -325,7 +325,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() throws QueueException.EphemeralIsFull {
+    public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
         if (!isEphemeralDisabled()) {
             int ephemeralMaxSize = getEphemeralMaxSize();
             if (ephemeralMaxSize > 0 && ephemeralSize() >= ephemeralMaxSize) {
@@ -344,7 +344,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
             }
             lastFetchedId = itQueue.key();
             byte[] value = itQueue.value();
-            IQueueMessage msg = deserialize(value);
+            IQueueMessage<ID, DATA> msg = deserialize(value);
             try {
                 batchTake.remove(cfQueue, lastFetchedId);
                 batchTake.put(cfMetadata, keyLastFetchedId, lastFetchedId);
@@ -367,17 +367,17 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
         if (isEphemeralDisabled()) {
             return null;
         }
         synchronized (itEphemeral) {
-            Collection<IQueueMessage> orphanMessages = new HashSet<>();
+            Collection<IQueueMessage<ID, DATA>> orphanMessages = new HashSet<>();
             long now = System.currentTimeMillis();
             itEphemeral.seekToFirst();
             while (itEphemeral.isValid()) {
                 byte[] value = itEphemeral.value();
-                IQueueMessage msg = deserialize(value);
+                IQueueMessage<ID, DATA> msg = deserialize(value);
                 if (msg.qTimestamp().getTime() + thresholdTimestampMs < now) {
                     orphanMessages.add(msg);
                 }
@@ -391,7 +391,7 @@ public abstract class RocksDbQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
         return putToQueue(msg, true);
     }
 

@@ -6,11 +6,12 @@ import java.util.concurrent.ConcurrentMap;
 import com.github.ddth.queue.IQueueFactory;
 import com.github.ddth.queue.QueueSpec;
 
-public abstract class AbstractQueueFactory<T extends AbstractQueue> implements IQueueFactory {
+public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID, DATA>
+        implements IQueueFactory<ID, DATA> {
 
-    protected ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<QueueSpec, T>();
+    protected ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<>();
 
-    public AbstractQueueFactory<T> init() {
+    public AbstractQueueFactory<T, ID, DATA> init() {
         return this;
     }
 
@@ -54,6 +55,7 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue> implements I
      */
     protected T createAndInitQueue(QueueSpec spec) {
         T queue = createQueueInstance(spec);
+        queue.setQueueName(spec.name);
         initQueue(queue, spec);
         return queue;
     }

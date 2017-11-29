@@ -10,7 +10,8 @@ import com.github.ddth.queue.impl.InmemQueue;
  * @param <T>
  * @since 0.4.0
  */
-public class BaseUniversalInmemQueue<T extends BaseUniversalQueueMessage> extends InmemQueue {
+public class BaseUniversalInmemQueue<T extends BaseUniversalQueueMessage<ID>, ID>
+        extends InmemQueue<ID, byte[]> {
 
     public BaseUniversalInmemQueue() {
     }

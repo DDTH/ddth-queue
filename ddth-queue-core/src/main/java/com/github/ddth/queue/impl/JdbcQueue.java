@@ -3,6 +3,7 @@ package com.github.ddth.queue.impl;
 import java.sql.Connection;
 import java.text.MessageFormat;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ import com.github.ddth.queue.utils.QueueException;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.1.0
  */
-public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
+public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
 
     public static int DEFAULT_MAX_RETRIES = 3;
 
@@ -49,7 +50,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
     private int transactionIsolationLevel = Connection.TRANSACTION_READ_COMMITTED;
 
     /*----------------------------------------------------------------------*/
-    public JdbcQueue setTableName(String tableName) {
+    public JdbcQueue<ID, DATA> setTableName(String tableName) {
         this.tableName = tableName;
         return this;
     }
@@ -58,7 +59,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
         return tableName;
     }
 
-    public JdbcQueue setTableNameEphemeral(String tableNameEphemeral) {
+    public JdbcQueue<ID, DATA> setTableNameEphemeral(String tableNameEphemeral) {
         this.tableNameEphemeral = tableNameEphemeral;
         return this;
     }
@@ -67,7 +68,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
         return tableNameEphemeral;
     }
 
-    public JdbcQueue setTransactionIsolationLevel(int transactionIsolationLevel) {
+    public JdbcQueue<ID, DATA> setTransactionIsolationLevel(int transactionIsolationLevel) {
         this.transactionIsolationLevel = transactionIsolationLevel;
         return this;
     }
@@ -91,12 +92,12 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.5.1.1
      */
-    public JdbcQueue setJdbcHelper(IJdbcHelper jdbcHelper) {
+    public JdbcQueue<ID, DATA> setJdbcHelper(IJdbcHelper jdbcHelper) {
         this.jdbcHelper = jdbcHelper;
         return this;
     }
 
-    public JdbcQueue setMaxRetries(int maxRetries) {
+    public JdbcQueue<ID, DATA> setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
         return this;
     }
@@ -111,9 +112,9 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public JdbcQueue init() {
-        SQL_COUNT = MessageFormat.format(SQL_COUNT, tableName);
-        SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, tableNameEphemeral);
+    public JdbcQueue<ID, DATA> init() {
+        SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());
+        SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, getTableNameEphemeral());
         return this;
     }
 
@@ -125,7 +126,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param conn
      * @return
      */
-    protected abstract IQueueMessage readFromQueueStorage(Connection conn);
+    protected abstract IQueueMessage<ID, DATA> readFromQueueStorage(Connection conn);
 
     /**
      * Reads a message from the ephemeral storage.
@@ -135,7 +136,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.2.1
      */
-    protected abstract IQueueMessage readFromEphemeralStorage(Connection conn, IQueueMessage msg);
+    protected abstract IQueueMessage<ID, DATA> readFromEphemeralStorage(Connection conn,
+            IQueueMessage<ID, DATA> msg);
 
     /**
      * Gets all orphan messages (messages that were left in ephemeral storage
@@ -148,8 +150,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.2.0
      */
-    protected abstract Collection<IQueueMessage> getOrphanFromEphemeralStorage(Connection conn,
-            long thresholdTimestampMs);
+    protected abstract Collection<? extends IQueueMessage<ID, DATA>> getOrphanFromEphemeralStorage(
+            Connection conn, long thresholdTimestampMs);
 
     /**
      * Puts a message to tail of the queue storage.
@@ -158,7 +160,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected abstract boolean putToQueueStorage(Connection conn, IQueueMessage msg);
+    protected abstract boolean putToQueueStorage(Connection conn, IQueueMessage<ID, DATA> msg);
 
     /**
      * Puts a message to the ephemeral storage.
@@ -167,7 +169,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected abstract boolean putToEphemeralStorage(Connection conn, IQueueMessage msg);
+    protected abstract boolean putToEphemeralStorage(Connection conn, IQueueMessage<ID, DATA> msg);
 
     /**
      * Removes a message from the queue storage.
@@ -176,7 +178,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected abstract boolean removeFromQueueStorage(Connection conn, IQueueMessage msg);
+    protected abstract boolean removeFromQueueStorage(Connection conn, IQueueMessage<ID, DATA> msg);
 
     /**
      * Removes a message from the queue storage.
@@ -185,7 +187,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param msg
      * @return
      */
-    protected abstract boolean removeFromEphemeralStorage(Connection conn, IQueueMessage msg);
+    protected abstract boolean removeFromEphemeralStorage(Connection conn,
+            IQueueMessage<ID, DATA> msg);
 
     /**
      * Queues a message, retry if deadlock.
@@ -211,8 +214,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param maxRetries
      * @return
      */
-    protected boolean _queueWithRetries(Connection conn, IQueueMessage msg, int numRetries,
-            int maxRetries) {
+    protected boolean _queueWithRetries(Connection conn, IQueueMessage<ID, DATA> msg,
+            int numRetries, int maxRetries) {
         try {
             Date now = new Date();
             msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
@@ -242,7 +245,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(IQueueMessage msg) {
+    public boolean queue(IQueueMessage<ID, DATA> msg) {
         if (msg == null) {
             return false;
         }
@@ -282,8 +285,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param maxRetries
      * @return
      */
-    protected boolean _requeueWithRetries(Connection conn, IQueueMessage msg, int numRetries,
-            int maxRetries) {
+    protected boolean _requeueWithRetries(Connection conn, IQueueMessage<ID, DATA> msg,
+            int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
@@ -329,7 +332,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeue(IQueueMessage msg) {
+    public boolean requeue(IQueueMessage<ID, DATA> msg) {
         if (msg == null) {
             return false;
         }
@@ -369,8 +372,8 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param maxRetries
      * @return
      */
-    protected boolean _requeueSilentWithRetries(Connection conn, IQueueMessage msg, int numRetries,
-            int maxRetries) {
+    protected boolean _requeueSilentWithRetries(Connection conn, IQueueMessage<ID, DATA> msg,
+            int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
@@ -409,7 +412,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean requeueSilent(IQueueMessage msg) {
+    public boolean requeueSilent(IQueueMessage<ID, DATA> msg) {
         if (msg == null) {
             return false;
         }
@@ -448,7 +451,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param numRetries
      * @param maxRetries
      */
-    protected void _finishWithRetries(Connection conn, IQueueMessage msg, int numRetries,
+    protected void _finishWithRetries(Connection conn, IQueueMessage<ID, DATA> msg, int numRetries,
             int maxRetries) {
         try {
             if (!isEphemeralDisabled()) {
@@ -472,7 +475,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public void finish(IQueueMessage msg) {
+    public void finish(IQueueMessage<ID, DATA> msg) {
         if (msg == null) {
             return;
         }
@@ -507,13 +510,14 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param maxRetries
      * @return
      */
-    protected IQueueMessage _takeWithRetries(Connection conn, int numRetries, int maxRetries) {
+    protected IQueueMessage<ID, DATA> _takeWithRetries(Connection conn, int numRetries,
+            int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
 
             boolean result = true;
-            IQueueMessage msg = readFromQueueStorage(conn);
+            IQueueMessage<ID, DATA> msg = readFromQueueStorage(conn);
             if (msg != null) {
                 result = result && removeFromQueueStorage(conn, msg);
                 if (!isEphemeralDisabled()) {
@@ -560,7 +564,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      *             if the ephemeral storage is full
      */
     @Override
-    public IQueueMessage take() throws QueueException.EphemeralIsFull {
+    public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
         try {
             try (Connection conn = jdbcHelper.getConnection()) {
                 if (!isEphemeralDisabled()) {
@@ -601,12 +605,12 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @return
      * @since 0.2.0
      */
-    protected Collection<IQueueMessage> _getOrphanMessagesWithRetries(long thresholdTimestampMs,
-            Connection conn, int numRetries, int maxRetries) {
+    protected Collection<? extends IQueueMessage<ID, DATA>> _getOrphanMessagesWithRetries(
+            long thresholdTimestampMs, Connection conn, int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            Collection<IQueueMessage> msgs = getOrphanFromEphemeralStorage(conn,
+            Collection<? extends IQueueMessage<ID, DATA>> msgs = getOrphanFromEphemeralStorage(conn,
                     thresholdTimestampMs);
             jdbcHelper.commitTransaction(conn);
             return msgs;
@@ -631,12 +635,13 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs) {
+    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
         if (isEphemeralDisabled()) {
             return null;
         }
         try (Connection conn = jdbcHelper.getConnection()) {
-            return _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, 0, this.maxRetries);
+            return Collections.unmodifiableCollection(
+                    _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, 0, this.maxRetries));
         } catch (Exception e) {
             final String logMsg = "(getOrphanMessages) Exception [" + e.getClass().getName() + "]: "
                     + e.getMessage();
@@ -665,12 +670,12 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * @param maxRetries
      * @return
      */
-    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage msg,
+    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<ID, DATA> msg,
             Connection conn, int numRetries, int maxRetries) {
         try {
             jdbcHelper.startTransaction(conn);
             conn.setTransactionIsolation(transactionIsolationLevel);
-            IQueueMessage orphanMsg = readFromEphemeralStorage(conn, msg);
+            IQueueMessage<ID, DATA> orphanMsg = readFromEphemeralStorage(conn, msg);
             if (orphanMsg != null) {
                 removeFromEphemeralStorage(conn, msg);
                 boolean result = putToQueueStorage(conn, msg);
@@ -700,7 +705,7 @@ public abstract class JdbcQueue extends AbstractEphemeralSupportQueue {
      * {@inheritDoc}
      */
     @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg) {
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
         if (isEphemeralDisabled()) {
             return true;
         }

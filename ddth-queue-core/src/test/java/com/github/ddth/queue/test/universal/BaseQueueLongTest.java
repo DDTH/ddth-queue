@@ -14,7 +14,7 @@ import org.junit.Before;
 import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 import junit.framework.TestCase;
@@ -88,7 +88,7 @@ public abstract class BaseQueueLongTest extends TestCase {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
                         String msgContent = idGen.generateId128Hex();
-                        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                        UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                         msg.content(msgContent);
                         try {
                             while (!queue.queue(msg)) {
@@ -120,7 +120,7 @@ public abstract class BaseQueueLongTest extends TestCase {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
                         String msgContent = idGen.generateId128Hex();
-                        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                        UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                         msg.content(msgContent);
                         try {
                             while (!queue.queue(msg)) {
@@ -156,8 +156,8 @@ public abstract class BaseQueueLongTest extends TestCase {
                     while (!signal.get()) {
                         try {
                             IQueueMessage _msg = queue.take();
-                            if (_msg instanceof UniversalQueueMessage) {
-                                UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
+                            if (_msg instanceof UniversalIdIntQueueMessage) {
+                                UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
                                 queue.finish(msg);
                                 if (!STORAGE_RECEIVED.add(msg.contentAsString())) {
                                     throw new IllegalStateException("Something wrong!");
@@ -191,8 +191,8 @@ public abstract class BaseQueueLongTest extends TestCase {
                     while (!signal.get()) {
                         try {
                             IQueueMessage _msg = queue.take();
-                            if (_msg instanceof UniversalQueueMessage) {
-                                UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
+                            if (_msg instanceof UniversalIdIntQueueMessage) {
+                                UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
                                 queue.finish(msg);
                                 if (!STORAGE_RECEIVED.add(msg.contentAsString())) {
                                     throw new IllegalStateException("Something wrong!");

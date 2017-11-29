@@ -10,7 +10,8 @@ import com.github.ddth.queue.QueueSpec;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public abstract class RedisQueueFactory<T extends RedisQueue> extends AbstractQueueFactory<T> {
+public abstract class RedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, DATA>
+        extends AbstractQueueFactory<T, ID, DATA> {
 
     public final static String SPEC_FIELD_HASH_NAME = "hash_name";
     public final static String SPEC_FIELD_LIST_NAME = "list_name";

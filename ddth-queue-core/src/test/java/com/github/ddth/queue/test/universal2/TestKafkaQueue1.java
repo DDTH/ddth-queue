@@ -3,7 +3,7 @@ package com.github.ddth.queue.test.universal2;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.KafkaQueue;
-import com.github.ddth.queue.impl.universal2.UniversalKafkaQueue;
+import com.github.ddth.queue.impl.universal.idstr.UniversalKafkaQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;

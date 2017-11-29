@@ -2,8 +2,8 @@ package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 
-import com.github.ddth.queue.impl.universal.UniversalDisruptorQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalDisruptorQueue;
 
 public class QndQueueDisruptor {
 
@@ -11,7 +11,7 @@ public class QndQueueDisruptor {
         try (final UniversalDisruptorQueue queue = new UniversalDisruptorQueue()) {
             queue.init();
 
-            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+            UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
             msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
             System.out.println("Queue: " + queue.queue(msg));
 

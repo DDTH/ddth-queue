@@ -19,7 +19,7 @@ Hence this library is born to fulfill my need.
 
 ## Installation ##
 
-Latest release version: `0.5.1.1`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.5.2`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency: if only a sub-set of `ddth-queue` functionality is used, choose the
 corresponding dependency artifact(s) to reduce the number of unused jar files.
@@ -30,7 +30,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue-core</artifactId>
-	<version>0.5.1.1</version>
+	<version>0.5.2</version>
 </dependency>
 ```
 
@@ -40,7 +40,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-disruptor</artifactId>
-    <version>0.5.1.1</version>
+    <version>0.5.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -51,7 +51,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jdbc</artifactId>
-    <version>0.5.1.1</version>
+    <version>0.5.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -62,7 +62,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-kafka</artifactId>
-    <version>0.5.1.1</version>
+    <version>0.5.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -73,7 +73,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jedis</artifactId>
-    <version>0.5.1.1</version>
+    <version>0.5.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -84,7 +84,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-rocskdb</artifactId>
-    <version>0.5.1.1</version>
+    <version>0.5.2</version>
     <type>pom</type>
 </dependency>
 ```

@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalKafkaQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue;
 import com.github.ddth.queue.utils.QueueException;
 
 public class QndMultithreadKafka {
@@ -57,7 +57,7 @@ public class QndMultithreadKafka {
                 public void run() {
                     while (!DONE) {
                         try {
-                            UniversalQueueMessage msg = queue.take();
+                            UniversalIdIntQueueMessage msg = queue.take();
                             if (msg != null) {
                                 queue.finish(msg);
                                 long numItems = NUM_TAKEN.incrementAndGet();
@@ -86,7 +86,7 @@ public class QndMultithreadKafka {
 
     private static void queueMessages(IQueue queue, long numItems) {
         for (int i = 0; i < NUM_ITEMS; i++) {
-            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+            UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();
             msg.content(content);
             queue.queue(msg);

@@ -6,7 +6,7 @@ package com.github.ddth.queue.impl;
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.5.0
  */
-public abstract class AbstractEphemeralSupportQueue extends AbstractQueue {
+public abstract class AbstractEphemeralSupportQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     private boolean ephemeralDisabled = false;
     private int ephemeralMaxSize = 0;
@@ -37,7 +37,7 @@ public abstract class AbstractEphemeralSupportQueue extends AbstractQueue {
      *            otherwise.
      * @return
      */
-    public AbstractEphemeralSupportQueue setEphemeralDisabled(boolean ephemeralDisabled) {
+    public AbstractEphemeralSupportQueue<ID, DATA> setEphemeralDisabled(boolean ephemeralDisabled) {
         this.ephemeralDisabled = ephemeralDisabled;
         return this;
     }
@@ -59,7 +59,7 @@ public abstract class AbstractEphemeralSupportQueue extends AbstractQueue {
      * @param ephemeralMaxSize
      * @return
      */
-    public AbstractEphemeralSupportQueue setEphemeralMaxSize(int ephemeralMaxSize) {
+    public AbstractEphemeralSupportQueue<ID, DATA> setEphemeralMaxSize(int ephemeralMaxSize) {
         this.ephemeralMaxSize = ephemeralMaxSize;
         return this;
     }

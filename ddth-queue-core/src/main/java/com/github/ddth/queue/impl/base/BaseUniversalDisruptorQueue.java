@@ -10,8 +10,8 @@ import com.github.ddth.queue.impl.DisruptorQueue;
  * @param <T>
  * @since 0.4.0
  */
-public class BaseUniversalDisruptorQueue<T extends BaseUniversalQueueMessage>
-        extends DisruptorQueue {
+public class BaseUniversalDisruptorQueue<T extends BaseUniversalQueueMessage<ID>, ID>
+        extends DisruptorQueue<ID, byte[]> {
 
     public BaseUniversalDisruptorQueue() {
     }

@@ -14,7 +14,7 @@ import org.junit.Before;
 import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal2.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 import junit.framework.TestCase;
@@ -88,7 +88,7 @@ public abstract class BaseQueueMultiThreadsTest extends TestCase {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
                         String msgContent = idGen.generateId128Hex();
-                        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                        UniversalIdStrQueueMessage msg = UniversalIdStrQueueMessage.newInstance();
                         msg.content(msgContent);
                         try {
                             boolean status = false;
@@ -127,7 +127,7 @@ public abstract class BaseQueueMultiThreadsTest extends TestCase {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
                         String msgContent = idGen.generateId128Hex();
-                        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                        UniversalIdStrQueueMessage msg = UniversalIdStrQueueMessage.newInstance();
                         msg.content(msgContent);
                         try {
                             while (!queue.queue(msg)) {
@@ -163,8 +163,8 @@ public abstract class BaseQueueMultiThreadsTest extends TestCase {
                     while (!signal.get()) {
                         try {
                             IQueueMessage _msg = queue.take();
-                            if (_msg instanceof UniversalQueueMessage) {
-                                UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
+                            if (_msg instanceof UniversalIdStrQueueMessage) {
+                                UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
                                 queue.finish(msg);
                                 if (!STORAGE_RECEIVED.add(msg.contentAsString())) {
                                     throw new IllegalStateException("Something wrong!");
@@ -198,8 +198,8 @@ public abstract class BaseQueueMultiThreadsTest extends TestCase {
                     while (!signal.get()) {
                         try {
                             IQueueMessage _msg = queue.take();
-                            if (_msg instanceof UniversalQueueMessage) {
-                                UniversalQueueMessage msg = (UniversalQueueMessage) _msg;
+                            if (_msg instanceof UniversalIdStrQueueMessage) {
+                                UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
                                 queue.finish(msg);
                                 if (!STORAGE_RECEIVED.add(msg.contentAsString())) {
                                     throw new IllegalStateException("Something wrong!");

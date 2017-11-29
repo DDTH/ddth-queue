@@ -1,6 +1,7 @@
 package com.github.ddth.queue;
 
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -12,6 +13,8 @@ import com.github.ddth.commons.utils.DPathUtils;
 
 public class QueueSpec {
 
+    public final String name;
+
     public final static int NO_BOUNDARY = -1;
 
     private SortedMap<String, Object> fieldData = new TreeMap<String, Object>();
@@ -20,33 +23,58 @@ public class QueueSpec {
     public final static String FIELD_EPHEMERAL_MAX_SIZE = "ephemeral_max_size";
 
     public QueueSpec() {
-        this(false, NO_BOUNDARY, NO_BOUNDARY);
+        this(null);
+    }
+
+    public QueueSpec(String name) {
+        this(name, false, NO_BOUNDARY, NO_BOUNDARY);
     }
 
     public QueueSpec(boolean ephemeralDisabled) {
-        this(ephemeralDisabled, NO_BOUNDARY, NO_BOUNDARY);
+        this(null, ephemeralDisabled);
+    }
+
+    public QueueSpec(String name, boolean ephemeralDisabled) {
+        this(name, ephemeralDisabled, NO_BOUNDARY, NO_BOUNDARY);
     }
 
     public QueueSpec(int maxSize) {
-        this(false, maxSize, NO_BOUNDARY);
+        this(null, maxSize);
+    }
+
+    public QueueSpec(String name, int maxSize) {
+        this(name, false, maxSize, NO_BOUNDARY);
     }
 
     public QueueSpec(int maxSize, int ephemeralMaxSize) {
-        this(false, maxSize, ephemeralMaxSize);
+        this(null, maxSize, ephemeralMaxSize);
+    }
+
+    public QueueSpec(String name, int maxSize, int ephemeralMaxSize) {
+        this(name, false, maxSize, ephemeralMaxSize);
     }
 
     public QueueSpec(boolean ephemeralDisabled, int maxSize) {
-        this(false, maxSize, NO_BOUNDARY);
+        this(null, false, maxSize);
+    }
+
+    public QueueSpec(String name, boolean ephemeralDisabled, int maxSize) {
+        this(name, false, maxSize, NO_BOUNDARY);
     }
 
     public QueueSpec(boolean ephemeralDisabled, int maxSize, int ephemeralMaxSize) {
+        this(null, ephemeralDisabled, maxSize, ephemeralMaxSize);
+    }
+
+    public QueueSpec(String name, boolean ephemeralDisabled, int maxSize, int ephemeralMaxSize) {
+        this.name = name;
         setField(FIELD_EPHEMERAL_DISABLED, ephemeralDisabled);
         setField(FIELD_MAX_SIZE, maxSize);
         setField(FIELD_EPHEMERAL_MAX_SIZE, ephemeralMaxSize);
     }
 
     /**
-     * Sets a field's value.
+     * Set a field's value.
      * 
      * @param fieldName
      * @param value
@@ -58,7 +86,7 @@ public class QueueSpec {
     }
 
     /**
-     * Gets a field's value.
+     * Get a field's value.
      * 
      * @param fieldName
      * @param clazz
@@ -69,7 +97,18 @@ public class QueueSpec {
     }
 
     /**
-     * Gets a field's value.
+     * Get a field's value.
+     * 
+     * @param fieldName
+     * @param clazz
+     * @return
+     */
+    public <T> Optional<T> getFieldOptional(String fieldName, Class<T> clazz) {
+        return DPathUtils.getValueOptional(fieldData, fieldName, clazz);
+    }
+
+    /**
+     * Get a field's value.
      * 
      * @param fieldName
      * @return
@@ -84,9 +123,9 @@ public class QueueSpec {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof QueueSpec) {
-            QueueSpec another = (QueueSpec) obj;
+            QueueSpec other = (QueueSpec) obj;
             EqualsBuilder eq = new EqualsBuilder();
-            eq.append(fieldData, another.fieldData);
+            eq.append(name, other.name).append(fieldData, other.fieldData);
             return eq.isEquals();
         }
         return false;
@@ -98,7 +137,7 @@ public class QueueSpec {
     @Override
     public int hashCode() {
         HashCodeBuilder hcb = new HashCodeBuilder(19, 81);
-        hcb.append(fieldData);
+        hcb.append(name).append(fieldData);
         return hcb.hashCode();
     }
 
@@ -108,6 +147,7 @@ public class QueueSpec {
     @Override
     public String toString() {
         ToStringBuilder tsb = new ToStringBuilder(this);
+        tsb.append("name", name);
         for (Entry<String, Object> entry : fieldData.entrySet()) {
             tsb.append(entry.getKey(), entry.getValue());
         }

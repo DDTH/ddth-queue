@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.github.ddth.queue.impl.universal.UniversalDisruptorQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalDisruptorQueue;
 
 public class QndMultithreadDisruptor {
 
@@ -16,7 +16,7 @@ public class QndMultithreadDisruptor {
     private static ConcurrentMap<Object, Object> SENT = new ConcurrentHashMap<Object, Object>();
     private static ConcurrentMap<Object, Object> RECEIVE = new ConcurrentHashMap<Object, Object>();
     private static AtomicLong TIMESTAMP = new AtomicLong(0);
-    private static long NUM_ITEMS = 10240000;
+    private static long NUM_ITEMS = 4 * 1024000;
     private static int NUM_THREADS = 8;
 
     public static void main(String[] args) throws Exception {
@@ -29,7 +29,7 @@ public class QndMultithreadDisruptor {
                     public void run() {
                         while (true) {
                             try {
-                                UniversalQueueMessage msg = queue.take();
+                                UniversalIdIntQueueMessage msg = queue.take();
                                 if (msg != null) {
                                     // System.out.println(this + ": " + msg);
                                     queue.finish(msg);
@@ -59,7 +59,7 @@ public class QndMultithreadDisruptor {
 
             long t1 = System.currentTimeMillis();
             for (int i = 0; i < NUM_ITEMS; i++) {
-                UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                 String content = "Content: [" + i + "] " + new Date();
                 msg.content(content);
                 // System.out.println("Sending: " + msg.toJson());

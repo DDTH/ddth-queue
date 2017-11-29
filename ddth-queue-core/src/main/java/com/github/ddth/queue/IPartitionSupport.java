@@ -13,7 +13,7 @@ public interface IPartitionSupport extends Cloneable {
      * 
      * @return
      */
-    public String qPartitionKey();
+    String qPartitionKey();
 
     /**
      * Key used for partitioning messages (some queue implementations, such as
@@ -22,5 +22,5 @@ public interface IPartitionSupport extends Cloneable {
      * @param partitionKey
      * @return
      */
-    public IPartitionSupport qPartitionKey(String partitionKey);
+    IPartitionSupport qPartitionKey(String partitionKey);
 }

@@ -12,14 +12,14 @@ import com.github.ddth.queue.utils.QueueException;
  * @param <T>
  * @since 0.3.3
  */
-public abstract class BaseUniversalKafkaQueue<T extends BaseUniversalQueueMessage>
-        extends KafkaQueue {
+public abstract class BaseUniversalKafkaQueue<T extends BaseUniversalQueueMessage<ID>, ID>
+        extends KafkaQueue<ID, byte[]> {
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected byte[] serialize(IQueueMessage _msg) throws QueueException {
+    protected byte[] serialize(IQueueMessage<ID, byte[]> _msg) throws QueueException {
         if (_msg == null) {
             return null;
         }
@@ -28,7 +28,7 @@ public abstract class BaseUniversalKafkaQueue<T extends BaseUniversalQueueMessag
                     + BaseUniversalQueueMessage.class.getName() + "]!");
         }
 
-        BaseUniversalQueueMessage msg = (BaseUniversalQueueMessage) _msg;
+        BaseUniversalQueueMessage<ID> msg = (BaseUniversalQueueMessage<ID>) _msg;
         try {
             return msg.toBytes();
         } catch (Exception e) {

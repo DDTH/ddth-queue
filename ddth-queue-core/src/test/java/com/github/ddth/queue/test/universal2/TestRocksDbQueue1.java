@@ -6,7 +6,7 @@ import org.apache.commons.io.FileUtils;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RocksDbQueue;
-import com.github.ddth.queue.impl.universal2.UniversalRocksDbQueue;
+import com.github.ddth.queue.impl.universal.idstr.UniversalRocksDbQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;

@@ -9,7 +9,7 @@ import com.github.ddth.dao.jdbc.IJdbcHelper;
 import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.JdbcQueue;
-import com.github.ddth.queue.impl.universal2.UniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.idstr.UniversalJdbcQueue;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;

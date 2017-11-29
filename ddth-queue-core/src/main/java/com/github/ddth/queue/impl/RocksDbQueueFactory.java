@@ -10,7 +10,8 @@ import com.github.ddth.queue.QueueSpec;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public abstract class RocksDbQueueFactory<T extends RocksDbQueue> extends AbstractQueueFactory<T> {
+public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, DATA>
+        extends AbstractQueueFactory<T, ID, DATA> {
 
     public final static String SPEC_FIELD_STORAGE_DIR = "storage_dir";
     public final static String SPEC_FIELD_CF_EPHEMERAL = "cf_ephemeral";
@@ -23,7 +24,7 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue> extends Abstra
         return defaultStorageDir;
     }
 
-    public RocksDbQueueFactory<T> setDefaultStorageDir(String defaultStorageDir) {
+    public RocksDbQueueFactory<T, ID, DATA> setDefaultStorageDir(String defaultStorageDir) {
         this.defaultStorageDir = defaultStorageDir;
         return this;
     }

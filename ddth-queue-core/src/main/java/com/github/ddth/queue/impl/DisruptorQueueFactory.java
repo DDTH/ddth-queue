@@ -8,8 +8,8 @@ import com.github.ddth.queue.QueueSpec;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public abstract class DisruptorQueueFactory<T extends DisruptorQueue>
-        extends AbstractQueueFactory<T> {
+public abstract class DisruptorQueueFactory<T extends DisruptorQueue<ID, DATA>, ID, DATA>
+        extends AbstractQueueFactory<T, ID, DATA> {
 
     /**
      * {@inheritDoc}

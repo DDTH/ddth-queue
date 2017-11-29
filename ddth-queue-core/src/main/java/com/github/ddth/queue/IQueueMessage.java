@@ -8,82 +8,82 @@ import java.util.Date;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.1.0
  */
-public interface IQueueMessage extends Cloneable {
+public interface IQueueMessage<ID, DATA> extends Cloneable {
 
     /**
-     * Clones this message.
+     * Clone this message.
      * 
      * @return
      * @since 0.4.0
      */
-    public IQueueMessage clone();
+    IQueueMessage<ID, DATA> clone();
 
     /**
      * Message's unique id in queue.
      * 
      * @return
      */
-    public Object qId();
+    ID qId();
 
     /**
-     * Sets message's unique queue id.
+     * Set message's unique queue id.
      * 
      * @param id
      * @return
      */
-    public IQueueMessage qId(Object queueId);
+    IQueueMessage<ID, DATA> qId(ID queueId);
 
     /**
      * Message's first-queued timestamp.
      * 
      * @return
      */
-    public Date qOriginalTimestamp();
+    Date qOriginalTimestamp();
 
     /**
-     * Sets message's first-queued timestamp.
+     * Set message's first-queued timestamp.
      * 
      * @param timestamp
      * @return
      */
-    public IQueueMessage qOriginalTimestamp(final Date timestamp);
+    IQueueMessage<ID, DATA> qOriginalTimestamp(Date timestamp);
 
     /**
      * Message's last-queued timestamp.
      * 
      * @return
      */
-    public Date qTimestamp();
+    Date qTimestamp();
 
     /**
-     * Sets message's last-queued timestamp.
+     * Set message's last-queued timestamp.
      * 
      * @param timestamp
      * @return
      */
-    public IQueueMessage qTimestamp(final Date timestamp);
+    IQueueMessage<ID, DATA> qTimestamp(Date timestamp);
 
     /**
      * How many times message has been re-queued?
      * 
      * @return
      */
-    public int qNumRequeues();
+    int qNumRequeues();
 
     /**
-     * Sets message's number of re-queue times.
+     * Set message's number of re-queue times.
      * 
      * @param numRequeues
      * @return
      */
-    public IQueueMessage qNumRequeues(final int numRequeues);
+    IQueueMessage<ID, DATA> qNumRequeues(int numRequeues);
 
     /**
-     * Increases message's number of re-queue times by 1.
+     * Increase message's number of re-queue times by 1.
      * 
      * @return
      */
-    public IQueueMessage qIncNumRequeues();
+    IQueueMessage<ID, DATA> qIncNumRequeues();
 
     /**
      * Data/content attached to the queue message.
@@ -91,16 +91,16 @@ public interface IQueueMessage extends Cloneable {
      * @return
      * @since 0.4.2
      */
-    public Object qData();
+    DATA qData();
 
     /**
-     * Attaches data/content to the queue message.
+     * Attach data/content to the queue message.
      * 
      * @param data
      * @return
      * @since 0.4.2
      */
-    public IQueueMessage qData(Object data);
+    IQueueMessage<ID, DATA> qData(DATA data);
 
     /**
      * An empty queue message.
@@ -108,7 +108,7 @@ public interface IQueueMessage extends Cloneable {
      * @author Thanh Nguyen <btnguyen2k@gmail.com>
      * @since 0.3.3
      */
-    public static class EmptyQueueMessage implements IQueueMessage {
+    static class EmptyQueueMessage implements IQueueMessage<Object, Object> {
         /**
          * {@inheritDoc}
          */
@@ -127,7 +127,7 @@ public interface IQueueMessage extends Cloneable {
         }
 
         @Override
-        public IQueueMessage qId(Object queueId) {
+        public EmptyQueueMessage qId(Object queueId) {
             return this;
         }
 
@@ -137,7 +137,7 @@ public interface IQueueMessage extends Cloneable {
         }
 
         @Override
-        public IQueueMessage qOriginalTimestamp(Date timestamp) {
+        public EmptyQueueMessage qOriginalTimestamp(Date timestamp) {
             return this;
         }
 
@@ -147,7 +147,7 @@ public interface IQueueMessage extends Cloneable {
         }
 
         @Override
-        public IQueueMessage qTimestamp(Date timestamp) {
+        public EmptyQueueMessage qTimestamp(Date timestamp) {
             return this;
         }
 
@@ -157,12 +157,12 @@ public interface IQueueMessage extends Cloneable {
         }
 
         @Override
-        public IQueueMessage qNumRequeues(int numRequeues) {
+        public EmptyQueueMessage qNumRequeues(int numRequeues) {
             return null;
         }
 
         @Override
-        public IQueueMessage qIncNumRequeues() {
+        public EmptyQueueMessage qIncNumRequeues() {
             return this;
         }
 
@@ -172,9 +172,8 @@ public interface IQueueMessage extends Cloneable {
         }
 
         @Override
-        public IQueueMessage qData(Object data) {
+        public EmptyQueueMessage qData(Object data) {
             return this;
         }
-
     }
 }

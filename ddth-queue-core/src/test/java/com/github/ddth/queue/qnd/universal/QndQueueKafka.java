@@ -4,8 +4,8 @@ import java.util.Date;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalKafkaQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue;
 
 public class QndQueueKafka {
 
@@ -23,10 +23,10 @@ public class QndQueueKafka {
                     .setConsumerGroupId("ddth-queue").init();
 
             emptyQueue(queue);
-            UniversalQueueMessage msg = queue.take();
+            UniversalIdIntQueueMessage msg = queue.take();
             System.out.println("Queue empty: " + msg);
 
-            msg = UniversalQueueMessage.newInstance();
+            msg = UniversalIdIntQueueMessage.newInstance();
             msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
             System.out.println("Queue: " + queue.queue(msg));
 

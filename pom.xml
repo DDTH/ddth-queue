@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<parent>
@@ -49,11 +50,12 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<skipTests>true</skipTests>
 
-		<version.ddth_dao>0.8.2</version.ddth_dao>
+		<version.ddth_commons>0.7.1.1</version.ddth_commons>
+		<version.ddth_dao>0.8.3</version.ddth_dao>
 		<version.ddth_kafka>1.3.3</version.ddth_kafka>
 		<version.jedis>2.9.0</version.jedis>
 		<version.disruptor>3.3.7</version.disruptor>
-		<version.rocksdb>5.8.0</version.rocksdb>
+		<version.rocksdb>5.8.6</version.rocksdb>
 	</properties>
 
 	<repositories>
@@ -94,6 +96,11 @@
 			<groupId>com.github.ddth</groupId>
 			<artifactId>ddth-dao-core</artifactId>
 			<version>${version.ddth_dao}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ddth</groupId>
+			<artifactId>ddth-commons-core</artifactId>
+			<version>${version.ddth_commons}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>

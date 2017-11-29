@@ -11,47 +11,17 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import com.github.ddth.commons.utils.DPathUtils;
 import com.github.ddth.commons.utils.SerializationUtils;
-import com.github.ddth.queue.IPartitionSupport;
-import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.GenericQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
- * Base class for universal queue messages.
- * 
- * <p>
- * Fields:
- * </p>
- * <ul>
- * <li>{@code queue_id}: see {@link IQueueMessage#qId()}</li>
- * <li>{@code org_timestamp (type: java.util.Date)}: see
- * {@link IQueueMessage#qOriginalTimestamp()}</li>
- * <li>{@code timestamp (type: java.util.Date)}: see
- * {@link IQueueMessage#qTimestamp()}</li>
- * <li>{@code num_requeues (type: int)}: see
- * {@link IQueueMessage#qNumRequeues()}</li>
- * <li>{@code content (type: byte[])}: message's content</li>
- * <li>{@code partitionKey (type: string)}: key for partitioning messages, see
- * {@link #qPartitionKey()}</li>
- * </ul>
+ * Base class for universal queue messages, where data is stored as
+ * {@code byte[]}.
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.3
  */
-public abstract class BaseUniversalQueueMessage
-        implements IQueueMessage, IPartitionSupport, Cloneable {
-
-    public final static String FIELD_QUEUE_ID = "qid";
-    public final static String FIELD_ORG_TIMESTAMP = "orgt";
-    public final static String FIELD_TIMESTAMP = "t";
-    public final static String FIELD_NUM_REQUEUES = "numq";
-    public final static String FIELD_CONTENT = "data";
-
-    /**
-     * Key used for partitioning messages.
-     *
-     * @since 0.3.3.2
-     */
-    protected final static String FIELD_PARTITION_KEY = "_pkey_";
+public abstract class BaseUniversalQueueMessage<ID> extends GenericQueueMessage<ID, byte[]> {
 
     /**
      * {@inheritDoc}
@@ -61,7 +31,7 @@ public abstract class BaseUniversalQueueMessage
     @Override
     public int hashCode() {
         HashCodeBuilder hcb = new HashCodeBuilder(19, 81);
-        hcb.append(queueId);
+        hcb.append(qId());
         return hcb.hashCode();
     }
 
@@ -76,15 +46,20 @@ public abstract class BaseUniversalQueueMessage
             return true;
         }
         if (obj instanceof BaseUniversalQueueMessage) {
-            BaseUniversalQueueMessage msg = (BaseUniversalQueueMessage) obj;
+            BaseUniversalQueueMessage<?> msg = (BaseUniversalQueueMessage<?>) obj;
             EqualsBuilder eq = new EqualsBuilder();
-            eq.append(this.queueId, msg.queueId);
+            eq.append(this.qId(), msg.qId());
             return eq.isEquals();
         }
         return false;
     }
 
+    public final static String FIELD_QUEUE_ID = "qid", FIELD_ORG_TIMESTAMP = "orgTime",
+            FIELD_TIMESTAMP = "time", FIELD_NUM_REQUEUES = "numRequeues", FIELD_DATA = "data",
+            FIELD_PARTITION_KEY = "pkey";
+
     /**
+     * Serialize this queue message to a {@link Map}.
      * 
      * @return
      * @since 0.5.0
@@ -93,26 +68,28 @@ public abstract class BaseUniversalQueueMessage
         return new HashMap<String, Object>() {
             private static final long serialVersionUID = 1L;
             {
-                put(FIELD_QUEUE_ID, queueId);
-                put(FIELD_ORG_TIMESTAMP, orgTimestamp);
-                put(FIELD_TIMESTAMP, timestamp);
-                put(FIELD_NUM_REQUEUES, numRequeues);
-                put(FIELD_CONTENT, content);
-                put(FIELD_PARTITION_KEY, partitionKey);
+                put(FIELD_QUEUE_ID, qId());
+                put(FIELD_ORG_TIMESTAMP, qOriginalTimestamp());
+                put(FIELD_TIMESTAMP, qTimestamp());
+                put(FIELD_NUM_REQUEUES, qNumRequeues());
+                put(FIELD_DATA, qData());
+                put(FIELD_PARTITION_KEY, qPartitionKey());
             }
         };
     }
 
     /**
+     * Deserialize queue message from a {@link Map}.
      * 
      * @param dataMap
      * @return
      * @since 0.5.0
      */
-    public BaseUniversalQueueMessage fromMap(Map<String, Object> dataMap) {
+    @SuppressWarnings("unchecked")
+    public BaseUniversalQueueMessage<ID> fromMap(Map<String, Object> dataMap) {
         Object queueId = DPathUtils.getValue(dataMap, FIELD_QUEUE_ID);
         if (queueId != null) {
-            qId(queueId);
+            qId((ID) queueId);
         }
 
         Date orgTimestamp = DPathUtils.getValue(dataMap, FIELD_ORG_TIMESTAMP, Date.class);
@@ -130,24 +107,25 @@ public abstract class BaseUniversalQueueMessage
             qNumRequeues(numRequeues.intValue());
         }
 
-        Object content = DPathUtils.getValue(dataMap, FIELD_CONTENT);
+        Object content = DPathUtils.getValue(dataMap, FIELD_DATA);
         if (content != null) {
             if (content instanceof byte[]) {
-                qData(content);
+                content((byte[]) content);
             } else if (content instanceof String) {
-                qData(Base64.decodeBase64((String) content));
+                content((byte[]) Base64.decodeBase64((String) content));
             }
         }
 
         String partitionKey = DPathUtils.getValue(dataMap, FIELD_PARTITION_KEY, String.class);
         if (partitionKey != null) {
-            partitionKey(partitionKey);
+            qPartitionKey(partitionKey);
         }
 
         return this;
     }
 
     /**
+     * Serialize this queue message to Json string.
      * 
      * @return
      * @since 0.5.0
@@ -158,13 +136,14 @@ public abstract class BaseUniversalQueueMessage
     }
 
     /**
+     * Deserialize queue message from a Json string.
      * 
      * @param dataJson
      * @return
      * @since 0.5.0
      */
     @SuppressWarnings("unchecked")
-    protected BaseUniversalQueueMessage fromJson(String dataJson) {
+    protected BaseUniversalQueueMessage<ID> fromJson(String dataJson) {
         Map<String, Object> dataMap = SerializationUtils.fromJsonString(dataJson, Map.class);
         return fromMap(dataMap);
     }
@@ -189,8 +168,8 @@ public abstract class BaseUniversalQueueMessage
      * @throws InstantiationException
      */
     @SuppressWarnings("unchecked")
-    public static <T extends BaseUniversalQueueMessage> T fromBytes(byte[] msgData, Class<T> clazz)
-            throws InstantiationException, IllegalAccessException {
+    public static <T extends BaseUniversalQueueMessage<ID>, ID> T fromBytes(byte[] msgData,
+            Class<T> clazz) throws InstantiationException, IllegalAccessException {
         // firstly, deserialize the input data to a map
         String msgDataJson = msgData != null ? new String(msgData, QueueUtils.UTF8) : null;
         Map<String, Object> dataMap = null;
@@ -208,183 +187,23 @@ public abstract class BaseUniversalQueueMessage
         return msg;
     }
 
-    private Object queueId;
-    private Date orgTimestamp, timestamp;
-    volatile private int numRequeues;
-    private byte[] content;
-    private String partitionKey;
-
     /**
      * {@inheritDoc}
      */
     @Override
-    public BaseUniversalQueueMessage clone() {
-        try {
-            return (BaseUniversalQueueMessage) super.clone();
-        } catch (CloneNotSupportedException e) {
-            // should not happen
-            throw new RuntimeException(e);
-        }
+    public BaseUniversalQueueMessage<ID> clone() {
+        return (BaseUniversalQueueMessage<ID>) super.clone();
     }
 
     /**
-     * Key used for partitioning messages (some queue implementations, such as
-     * Kafka queue) support message partitioning.
+     * Set queue message's data.
      * 
+     * @param data
      * @return
-     * @since 0.3.3.2
-     * @deprecated since 0.5.0, use {@link #qPartitionKey()} instead
+     * @since 0.6.0
      */
-    public String partitionKey() {
-        return partitionKey;
-    }
-
-    /**
-     * Key used for partitioning messages (some queue implementations, such as
-     * Kafka queue) support message partitioning.
-     * 
-     * @return
-     * @since 0.5.0
-     */
-    @Override
-    public String qPartitionKey() {
-        return partitionKey;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.5.0
-     */
-    @Override
-    public Object qId() {
-        return queueId;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.5.0
-     */
-    @Override
-    public BaseUniversalQueueMessage qId(Object qId) {
-        this.queueId = qId;
-        return this;
-    }
-
-    /**
-     * Key used for partitioning messages (some queue implementations, such as
-     * Kafka queue) support message partitioning.
-     * 
-     * @param partitionKey
-     * @return
-     * @since 0.3.3.2
-     * @deprecated since 0.5.0, use {@link #qPartitionKey(String)} instead
-     */
-    public BaseUniversalQueueMessage partitionKey(String partitionKey) {
-        this.partitionKey = partitionKey;
-        return this;
-    }
-
-    /**
-     * Key used for partitioning messages (some queue implementations, such as
-     * Kafka queue) support message partitioning.
-     * 
-     * @param partitionKey
-     * @return
-     * @since 0.5.0
-     */
-    @Override
-    public BaseUniversalQueueMessage qPartitionKey(String partitionKey) {
-        this.partitionKey = partitionKey;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Date qOriginalTimestamp() {
-        return orgTimestamp;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public BaseUniversalQueueMessage qOriginalTimestamp(Date timestamp) {
-        this.orgTimestamp = timestamp;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Date qTimestamp() {
-        return timestamp;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public BaseUniversalQueueMessage qTimestamp(Date timestamp) {
-        this.timestamp = timestamp;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int qNumRequeues() {
-        return numRequeues;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public BaseUniversalQueueMessage qNumRequeues(int numRequeues) {
-        this.numRequeues = numRequeues < 0 ? 0 : numRequeues;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public BaseUniversalQueueMessage qIncNumRequeues() {
-        numRequeues++;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.4.2
-     */
-    public byte[] qData() {
-        return content();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.4.2
-     */
-    public BaseUniversalQueueMessage qData(Object data) {
-        if (data instanceof byte[]) {
-            return content((byte[]) data);
-        }
-        if (data instanceof String) {
-            return content((String) data);
-        }
-        if (data == null) {
-            return content((byte[]) null);
-        }
-        return content(data.toString());
+    public BaseUniversalQueueMessage<ID> qData(String data) {
+        return content(data);
     }
 
     /**
@@ -393,7 +212,7 @@ public abstract class BaseUniversalQueueMessage
      * @return
      */
     public byte[] content() {
-        return content;
+        return qData();
     }
 
     /**
@@ -412,8 +231,8 @@ public abstract class BaseUniversalQueueMessage
      * @param content
      * @return
      */
-    public BaseUniversalQueueMessage content(byte[] content) {
-        this.content = content != null ? Arrays.copyOf(content, content.length) : null;
+    public BaseUniversalQueueMessage<ID> content(byte[] content) {
+        qData(content != null ? Arrays.copyOf(content, content.length) : null);
         return this;
     }
 
@@ -423,7 +242,7 @@ public abstract class BaseUniversalQueueMessage
      * @param content
      * @return
      */
-    public BaseUniversalQueueMessage content(String content) {
+    public BaseUniversalQueueMessage<ID> content(String content) {
         return content(content != null ? content.getBytes(QueueUtils.UTF8) : null);
     }
 

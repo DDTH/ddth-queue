@@ -8,10 +8,10 @@ CREATE TABLE queue2 (
     msg_timestamp               DATETIME            NOT NULL            COMMENT "Message's queue timestamp",
     msg_num_requeues            INT                 NOT NULL DEFAULT 0  COMMENT "How many times message has been requeued",
     msg_content                 BLOB                                    COMMENT "Message's content"
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-DROP TABLE IF EXISTS queue_ephemeral2;
-CREATE TABLE queue_ephemeral2 (
+DROP TABLE IF EXISTS queue2_ephemeral;
+CREATE TABLE queue2_ephemeral (
     queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     msg_org_timestamp           DATETIME            NOT NULL,
@@ -19,4 +19,4 @@ CREATE TABLE queue_ephemeral2 (
         INDEX (msg_timestamp),
     msg_num_requeues            INT                 NOT NULL DEFAULT 0,
     msg_content                 BLOB
-) ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

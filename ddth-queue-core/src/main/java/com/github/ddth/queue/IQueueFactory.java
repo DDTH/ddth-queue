@@ -6,7 +6,7 @@ package com.github.ddth.queue;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public interface IQueueFactory {
+public interface IQueueFactory<ID, DATA> {
     /**
      * Gets an {@link IQueue} instance.
      * 
@@ -14,5 +14,5 @@ public interface IQueueFactory {
      *            concrete class defines format of {@code spec}.
      * @return
      */
-    public IQueue getQueue(QueueSpec spec);
+    IQueue<ID, DATA> getQueue(QueueSpec spec);
 }

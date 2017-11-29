@@ -9,7 +9,7 @@ import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.AbstractEphemeralSupportQueue;
-import com.github.ddth.queue.impl.universal2.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 import junit.framework.TestCase;
@@ -68,7 +68,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         }
 
         String content = idGen.generateId128Ascii();
-        UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+        UniversalIdStrQueueMessage msg = UniversalIdStrQueueMessage.newInstance();
         msg.content(content);
 
         assertTrue(queue.queue(msg));
@@ -93,7 +93,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         int queueSize, ephemeralSize;
 
         String content = idGen.generateId128Ascii();
-        UniversalQueueMessage msg1 = UniversalQueueMessage.newInstance();
+        UniversalIdStrQueueMessage msg1 = UniversalIdStrQueueMessage.newInstance();
         msg1.content(content);
 
         assertTrue(queue.queue(msg1));
@@ -102,7 +102,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         ephemeralSize = queue.ephemeralSize();
         assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
 
-        UniversalQueueMessage msg2 = (UniversalQueueMessage) queue.take();
+        UniversalIdStrQueueMessage msg2 = (UniversalIdStrQueueMessage) queue.take();
         assertNotNull(msg2);
         assertEquals(content, msg2.contentAsString());
         queueSize = queue.queueSize();
@@ -129,7 +129,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         }
 
         String content = idGen.generateId128Ascii();
-        UniversalQueueMessage msg1 = UniversalQueueMessage.newInstance();
+        UniversalIdStrQueueMessage msg1 = UniversalIdStrQueueMessage.newInstance();
         msg1.content(content);
 
         int queueSize, ephemeralSize;
@@ -146,7 +146,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
             assertEquals(0, orphanMessages.size());
         }
 
-        UniversalQueueMessage msg2 = (UniversalQueueMessage) queue.take();
+        UniversalIdStrQueueMessage msg2 = (UniversalIdStrQueueMessage) queue.take();
         assertNotNull(msg2);
         assertEquals(content, msg2.contentAsString());
         queueSize = queue.queueSize();
@@ -186,14 +186,14 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         ((AbstractEphemeralSupportQueue) queue).setEphemeralDisabled(true);
 
         String content = idGen.generateId128Ascii();
-        UniversalQueueMessage msg1 = UniversalQueueMessage.newInstance();
+        UniversalIdStrQueueMessage msg1 = UniversalIdStrQueueMessage.newInstance();
         msg1.content(content);
 
         assertTrue(queue.queue(msg1));
         assertEquals(1, queue.queueSize());
         assertEquals(0, queue.ephemeralSize());
 
-        UniversalQueueMessage msg2 = (UniversalQueueMessage) queue.take();
+        UniversalIdStrQueueMessage msg2 = (UniversalIdStrQueueMessage) queue.take();
         assertNotNull(msg2);
         assertEquals(content, msg2.contentAsString());
         assertEquals(0, queue.queueSize());
@@ -216,7 +216,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
 
         for (int i = 0, n = EPHEMERAL_MAX_SIZE + 1; i < n; i++) {
             String content = idGen.generateId128Ascii();
-            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+            UniversalIdStrQueueMessage msg = UniversalIdStrQueueMessage.newInstance();
             msg.content(content);
             assertTrue(queue.queue(msg));
             assertEquals(i + 1, queue.queueSize());

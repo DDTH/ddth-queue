@@ -24,9 +24,18 @@ import com.github.ddth.queue.utils.QueueException;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.1.0
  */
-public interface IQueue {
+public interface IQueue<ID, DATA> {
+
     /**
-     * Queues a message.
+     * Create a new, empty queue message.
+     * 
+     * @return
+     * @since 0.6.0
+     */
+    IQueueMessage<ID, DATA> createMessage();
+
+    /**
+     * Queue a message.
      * 
      * <p>
      * Implementation flow:
@@ -44,10 +53,10 @@ public interface IQueue {
      * @throws QueueException
      *             other queue exception
      */
-    public boolean queue(IQueueMessage msg) throws QueueException;
+    boolean queue(IQueueMessage<ID, DATA> msg) throws QueueException;
 
     /**
-     * Re-queues a message.
+     * Re-queue a message.
      * 
      * <p>
      * Implementation flow:
@@ -73,10 +82,10 @@ public interface IQueue {
      * @throws QueueException
      *             other queue exception
      */
-    public boolean requeue(IQueueMessage msg) throws QueueException;
+    boolean requeue(IQueueMessage<ID, DATA> msg) throws QueueException;
 
     /**
-     * Silently re-queues a message.
+     * Silently re-queue a message.
      * 
      * <p>
      * Implementation flow:
@@ -102,7 +111,7 @@ public interface IQueue {
      * @throws QueueException
      *             other queue exception
      */
-    public boolean requeueSilent(IQueueMessage msg) throws QueueException;
+    boolean requeueSilent(IQueueMessage<ID, DATA> msg) throws QueueException;
 
     /**
      * Called when finish processing the message to cleanup ephemeral storage.
@@ -122,10 +131,10 @@ public interface IQueue {
      * @param msg
      * @throws QueueException
      */
-    public void finish(IQueueMessage msg) throws QueueException;
+    void finish(IQueueMessage<ID, DATA> msg) throws QueueException;
 
     /**
-     * Takes a message out of queue.
+     * Take a message out of queue.
      * 
      * <p>
      * Implementation flow:
@@ -150,11 +159,11 @@ public interface IQueue {
      * @throws QueueException
      *             other queue exception
      */
-    public IQueueMessage take() throws QueueException;
+    IQueueMessage<ID, DATA> take() throws QueueException;
 
     /**
-     * Gets all orphan messages (messages that were left in ephemeral storage
-     * for a long time).
+     * Get all orphan messages (messages that were left in ephemeral storage for
+     * a long time).
      * 
      * @param thresholdTimestampMs
      *            message is orphan if
@@ -166,11 +175,11 @@ public interface IQueue {
      * @since 0.2.0
      * @throws QueueException.OperationNotSupported
      */
-    public Collection<IQueueMessage> getOrphanMessages(long thresholdTimestampMs)
+    Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs)
             throws QueueException.OperationNotSupported;
 
     /**
-     * Moves a message from ephemeral back to queue storage. Useful when dealing
+     * Move a message from ephemeral back to queue storage. Useful when dealing
      * with orphan messages.
      * 
      * <p>
@@ -193,19 +202,19 @@ public interface IQueue {
      * @since 0.2.1
      * @throws QueueException.OperationNotSupported
      */
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage msg)
+    boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg)
             throws QueueException.OperationNotSupported;
 
     /**
-     * Gets number of items currently in queue storage.
+     * Get number of items currently in queue storage.
      * 
      * @return negative number if queue size can not be queried
      * @throws QueueException
      */
-    public int queueSize() throws QueueException;
+    int queueSize() throws QueueException;
 
     /**
-     * Gets number of items currently in ephemeral storage.
+     * Get number of items currently in ephemeral storage.
      * 
      * <p>
      * Note: ephemeral storage implementation is optional, depends on
@@ -215,5 +224,5 @@ public interface IQueue {
      * @return negative number if ephemeral size can not be queried
      * @throws QueueException
      */
-    public int ephemeralSize() throws QueueException;
+    int ephemeralSize() throws QueueException;
 }

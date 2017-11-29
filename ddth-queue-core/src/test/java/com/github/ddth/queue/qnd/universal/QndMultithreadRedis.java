@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalRedisQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalRedisQueue;
 
 public class QndMultithreadRedis {
 
@@ -32,7 +32,7 @@ public class QndMultithreadRedis {
                     public void run() {
                         while (!DONE) {
                             try {
-                                UniversalQueueMessage msg = queue.take();
+                                UniversalIdIntQueueMessage msg = queue.take();
                                 if (msg != null) {
                                     // System.out.println(this + ": " + msg);
                                     queue.finish(msg);
@@ -62,7 +62,7 @@ public class QndMultithreadRedis {
 
             long t1 = System.currentTimeMillis();
             for (int i = 0; i < NUM_ITEMS; i++) {
-                UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                 String content = "Content: [" + i + "] " + new Date();
                 msg.content(content);
                 // System.out.println("Sending: " + msg.toJson());

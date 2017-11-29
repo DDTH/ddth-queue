@@ -10,8 +10,8 @@ CREATE TABLE queue2 (
     msg_content                 BYTEA
 );
 
-DROP TABLE IF EXISTS queue_ephemeral2;
-CREATE TABLE queue_ephemeral2 (
+DROP TABLE IF EXISTS queue2_ephemeral;
+CREATE TABLE queue2_ephemeral (
     queue_id                    VARCHAR(32)         NOT NULL,
         PRIMARY KEY (queue_id),
     msg_org_timestamp           TIMESTAMP           NOT NULL,
@@ -19,4 +19,4 @@ CREATE TABLE queue_ephemeral2 (
     msg_num_requeues            INT                 NOT NULL DEFAULT 0,
     msg_content                 BYTEA
 );
-CREATE INDEX queue_ephemeral2_msg_timestamp ON queue_ephemeral2(msg_timestamp);
+CREATE INDEX queue2_ephemeral_msg_timestamp ON queue2_ephemeral(msg_timestamp);

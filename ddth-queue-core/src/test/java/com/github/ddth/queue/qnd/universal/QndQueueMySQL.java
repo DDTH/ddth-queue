@@ -6,8 +6,8 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
-import com.github.ddth.queue.impl.universal.UniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalJdbcQueue;
 
 public class QndQueueMySQL {
 
@@ -26,7 +26,7 @@ public class QndQueueMySQL {
                 queue.setTableName("queue").setTableNameEphemeral("queue_ephemeral")
                         .setJdbcHelper(jdbcHelper).init();
 
-                UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+                UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                 msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
                 System.out.println("Queue: " + queue.queue(msg));
 

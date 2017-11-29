@@ -2,8 +2,8 @@ package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 
-import com.github.ddth.queue.impl.universal.UniversalInmemQueue;
-import com.github.ddth.queue.impl.universal.UniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.idint.UniversalInmemQueue;
 
 public class QndQueueInmem {
 
@@ -11,7 +11,7 @@ public class QndQueueInmem {
         try (final UniversalInmemQueue queue = new UniversalInmemQueue()) {
             queue.init();
 
-            UniversalQueueMessage msg = UniversalQueueMessage.newInstance();
+            UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
             msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
             System.out.println("Queue: " + queue.queue(msg));
 
