@@ -34,6 +34,8 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) {
+        super.initQueue(queue, spec);
+
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
                 Boolean.class);
         if (ephemeralDisabled != null) {

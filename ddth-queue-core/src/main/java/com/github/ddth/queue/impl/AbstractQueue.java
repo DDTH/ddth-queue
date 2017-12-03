@@ -4,6 +4,7 @@ import java.io.Closeable;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.IQueueObserver;
 
 /**
  * Abstract queue implementation.
@@ -15,6 +16,7 @@ public abstract class AbstractQueue<ID, DATA>
         implements IQueue<ID, DATA>, Closeable, AutoCloseable {
 
     private String queueName;
+    private IQueueObserver<ID, DATA> observer;
 
     /**
      * Get queue's name.
@@ -39,20 +41,52 @@ public abstract class AbstractQueue<ID, DATA>
     }
 
     /**
+     * Get queue's event observers
+     * 
+     * @return
+     */
+    public IQueueObserver<ID, DATA> getObserver() {
+        return observer;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public AbstractQueue<ID, DATA> setObserver(IQueueObserver<ID, DATA> observer) {
+        this.observer = observer;
+        return this;
+    }
+
+    /**
      * Initializing method.
      * 
      * @return
      * @throws Exception
      */
     public AbstractQueue<ID, DATA> init() throws Exception {
-        return this;
+        if (observer != null) {
+            observer.preInit(this);
+        }
+        try {
+            return this;
+        } finally {
+            if (observer != null) {
+                observer.postInit(this);
+            }
+        }
     }
 
     /**
      * Destroy method.
      */
     public void destroy() {
-        // EMPTY
+        if (observer != null) {
+            observer.preDestroy(this);
+        }
+        if (observer != null) {
+            observer.postDestroy(this);
+        }
     }
 
     /**
@@ -72,4 +106,25 @@ public abstract class AbstractQueue<ID, DATA>
     public IQueueMessage<ID, DATA> createMessage() {
         return new GenericQueueMessage<>();
     }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public IQueueMessage<ID, DATA> createMessage(DATA content) {
+        return new GenericQueueMessage<ID, DATA>().qData(content);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public IQueueMessage<ID, DATA> createMessage(ID id, DATA content) {
+        return new GenericQueueMessage<ID, DATA>().qId(id).qData(content);
+    }
+
 }

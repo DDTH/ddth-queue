@@ -9,23 +9,30 @@ import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.AbstractEphemeralSupportQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.AbstractQueue;
 import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.utils.QueueUtils;
 
 import junit.framework.TestCase;
 
-public abstract class BaseQueueFunctionalTest extends TestCase {
+public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
     protected static IdGenerator idGen = IdGenerator.getInstance(IdGenerator.getMacAddr());
-    protected IQueue queue;
+    protected IQueue<I, byte[]> queue;
 
     public BaseQueueFunctionalTest(String testName) {
         super(testName);
     }
 
-    protected abstract IQueue initQueueInstance(int ephemeralMaxSize) throws Exception;
+    protected abstract IQueue<I, byte[]> initQueueInstance(int ephemeralMaxSize) throws Exception;
 
-    protected abstract void destroyQueueInstance(IQueue queue);
+    protected void destroyQueueInstance(IQueue<?, ?> queue) {
+        if (queue instanceof AbstractQueue) {
+            ((AbstractQueue<?, ?>) queue).destroy();
+        } else {
+            throw new RuntimeException("[queue] is not closed!");
+        }
+    }
 
     protected final static int EPHEMERAL_MAX_SIZE = 2;
 
@@ -55,7 +62,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
@@ -68,8 +75,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         }
 
         String content = idGen.generateId128Ascii();
-        UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-        msg.content(content);
+        IQueueMessage<I, byte[]> msg = queue.createMessage(content.getBytes(QueueUtils.UTF8));
 
         assertTrue(queue.queue(msg));
         int queueSize = queue.queueSize();
@@ -78,7 +84,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
@@ -93,8 +99,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         int queueSize, ephemeralSize;
 
         String content = idGen.generateId128Ascii();
-        UniversalIdIntQueueMessage msg1 = UniversalIdIntQueueMessage.newInstance();
-        msg1.content(content);
+        IQueueMessage<I, byte[]> msg1 = queue.createMessage(content.getBytes(QueueUtils.UTF8));
 
         assertTrue(queue.queue(msg1));
         queueSize = queue.queueSize();
@@ -102,16 +107,16 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         ephemeralSize = queue.ephemeralSize();
         assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
 
-        UniversalIdIntQueueMessage msg2 = (UniversalIdIntQueueMessage) queue.take();
+        IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, msg2.contentAsString());
+        assertEquals(content, new String((byte[]) msg2.qData(), QueueUtils.UTF8));
         queueSize = queue.queueSize();
         assertTrue(queueSize == 0 || queueSize < 0);
         ephemeralSize = queue.ephemeralSize();
         assertTrue(ephemeralSize == 1 || ephemeralSize < 0);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage> orphanMessages = queue.getOrphanMessages(10000);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(10000);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
 
@@ -129,8 +134,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         }
 
         String content = idGen.generateId128Ascii();
-        UniversalIdIntQueueMessage msg1 = UniversalIdIntQueueMessage.newInstance();
-        msg1.content(content);
+        IQueueMessage<I, byte[]> msg1 = queue.createMessage(content.getBytes(QueueUtils.UTF8));
 
         int queueSize, ephemeralSize;
 
@@ -141,14 +145,14 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1000);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
 
-        UniversalIdIntQueueMessage msg2 = (UniversalIdIntQueueMessage) queue.take();
+        IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, msg2.contentAsString());
+        assertEquals(content, new String(msg2.qData(), QueueUtils.UTF8));
         queueSize = queue.queueSize();
         assertTrue(queueSize == 0 || queueSize < 0);
         ephemeralSize = queue.ephemeralSize();
@@ -156,7 +160,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
 
         if (ephemeralSize >= 0) {
             Thread.sleep(2000);
-            Collection<IQueueMessage> orphanMessages = queue.getOrphanMessages(1000);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1000);
             assertNotNull(orphanMessages);
             assertEquals(1, orphanMessages.size());
         }
@@ -169,7 +173,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
@@ -183,19 +187,18 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
         if (!(queue instanceof AbstractEphemeralSupportQueue)) {
             return;
         }
-        ((AbstractEphemeralSupportQueue) queue).setEphemeralDisabled(true);
+        ((AbstractEphemeralSupportQueue<I, byte[]>) queue).setEphemeralDisabled(true);
 
         String content = idGen.generateId128Ascii();
-        UniversalIdIntQueueMessage msg1 = UniversalIdIntQueueMessage.newInstance();
-        msg1.content(content);
+        IQueueMessage<I, byte[]> msg1 = queue.createMessage(content.getBytes(QueueUtils.UTF8));
 
         assertTrue(queue.queue(msg1));
         assertEquals(1, queue.queueSize());
         assertEquals(0, queue.ephemeralSize());
 
-        UniversalIdIntQueueMessage msg2 = (UniversalIdIntQueueMessage) queue.take();
+        IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, msg2.contentAsString());
+        assertEquals(content, new String(msg2.qData(), QueueUtils.UTF8));
         assertEquals(0, queue.queueSize());
         assertEquals(0, queue.ephemeralSize());
 
@@ -216,14 +219,14 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
 
         for (int i = 0, n = EPHEMERAL_MAX_SIZE + 1; i < n; i++) {
             String content = idGen.generateId128Ascii();
-            UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-            msg.content(content);
+            IQueueMessage<I, byte[]> msg = queue.createMessage(content.getBytes(QueueUtils.UTF8));
             assertTrue(queue.queue(msg));
             assertEquals(i + 1, queue.queueSize());
             assertEquals(0, queue.ephemeralSize());
         }
 
-        IQueueMessage[] MSGS = new IQueueMessage[EPHEMERAL_MAX_SIZE];
+        @SuppressWarnings("unchecked")
+        IQueueMessage<I, byte[]>[] MSGS = new IQueueMessage[EPHEMERAL_MAX_SIZE];
         for (int i = 0; i < EPHEMERAL_MAX_SIZE; i++) {
             MSGS[i] = queue.take();
             assertNotNull(MSGS[i]);
@@ -233,7 +236,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
 
         boolean ephemeralIsFull = false;
         try {
-            IQueueMessage msg = queue.take();
+            IQueueMessage<I, byte[]> msg = queue.take();
             assertNull(msg);
         } catch (QueueException.EphemeralIsFull e) {
             ephemeralIsFull = true;
@@ -246,7 +249,7 @@ public abstract class BaseQueueFunctionalTest extends TestCase {
             assertEquals(EPHEMERAL_MAX_SIZE - i - 1, queue.ephemeralSize());
         }
 
-        IQueueMessage msg = queue.take();
+        IQueueMessage<I, byte[]> msg = queue.take();
         assertNotNull(msg);
         assertEquals(0, queue.queueSize());
         assertEquals(1, queue.ephemeralSize());

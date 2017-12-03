@@ -14,24 +14,33 @@ import org.junit.Before;
 import com.github.ddth.commons.utils.IdGenerator;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.AbstractQueue;
 import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.utils.QueueException.EphemeralIsFull;
+import com.github.ddth.queue.utils.QueueException.QueueIsFull;
+import com.github.ddth.queue.utils.QueueUtils;
 
 import junit.framework.TestCase;
 
-public abstract class BaseQueueLongTest extends TestCase {
+public abstract class BaseQueueLongTest<I> extends TestCase {
 
     protected static IdGenerator idGen = IdGenerator.getInstance(IdGenerator.getMacAddr());
-    protected IQueue queue;
+    protected IQueue<I, byte[]> queue;
     protected Random random = new Random(System.currentTimeMillis());
 
     public BaseQueueLongTest(String testName) {
         super(testName);
     }
 
-    protected abstract IQueue initQueueInstance() throws Exception;
+    protected abstract IQueue<I, byte[]> initQueueInstance() throws Exception;
 
-    protected abstract void destroyQueueInstance(IQueue queue);
+    protected void destroyQueueInstance(IQueue<?, ?> queue) {
+        if (queue instanceof AbstractQueue) {
+            ((AbstractQueue<?, ?>) queue).destroy();
+        } else {
+            throw new RuntimeException("[queue] is not closed!");
+        }
+    }
 
     protected static AtomicLong COUNTER_SENT;
     protected static AtomicLong COUNTER_RECEIVED;
@@ -62,6 +71,10 @@ public abstract class BaseQueueLongTest extends TestCase {
 
         Collections.sort(STORAGE_SENT);
         Collections.sort(STORAGE_RECEIVED);
+        // if (STORAGE_SENT.equals(STORAGE_RECEIVED)) {
+        // System.out.println(STORAGE_SENT);
+        // System.out.println(STORAGE_RECEIVED);
+        // }
         assertTrue(STORAGE_SENT.equals(STORAGE_RECEIVED));
 
         int queueSize = -1;
@@ -87,17 +100,20 @@ public abstract class BaseQueueLongTest extends TestCase {
             result[i] = new Thread("Producer - " + i) {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
-                        String msgContent = idGen.generateId128Hex();
-                        UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-                        msg.content(msgContent);
+                        String content = idGen.generateId128Hex();
+                        IQueueMessage<I, byte[]> msg = queue
+                                .createMessage(content.getBytes(QueueUtils.UTF8));
                         try {
-                            while (!queue.queue(msg)) {
+                            boolean status = false;
+                            while (!status) {
                                 try {
-                                    Thread.sleep(1);
-                                } catch (InterruptedException e) {
+                                    status = queue.queue(msg);
+                                    if (!status)
+                                        Thread.sleep(1);
+                                } catch (QueueIsFull | InterruptedException e) {
                                 }
                             }
-                            if (!STORAGE_SENT.add(msgContent)) {
+                            if (!STORAGE_SENT.add(content)) {
                                 throw new IllegalStateException("Something wrong!");
                             }
                             COUNTER_SENT.incrementAndGet();
@@ -119,17 +135,20 @@ public abstract class BaseQueueLongTest extends TestCase {
             result[i] = new Thread("Producer - " + i) {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
-                        String msgContent = idGen.generateId128Hex();
-                        UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-                        msg.content(msgContent);
+                        String content = idGen.generateId128Hex();
+                        IQueueMessage<I, byte[]> msg = queue
+                                .createMessage(content.getBytes(QueueUtils.UTF8));
                         try {
-                            while (!queue.queue(msg)) {
+                            boolean status = false;
+                            while (!status) {
                                 try {
-                                    Thread.sleep(1);
-                                } catch (InterruptedException e) {
+                                    status = queue.queue(msg);
+                                    if (!status)
+                                        Thread.sleep(1);
+                                } catch (QueueIsFull | InterruptedException e) {
                                 }
                             }
-                            if (!STORAGE_SENT.add(msgContent)) {
+                            if (!STORAGE_SENT.add(content)) {
                                 throw new IllegalStateException("Something wrong!");
                             }
                             COUNTER_SENT.incrementAndGet();
@@ -155,22 +174,21 @@ public abstract class BaseQueueLongTest extends TestCase {
                 public void run() {
                     while (!signal.get()) {
                         try {
-                            IQueueMessage _msg = queue.take();
-                            if (_msg instanceof UniversalIdIntQueueMessage) {
-                                UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-                                queue.finish(msg);
-                                if (!STORAGE_RECEIVED.add(msg.contentAsString())) {
+                            IQueueMessage<I, byte[]> _msg = queue.take();
+                            if (_msg != null) {
+                                queue.finish(_msg);
+                                String content = new String(_msg.qData(), QueueUtils.UTF8);
+                                if (!STORAGE_RECEIVED.add(content)) {
                                     throw new IllegalStateException("Something wrong!");
                                 }
                                 COUNTER_RECEIVED.incrementAndGet();
-                            } else if (_msg == null) {
+                            } else {
                                 try {
                                     Thread.sleep(1);
                                 } catch (InterruptedException e) {
                                 }
-                            } else {
-                                throw new IllegalStateException("Something wrong!");
                             }
+                        } catch (EphemeralIsFull e) {
                         } catch (Exception e) {
                             e.printStackTrace();
                             break;
@@ -190,11 +208,11 @@ public abstract class BaseQueueLongTest extends TestCase {
                 public void run() {
                     while (!signal.get()) {
                         try {
-                            IQueueMessage _msg = queue.take();
-                            if (_msg instanceof UniversalIdIntQueueMessage) {
-                                UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-                                queue.finish(msg);
-                                if (!STORAGE_RECEIVED.add(msg.contentAsString())) {
+                            IQueueMessage<I, byte[]> _msg = queue.take();
+                            if (_msg != null) {
+                                queue.finish(_msg);
+                                String content = new String(_msg.qData(), QueueUtils.UTF8);
+                                if (!STORAGE_RECEIVED.add(content)) {
                                     throw new IllegalStateException("Something wrong!");
                                 }
                                 COUNTER_RECEIVED.incrementAndGet();
@@ -202,14 +220,13 @@ public abstract class BaseQueueLongTest extends TestCase {
                                     Thread.sleep(random.nextInt(delayMs));
                                 } catch (InterruptedException e) {
                                 }
-                            } else if (_msg == null) {
+                            } else {
                                 try {
                                     Thread.sleep(1);
                                 } catch (InterruptedException e) {
                                 }
-                            } else {
-                                throw new IllegalStateException("Something wrong!");
                             }
+                        } catch (EphemeralIsFull e) {
                         } catch (Exception e) {
                             e.printStackTrace();
                             break;

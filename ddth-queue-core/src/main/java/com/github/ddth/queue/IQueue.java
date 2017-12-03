@@ -35,6 +35,33 @@ public interface IQueue<ID, DATA> {
     IQueueMessage<ID, DATA> createMessage();
 
     /**
+     * Create a new queue message with supplied content.
+     * 
+     * @param content
+     * @return
+     * @since 0.6.0
+     */
+    IQueueMessage<ID, DATA> createMessage(DATA content);
+
+    /**
+     * Create a new queue message with supplied id and content.
+     * 
+     * @param id
+     * @param content
+     * @return
+     * @since 0.6.0
+     */
+    IQueueMessage<ID, DATA> createMessage(ID id, DATA content);
+
+    /**
+     * Set queue's event observer.
+     * 
+     * @param observer
+     * @return
+     */
+    IQueue<ID, DATA> setObserver(IQueueObserver<ID, DATA> observer);
+
+    /**
      * Queue a message.
      * 
      * <p>

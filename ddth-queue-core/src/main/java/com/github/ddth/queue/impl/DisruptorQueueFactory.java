@@ -16,6 +16,8 @@ public abstract class DisruptorQueueFactory<T extends DisruptorQueue<ID, DATA>, 
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) {
+        super.initQueue(queue, spec);
+
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
                 Boolean.class);
         if (ephemeralDisabled != null) {

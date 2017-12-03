@@ -4,12 +4,37 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import com.github.ddth.queue.IQueueFactory;
+import com.github.ddth.queue.IQueueObserver;
 import com.github.ddth.queue.QueueSpec;
 
 public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID, DATA>
         implements IQueueFactory<ID, DATA> {
 
-    protected ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<>();
+    private ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<>();
+    private IQueueObserver<ID, DATA> defaultObserver;
+
+    /**
+     * Get default queue's event observer.
+     * 
+     * @return
+     * @since 0.6.0
+     */
+    public IQueueObserver<ID, DATA> getDefaultObserver() {
+        return defaultObserver;
+    }
+
+    /**
+     * Set default queue's event observer.
+     * 
+     * @param defaultObserver
+     * @return
+     * @since 0.6.0
+     */
+    public AbstractQueueFactory<T, ID, DATA> setDefaultObserver(
+            IQueueObserver<ID, DATA> defaultObserver) {
+        this.defaultObserver = defaultObserver;
+        return this;
+    }
 
     public AbstractQueueFactory<T, ID, DATA> init() {
         return this;
@@ -44,7 +69,7 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      * @param spec
      */
     protected void initQueue(T queue, QueueSpec spec) {
-        // EMPTY
+        queue.setObserver(defaultObserver);
     }
 
     /**

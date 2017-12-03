@@ -134,6 +134,36 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
         return fifo;
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdIntQueueMessage createMessage() {
+        return UniversalIdIntQueueMessage.newInstance();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdIntQueueMessage createMessage(byte[] data) {
+        return UniversalIdIntQueueMessage.newInstance(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+    }
+
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;

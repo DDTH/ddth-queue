@@ -24,9 +24,13 @@ public class GenericQueueMessage<ID, DATA>
      * {@inheritDoc}
      */
     @Override
+    @SuppressWarnings("unchecked")
     public GenericQueueMessage<ID, DATA> clone() {
-        GenericQueueMessage<ID, DATA> clone = this.clone();
-        return clone;
+        try {
+            return (GenericQueueMessage<ID, DATA>) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

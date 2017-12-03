@@ -46,6 +46,8 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) {
+        super.initQueue(queue, spec);
+
         queue.setJdbcHelper(defaultJdbcHelper);
 
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,

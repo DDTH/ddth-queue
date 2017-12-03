@@ -129,6 +129,36 @@ public class UniversalSingleStorageJdbcQueue
         return fifo;
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdIntQueueMessage createMessage() {
+        return UniversalIdIntQueueMessage.newInstance();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdIntQueueMessage createMessage(byte[] data) {
+        return UniversalIdIntQueueMessage.newInstance(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+    }
+
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -240,7 +270,7 @@ public class UniversalSingleStorageJdbcQueue
         Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
         Collection<UniversalIdIntQueueMessage> result = new ArrayList<>();
         try (Stream<Map<String, Object>> dbRows = getJdbcHelper().executeSelectAsStream(conn,
-                getQueueName(), SQL_GET_ORPHAN_MSGS, threshold)) {
+                SQL_GET_ORPHAN_MSGS, getQueueName(), threshold)) {
             dbRows.forEach(row -> {
                 UniversalIdIntQueueMessage msg = new UniversalIdIntQueueMessage().fromMap(row);
                 result.add(msg);
