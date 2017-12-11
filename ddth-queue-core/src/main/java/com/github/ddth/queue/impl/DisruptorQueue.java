@@ -12,7 +12,6 @@ import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 import com.lmax.disruptor.EventFactory;
-import com.lmax.disruptor.InsufficientCapacityException;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.Sequence;
 
@@ -46,7 +45,8 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
     }
 
     private final EventFactory<Event<ID, DATA>> EVENT_FACTORY = () -> new Event<ID, DATA>();
-
+    private final Lock LOCK_TAKE = new ReentrantLock();
+    private final Lock LOCK_PUT = new ReentrantLock();
     private ConcurrentMap<Object, IQueueMessage<ID, DATA>> ephemeralStorage;
 
     private RingBuffer<Event<ID, DATA>> ringBuffer;
@@ -106,6 +106,7 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
      * @return
      */
     public DisruptorQueue<ID, DATA> init() {
+        /* single producer "seems" to offer better performance */
         ringBuffer = RingBuffer.createSingleProducer(EVENT_FACTORY, ringSize);
         // ringBuffer = RingBuffer.createMultiProducer(EVENT_FACTORY, ringSize);
 
@@ -133,22 +134,6 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
     }
 
     /**
-     * Publish (commit) the ring's sequence.
-     * 
-     * @param value
-     * @param seq
-     */
-    protected void publish(IQueueMessage<ID, DATA> value, long seq) {
-        try {
-            Event<ID, DATA> holder = ringBuffer.get(seq);
-            holder.set(value);
-        } finally {
-            knownPublishedSeq = seq;
-            ringBuffer.publish(seq);
-        }
-    }
-
-    /**
      * Put a message to the ring buffer.
      * 
      * @param msg
@@ -156,13 +141,15 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
      *             if the ring buffer is full
      */
     protected void putToRingBuffer(IQueueMessage<ID, DATA> msg) throws QueueException.QueueIsFull {
+        if (msg == null) {
+            throw new NullPointerException("Supplied queue message is null!");
+        }
         LOCK_PUT.lock();
         try {
-            long seq;
-            try {
-                seq = ringBuffer.tryNext();
-                publish(msg, seq);
-            } catch (InsufficientCapacityException e1) {
+            if (!ringBuffer.tryPublishEvent((event, _seq) -> {
+                event.set(msg);
+                knownPublishedSeq = _seq > knownPublishedSeq ? _seq : knownPublishedSeq;
+            })) {
                 throw new QueueException.QueueIsFull(getRingSize());
             }
         } finally {
@@ -229,9 +216,6 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         }
     }
 
-    private Lock LOCK_TAKE = new ReentrantLock();
-    private Lock LOCK_PUT = new ReentrantLock();
-
     /**
      * Takes a message from the ring buffer.
      * 
@@ -242,10 +226,18 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         try {
             long l = consumedSeq.get() + 1;
             if (l <= knownPublishedSeq) {
-                Event<ID, DATA> eventHolder = ringBuffer.get(l);
-                IQueueMessage<ID, DATA> value = eventHolder.get();
-                consumedSeq.incrementAndGet();
-                return value;
+                try {
+                    Event<ID, DATA> eventHolder = ringBuffer.get(l);
+                    try {
+                        return eventHolder.get();
+                    } finally {
+                        eventHolder.set(null);
+                    }
+                } finally {
+                    consumedSeq.incrementAndGet();
+                }
+            } else {
+                knownPublishedSeq = ringBuffer.getCursor();
             }
             return null;
         } finally {

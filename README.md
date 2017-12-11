@@ -7,7 +7,7 @@ Project home:
 [https://github.com/DDTH/ddth-queue](https://github.com/DDTH/ddth-queue)
 
 
-## Introduction ##
+## Introduction
 
 I work with queues from projects to projects.
 However, different projects are fit with different queues.
@@ -17,9 +17,9 @@ or find orphan queue items (items that have not been committed for a long period
 Hence this library is born to fulfill my need.
 
 
-## Installation ##
+## Installation
 
-Latest release version: `0.5.2`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.6.0`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency: if only a sub-set of `ddth-queue` functionality is used, choose the
 corresponding dependency artifact(s) to reduce the number of unused jar files.
@@ -30,7 +30,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue-core</artifactId>
-	<version>0.5.2</version>
+	<version>0.6.0</version>
 </dependency>
 ```
 
@@ -40,7 +40,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-disruptor</artifactId>
-    <version>0.5.2</version>
+    <version>0.6.0</version>
     <type>pom</type>
 </dependency>
 ```
@@ -51,7 +51,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jdbc</artifactId>
-    <version>0.5.2</version>
+    <version>0.6.0</version>
     <type>pom</type>
 </dependency>
 ```
@@ -62,7 +62,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-kafka</artifactId>
-    <version>0.5.2</version>
+    <version>0.6.0</version>
     <type>pom</type>
 </dependency>
 ```
@@ -73,7 +73,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jedis</artifactId>
-    <version>0.5.2</version>
+    <version>0.6.0</version>
     <type>pom</type>
 </dependency>
 ```
@@ -84,32 +84,32 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-rocskdb</artifactId>
-    <version>0.5.2</version>
+    <version>0.6.0</version>
     <type>pom</type>
 </dependency>
 ```
 
-## Usage ##
+## Usage
 
-`ddth-queue` provides a unified and simple APIs to interact with various queue implementations:
+`ddth-queue` provides a unified and simple API to interact with various queue implementations:
 
 - Put an item to queue: queue or re-queue.
 - Take an item from queue.
-- Retrive list of orphan items.
+- Retrieve list of orphan items.
 
 
-### Queue Usage Flow ###
+### Queue Usage Flow
 
 - Call `IQueue.take()` to take a message from queue.
 - Do something with the message.
   - When done, call `IQueue.finish(msg)`
   - If not done and the message need to be re-queued, either call `IQueue.requeue(msg)` or `IQueue.requeueSilent(msg)` to put back the message to queue.
 
-### Queue Storage Implementation ###
+### Queue Storage Implementation
 
 Queue implementation has 2 message storages:
 
-- *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is FIFO.
+- *Queue storage*: (required) main storage where messages are put into and taken from. Queue storage is implemented as FIFO list.
 - *Ephemeral storage*: (optional) messages taken from queue storage are temporarily store in a ephemeral until _finished_ or _re-queued_.
 
 (Queue implementation is required to provide *Queue storage*. *Ephemeral storage* is optional)
@@ -121,7 +121,7 @@ the message is removed from the ephemeral storage.
 The idea of the ephemeral storage is to make sure messages are not lost in the case the application
 crashes in between `IQueue.take()` and `IQueue.finish(msg)` (or `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)`).
 
-#### Orphan Messages ####
+#### Orphan Messages
 
 If the application crashes in between `IQueue.take()` and `IQueue.finish(msg)` (or `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)`)
 there could be orphan messages left in the ephemeral storage. To deal with orphan messages:
@@ -131,29 +131,27 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 - Call `IQueue.requeue(msg)`, or `IQueue.requeueSilent(msg)` to move the message back to the queue.
 
 
-### APIs ###
+### APIs
 
-*`boolean IQueue.queue(IQueueMessage)`*: Put a message to queue storage.
+Provided via `IQueue` interface:
 
-*`boolean requeue(IQueueMessage)`*: Re-queue a taken message. Queue implementation must remove the message instance in the ephemeral storage (if any). Once re-queued, message's timestamp and number of re-queue times are updated.
-
-*`boolean requeueSilent(IQueueMessage)`*: Similar to API `requeue` but message's timestamp and number of re-queue times are _not_ updated.
-
-*`IQueueMessage take()`*: Take a message from queue.
-
-*`Collection<IQueueMessage> getOrphanMessages(long)`*: Gets all orphan messages (messages that were left in ephemeral storage for a long time).
-
-*`finish(IQueueMessage)`*: Called to clean-up message from ephemeral storage.
-
-*`int queueSize()`*: Gets queue's number of items.
-
-*`int ephemeralSize()`*: Gets ephemeral-storage's number of items.
+| API                                               | Description |
+|---------------------------------------------------|-------------|
+|`boolean queue(IQueueMessage)`                     | Put a message to queue storage. | 
+|`boolean requeue(IQueueMessage)`                   | Re-queue a taken message. Queue implementation must remove the message instance in the ephemeral storage (if any). Once re-queued, message's timestamp and number of re-queue times are updated. |
+|`boolean requeueSilent(IQueueMessage)`             | Similar to API `requeue` but message's timestamp and number of re-queue times are _not_ updated. |
+|`IQueueMessage take()`                             | Take a message from queue. |
+|`Collection<IQueueMessage> getOrphanMessages(long)`| Gets all orphan messages (messages that were left in ephemeral storage for a long time). |
+|`finish(IQueueMessage)`                            | Called to clean-up message from ephemeral storage. |
+|`int queueSize()`                                  | Gets number of item current in queue storage. |
+|`int ephemeralSize()`                              | Gets number of item current in ephemeral storage. |
 
 
-## Built-in Queue Implementations ##
+## Built-in Queue Implementations
 
 | Implementation | Bounded Size | Persistent | Ephemeral Storage | Multi-Clients |
 |----------------|:------------:|:----------:|:-----------------:|:-------------:|
+| Disruptor      | Yes          | No         | Yes               | No            |
 | In-memory      | Optional     | No         | Yes               | No            |
 | JDBC           | No           | Yes        | Yes               | Yes           |
 | Kafka          | No           | Yes        | No                | Yes           |
@@ -161,7 +159,7 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 | RocksDB        | No           | Yes        | Yes               | No            |
 
 - *Bounded Size*: queue's size is bounded.
-  - Currently only in-memory queue(s) support bounded queue size
+  - Currently only in-memory queue(s), including Disruptor implementation, support bounded queue size
   - Databases (JDBC), Kafka, Redis and RocksDB queues are virtually limited only by hardware's capability
 - *Persistent*: queue's items are persistent between JVM restarts.
   - Redis backend: persistency depends on Redis server's configurations
@@ -169,7 +167,7 @@ there could be orphan messages left in the ephemeral storage. To deal with orpha
 - *Multi-Clients*: multi-clients can share a same queue backend storage.
 
 
-### In-Memory Queue ###
+### In-Memory Queue
 
 There are 2 implementations:
 
@@ -181,7 +179,7 @@ and a `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
 Messages in in-memory queues are _not_ persistent between JVM restarts!
 
-### JDBC Queue ###
+### JDBC Queue
 
 Queue messages are stored in RDBMS tables.
 
@@ -189,7 +187,7 @@ See [JdbcQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/Jd
 
 Queue messages are persistent.
 
-### Kafka Queue ###
+### Kafka Queue
 
 This queue implementation utilizes [Apache Kafka](http://kafka.apache.org) as queue storage.
 
@@ -199,7 +197,7 @@ Queue messages are persistent.
 
 See [KafkaQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/KafkaQueue.java).
 
-### Redis Queue ###
+### Redis Queue
 
 Queue storage and Ephemeral storage are implemented as a Redis hash and sorted set respectively. 
 Also, a Redis list is used as a queue of message-ids.
@@ -208,7 +206,7 @@ Queue messages are persistent (depends on Redis server's configurations).
 
 See [RedisQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/RedisQueue.java).
 
-### RocksDB Queue ###
+### RocksDB Queue
 
 Queue messages are stored in [RocskDB](http://rocksdb.org).
 
@@ -219,100 +217,137 @@ Queue messages are persistent.
 See [RocksDbQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/RocksDbQueue.java).
 
 
-## Pre-made Convenient Classes ##
+## Pre-made Convenient Classes
 
-- `com.github.ddth.queue.impl.universal.*`: universal queue implementations, where queue's message's id is a `64-bit long`.
-- `com.github.ddth.queue.impl.universal2.*`: universal queue implementations, where queue's message's id is a `String`.
+- `com.github.ddth.queue.impl.universal.base.*`: base implementations of universal queue message & queue implementations.
+- `com.github.ddth.queue.impl.universal.msg.*` : universal queue message implementations
+  - `UniversalIdIntQueueMessage`: message content is `byte[]` and message id is `Long`
+  - `UniversalIdStrQueueMessage`: message content is `byte[]` and message id is `String`
+- `com.github.ddth.queue.impl.universal.idint.*`: universal queue implementations, where queue's message's id is a `Long`.
+- `com.github.ddth.queue.impl.universal.idstr.*`: universal queue implementations, where queue's message's id is a `String`.
 
-### UniversalQueueMessage ###
+### Universal queue message
 
 Universal queue message implementation, with the following fields:
 
 - `queue_id`: message's unique id
-  - `com.github.ddth.queue.impl.universal.UniversalQueueMessage`: queue-id is a 64-bit `long`
-  - `com.github.ddth.queue.impl.universal2.UniversalQueueMessage`: queue-id is a `String`
-- `org_timestamp` (`java.util.Date`): timestamp when the message was first-queued
-- `timestamp` (`java.util.Date`): message's last-queued timestamp
+  - `com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage`: queue-id is a 64-bit `Long`
+  - `com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage`: queue-id is a `String`
+- `org_timestamp` (`java.util.Date`): timestamp when the message was queued for the first time
+- `timestamp` (`java.util.Date`): last timestamp when the message was (re-)queued
 - `num_requeues` (`int`): number of times the message has been re-queued
 - `content` (`byte[]`): message's content
 
-### UniversalInmemQueue ###
+### UniversalInmemQueue
 
 Universal in-memory queue implementation that uses `java.util.Queue` as Queue storage,
 and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
-`universal.UniversalInmemQueue` to work with `universal.UniversalQueueMessage`, and
-`universal2.UniversalInmemQueue` to work with `universal2.UniversalQueueMessage`.
+`com.github.ddth.queue.impl.universal.idint.UniversalInmemQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalInmemQueue` to work with `UniversalIdStrQueueMessage`.
 
-### UniversalDisruptorQueue ###
+### UniversalDisruptorQueue
 
 Universal in-memory queue implementation that uses [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as Queue storage,
 and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
-`universal.UniversalDisruptorQueue` to work with `universal.UniversalQueueMessage`, and
-`universal2.UniversalDisruptorQueue` to work with `universal2.UniversalQueueMessage`.
+`com.github.ddth.queue.impl.universal.idint.UniversalDisruptorQueue` to work with `UniversalIdIntQueueMessage`, and
+`com.github.ddth.queue.impl.universal.idstr.UniversalDisruptorQueue` to work with `UniversalIdStrQueueMessage`.
 
-### UniversalJdbcQueue ###
+### UniversalJdbcQueue
 
 Universal JDBC queue implementation:
 
-- 2 db tables for queue and ephemeral storages
-- `universal.UniversalRedisQueue` to work with `universal.UniversalQueueMessage`, and `universal2.UniversalRedisQueue` to work with `universal2.UniversalQueueMessage`
+- 2 db tables: 1 for queue and 1 for ephemeral storages
+- `com.github.ddth.queue.impl.universal.idint.UniversalJdbcQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalJdbcQueue` to work with `UniversalIdStrQueueMessage`
 - Property `ephemeralDisabled` (default `false`): when set to `true` ephemeral storage is disabled
 - Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
 
-Sample table schema for MySQL: see [sample_schema.mysql.sql](sample-dbschema/sample_schema.mysql.sql).
+Sample table schema for MySQL: see [sample_schema_universal.mysql.sql](sample-dbschema/sample_schema_universal.mysql.sql).
 
-Sample table schema for PgSQL: see [sample_schema.pgsql.sql](sample-dbschema/sample_schema.pgsql.sql).
+Sample table schema for PgSQL: see [sample_schema_universal.pgsql.sql](sample-dbschema/sample_schema_universal.pgsql.sql).
 
-### LessLockingUniversalMySQLQueue ###
+### UniversalSingleStorageJdbcQueue
+
+Similar to `UniversalJdbcQueue`, but queue messages are partitioned so that multiple queues share a same storage.
+
+- 2 db tables: 1 for queue and 1 for ephemeral storages
+- Queue messages within storage are partitioned by queue name
+- `com.github.ddth.queue.impl.universal.idint.UniversalSingleStorageJdbcQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalSingleStorageJdbcQueue` to work with `UniversalIdStrQueueMessage`
+
+Sample table schema for MySQL: see [sample_schema_universal_singlestore.mysql.sql](sample-dbschema/sample_schema_universal_singlestore.mysql.sql).
+
+Sample table schema for PgSQL: see [sample_schema_universal_singlestore.pgsql.sql](sample-dbschema/sample_schema_universal_singlestore.pgsql.sql).
+
+### LessLockingUniversalMySQLQueue
 
 Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for MySQL, and needs
 only one single db table for both queue and ephemeral storages.
 
-- Optimized for MySQL (EXPERIMENTAL!)
+- Optimized for MySQL
 - 1 single db table for both queue and ephemeral storages
-- Work with `UniversalQueueMessage`
-- Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
+- `com.github.ddth.queue.impl.universal.idint.LessLockingUniversalMySQLQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.LessLockingUniversalMySQLQueue` to work with `UniversalIdStrQueueMessage`
 
-Sample table schema for MySQL: see [sample_schema-less-locking.mysql.sql](sample-dbschema/sample_schema-less-locking.mysql.sql).
+Sample table schema for MySQL: see [sample_schema-less-locking-universal.mysql.sql](sample-dbschema/sample_schema-less-locking-universal.mysql.sql).
 
-### LessLockingUniversalPgSQLQueue ###
+### LessLockingUniversalPgSQLQueue
 
 Similar to `UniversalJdbcQueue`, but using a less-locking algorithm - specific for PostgreSQL, and needs
 only one single db table for both queue and ephemeral storages.
 
-- Optimized for PostgreSQL (EXPERIMENTAL!)
+- Optimized for PostgreSQL
 - 1 single db table for both queue and ephemeral storages
-- Work with `UniversalQueueMessage`
-- Property `fifo` (default `true`): when set to `true` messages are taken in FIFO manner
+- `com.github.ddth.queue.impl.universal.idint.LessLockingUniversalPgSQLQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.LessLockingUniversalPgSQLQueue` to work with `UniversalIdStrQueueMessage`
 
-Sample table schema for MySQL: see [sample_schema-less-locking.pgsql.sql](sample-dbschema/sample_schema-less-locking.pgsql.sql).
+Sample table schema for MySQL: see [sample_schema-less-locking-universal.pgsql.sql](sample-dbschema/sample_schema-less-locking-universal.pgsql.sql).
 
-### UniversalKafkaQueue ###
+### LessLockingUniversalSingleStorageMySQLQueue
+
+Similar to `UniversalSingleStorageJdbcQueue`, but using a less-locking algorithm - specific for MySQL, and needs
+only one single db table for both queue and ephemeral storages.
+
+- Optimized for MySQL
+- 1 single db table for both queue and ephemeral storages
+- Queue messages within storage are partitioned by queue name
+- `com.github.ddth.queue.impl.universal.idint.LessLockingUniversalSingleStorageMySQLQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.LessLockingUniversalSingleStorageMySQLQueue` to work with `UniversalIdStrQueueMessage`
+
+Sample table schema for MySQL: see [sample_schema-less-locking-universal-singlestore.mysql.sql](sample-dbschema/sample_schema-less-locking-universal-singlestore.mysql.sql).
+
+### LessLockingUniversalSingleStoragePgSQLQueue
+
+Similar to `UniversalSingleStorageJdbcQueue`, but using a less-locking algorithm - specific for PostgreSQL, and needs
+only one single db table for both queue and ephemeral storages.
+
+- Optimized for PostgreSQL
+- 1 single db table for both queue and ephemeral storages
+- Queue messages within storage are partitioned by queue name
+- `com.github.ddth.queue.impl.universal.idint.LessLockingUniversalSingleStoragePgSQLQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.LessLockingUniversalSingleStoragePgSQLQueue` to work with `UniversalIdStrQueueMessage`
+
+Sample table schema for MySQL: see [sample_schema-less-locking-universal-singlestore.pgsql.sql](sample-dbschema/sample_schema-less-locking-universal-singlestore.pgsql.sql).
+
+### UniversalKafkaQueue
 
 Universal queue implementation that uses [Apache Kafka](http://kafka.apache.org) as queue backend.
 
 - Ephemeral storage is currently _not_ supported.
-- `universal.UniversalKafkaQueue` to work with `universal.UniversalQueueMessage`, and `universal2.UniversalKafkaQueue` to work with `universal2.UniversalQueueMessage`.
+- `com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalKafkaQueue` to work with `UniversalIdStrQueueMessage`.
 
-### UniversalRedisQueue ###
+### UniversalRedisQueue
 
-Universal [Redis](http://redis.io) queue implementation.
+Universal queue implementation that uses [Redis](http://redis.io) to store queue messages.
 
-`universal.UniversalRedisQueue` to work with `universal.UniversalQueueMessage`, and
-`universal2.UniversalRedisQueue` to work with `universal2.UniversalQueueMessage`.
+`com.github.ddth.queue.impl.universal.idint.UniversalRedisQueue` to work with `UniversalIdIntQueueMessage`, and
+`com.github.ddth.queue.impl.universal.idstr.UniversalRedisQueue` to work with `UniversalIdStrQueueMessage`.
 
-### UniversalRocksDbQueue ###
+### UniversalRocksDbQueue
 
 Universal queue implementation that uses [RocksDB](http://rocksdb.org) to store queue messages.
 
 - Ephemeral storage is currently _not_ supported.
-- `universal.UniversalRocksDbQueue` to work with `universal.UniversalRocksDbQueue`, and `universal2.UniversalKafkaQueue` to work with `universal2.UniversalQueueMessage`.
+- `com.github.ddth.queue.impl.universal.idint.UniversalRocksDbQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalRocksDbQueue` to work with `UniversalIdStrQueueMessage`.
 
 
-## License ##
+## License
 
-See LICENSE.txt for details. Copyright (c) 2015-2016 Thanh Ba Nguyen.
+See LICENSE.txt for details. Copyright (c) 2015-2017 Thanh Ba Nguyen.
 
 Third party libraries are distributed under their own licenses.

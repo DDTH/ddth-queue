@@ -32,4 +32,7 @@ public class TestDisruptorQueueLargeBoundEphemeralSize extends BaseQueueMultiThr
         return queue;
     }
 
+    protected int numTestMessages() {
+        return 10 * 1024 * 1024;
+    }
 }

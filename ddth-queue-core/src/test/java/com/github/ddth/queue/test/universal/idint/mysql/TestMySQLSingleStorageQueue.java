@@ -24,7 +24,7 @@ import junit.framework.TestSuite;
  * Test queue functionality.
  * 
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
- * @since 0.5.2
+ * @since 0.6.0
  */
 public class TestMySQLSingleStorageQueue extends BaseQueueFunctionalTest<Long> {
     public TestMySQLSingleStorageQueue(String testName) {

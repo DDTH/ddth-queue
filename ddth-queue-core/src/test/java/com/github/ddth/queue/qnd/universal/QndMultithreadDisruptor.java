@@ -5,8 +5,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalDisruptorQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 public class QndMultithreadDisruptor {
 

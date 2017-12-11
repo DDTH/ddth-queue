@@ -4,8 +4,8 @@ import java.util.Date;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 public class QndQueueKafka {
 

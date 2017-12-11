@@ -3,7 +3,7 @@ package com.github.ddth.queue.impl.universal.idint;
 import java.text.MessageFormat;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 /**
  * MySQL-specific implementation of
@@ -29,7 +29,7 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.5.2
+ * @since 0.6.0
  */
 public class LessLockingUniversalSingleStorageMySQLQueue
         extends AbstractLessLockingUniversalSingleStorageJdbcQueue {

@@ -154,11 +154,14 @@ public class RocksDbUtils {
      * @param rocksObjList
      */
     public static void closeRocksObjects(RocksObject... rocksObjList) {
-        for (RocksObject obj : rocksObjList) {
-            try {
-                if (obj != null)
-                    obj.close();
-            } catch (Exception e) {
+        if (rocksObjList != null) {
+            for (RocksObject obj : rocksObjList) {
+                try {
+                    if (obj != null) {
+                        obj.close();
+                    }
+                } catch (Exception e) {
+                }
             }
         }
     }

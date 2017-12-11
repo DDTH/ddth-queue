@@ -2,8 +2,8 @@ package com.github.ddth.queue.impl.universal.idstr;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RedisQueue;
-import com.github.ddth.queue.impl.base.BaseUniversalRedisQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalRedisQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 /**
@@ -32,5 +32,35 @@ public class UniversalRedisQueue
         } catch (Exception e) {
             throw new QueueException.CannotDeserializeQueueMessage(e);
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage() {
+        return UniversalIdStrQueueMessage.newInstance();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(byte[] data) {
+        return UniversalIdStrQueueMessage.newInstance(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
     }
 }

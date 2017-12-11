@@ -1,8 +1,24 @@
 # ddth-queue release notes
 
-## 0.5.2 - 2017-11-08
+## 0.6.0 - 2017-12-11
 
-
+- Refactoring:
+  - `IQueue` and `IQueueMessage` are now generic-typed.
+  - Universal queues:
+    - Queue message's content remains `byte[]`
+    - Queue message's id is `Long`: moved to package `com.github.ddth.queue.impl.universal.idint`
+    - Queue message's id is `String`: moved to package `com.github.ddth.queue.impl.universal.idstr`
+  - New classes:
+    - `GenericQueueMessage`: universal-generic implementation of `IQueueMessage`
+    - `IQueueObserver`: interface to observe queue's actions
+    - `NoopQueueObserver`: no-op implementation of `IQueueObserver`
+- New queue implementations:
+  - `UniversalSingleStorageJdbcQueue`: messages from multiple queues are stored in same storage.
+  - `LessLockingUniversalSingleStorageMySQLQueue`: same as `UniversalSingleStorageJdbcQueue` but optimized for MySQL
+  - `LessLockingUniversalSingleStoragePgSQLQueue`: same as `UniversalSingleStorageJdbcQueue` but optimized for PostgreSQL
+- More unit tests.
+- Update dependencies.
+- Bug fixes and enhancements.
 
 
 ## 0.5.1.1 - 2017-10-29

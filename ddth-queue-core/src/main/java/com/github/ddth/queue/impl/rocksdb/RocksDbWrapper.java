@@ -287,12 +287,6 @@ public class RocksDbWrapper implements AutoCloseable {
             RocksDbUtils.closeRocksObjects(entry.getValue());
         }
 
-        RocksDbUtils.closeRocksObjects(rocksDb);
-
-        if (myOwnDbOptions) {
-            RocksDbUtils.closeRocksObjects(dbOptions);
-        }
-
         if (myOwnReadOptions) {
             RocksDbUtils.closeRocksObjects(readOptions);
         }
@@ -300,6 +294,21 @@ public class RocksDbWrapper implements AutoCloseable {
         if (myOwnWriteOptions) {
             RocksDbUtils.closeRocksObjects(writeOptions);
         }
+
+        if (myOwnDbOptions) {
+            RocksDbUtils.closeRocksObjects(dbOptions);
+        }
+
+        // for (ColumnFamilyDescriptor cfd : columnFamilies) {
+        // RocksDbUtils.closeRocksObjects(cfd);
+        // }
+
+        for (Entry<String, ColumnFamilyHandle> entry : columnFamilyHandles.entrySet()) {
+            RocksDbUtils.closeRocksObjects(entry.getValue());
+        }
+
+        RocksDbUtils.closeRocksObjects(rocksDb);
+
     }
 
     public RocksDbWrapper init() throws RocksDBException {

@@ -7,8 +7,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 public class QndMultithreadKafka2 {

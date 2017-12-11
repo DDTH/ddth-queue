@@ -12,8 +12,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
@@ -57,7 +57,7 @@ import com.github.ddth.queue.utils.QueueUtils;
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.5.2
+ * @since 0.6.0
  * @see UniversalJdbcQueue
  */
 public class UniversalSingleStorageJdbcQueue
@@ -131,6 +131,35 @@ public class UniversalSingleStorageJdbcQueue
         return fifo;
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage() {
+        return UniversalIdStrQueueMessage.newInstance();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(byte[] data) {
+        return UniversalIdStrQueueMessage.newInstance(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
+    }
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -209,7 +238,8 @@ public class UniversalSingleStorageJdbcQueue
      */
     @Override
     protected UniversalIdStrQueueMessage readFromQueueStorage(Connection conn) {
-        Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_QUEUE);
+        Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_QUEUE,
+                getQueueName());
         if (dbRow != null) {
             UniversalIdStrQueueMessage msg = new UniversalIdStrQueueMessage();
             return msg.fromMap(dbRow);
@@ -224,7 +254,7 @@ public class UniversalSingleStorageJdbcQueue
     protected UniversalIdStrQueueMessage readFromEphemeralStorage(Connection conn,
             IQueueMessage<String, byte[]> msg) {
         Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_EPHEMERAL,
-                msg.qId());
+                getQueueName(), msg.qId());
         if (dbRow != null) {
             UniversalIdStrQueueMessage myMsg = new UniversalIdStrQueueMessage();
             return myMsg.fromMap(dbRow);
@@ -264,7 +294,7 @@ public class UniversalSingleStorageJdbcQueue
         if (StringUtils.isEmpty(qid)) {
             qid = QueueUtils.IDGEN.generateId128Hex();
         }
-        int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, qid,
+        int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, getQueueName(), qid,
                 msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
         return numRows > 0;
     }

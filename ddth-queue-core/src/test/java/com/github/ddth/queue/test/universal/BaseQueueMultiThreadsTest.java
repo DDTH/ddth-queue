@@ -8,6 +8,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 
@@ -71,10 +72,21 @@ public abstract class BaseQueueMultiThreadsTest<I> extends TestCase {
 
         Collections.sort(STORAGE_SENT);
         Collections.sort(STORAGE_RECEIVED);
-        // if (STORAGE_SENT.equals(STORAGE_RECEIVED)) {
-        // System.out.println(STORAGE_SENT);
-        // System.out.println(STORAGE_RECEIVED);
-        // }
+        if (!STORAGE_SENT.equals(STORAGE_RECEIVED)) {
+            for (String item : STORAGE_SENT) {
+                if (Collections.binarySearch(STORAGE_RECEIVED, item) < 0) {
+                    System.out.println("Sent [" + item + "] but not received!");
+                }
+            }
+
+            for (int i = 0, n = STORAGE_RECEIVED.size(); i < n - 1; i++) {
+                String item1 = STORAGE_RECEIVED.get(i);
+                String item2 = STORAGE_RECEIVED.get(i + 1);
+                if (StringUtils.equals(item1, item2)) {
+                    System.out.println("Received duplicated [" + item1 + "]!");
+                }
+            }
+        }
         assertTrue(STORAGE_SENT.equals(STORAGE_RECEIVED));
 
         int queueSize = -1;

@@ -6,8 +6,8 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.LessLockingUniversalSingleStoragePgSQLQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 public class QndLessLockingQueueSingleStoragePgSQL {
 

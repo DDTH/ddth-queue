@@ -5,3 +5,5 @@
 /target
 *.log
 
+/.README.md.html
+/.RELEASE-NOTES.md.html

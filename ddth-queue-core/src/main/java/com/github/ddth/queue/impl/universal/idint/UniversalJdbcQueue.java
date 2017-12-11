@@ -12,8 +12,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 /**
  * Universal JDBC implementation of {@link IQueue}.

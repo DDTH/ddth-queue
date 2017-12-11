@@ -3,7 +3,7 @@ package com.github.ddth.queue.impl.universal.idstr;
 import java.text.MessageFormat;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 
 /**
  * MySQL-specific implementation of
@@ -29,7 +29,7 @@ import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.5.2
+ * @since 0.6.0
  */
 public class LessLockingUniversalSingleStorageMySQLQueue
         extends AbstractLessLockingUniversalSingleStorageJdbcQueue {
@@ -117,4 +117,33 @@ public class LessLockingUniversalSingleStorageMySQLQueue
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage() {
+        return UniversalIdStrQueueMessage.newInstance();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(byte[] data) {
+        return UniversalIdStrQueueMessage.newInstance(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
+    }
 }

@@ -3,7 +3,7 @@ package com.github.ddth.queue.impl.universal.idint;
 import java.text.MessageFormat;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 /**
  * Same as {@link UniversalJdbcQueue}, but using a less-locking algorithm -

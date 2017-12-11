@@ -13,8 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
@@ -104,6 +104,36 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdStrQue
 
     public boolean getFifo() {
         return fifo;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage() {
+        return UniversalIdStrQueueMessage.newInstance();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(byte[] data) {
+        return UniversalIdStrQueueMessage.newInstance(data);
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
     }
 
     /*----------------------------------------------------------------------*/

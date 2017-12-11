@@ -11,8 +11,8 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 /**
  * Same as {@link UniversalJdbcQueue} but messages from all queues are stored in
@@ -55,7 +55,7 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.5.2
+ * @since 0.6.0
  * @see UniversalJdbcQueue
  */
 public class UniversalSingleStorageJdbcQueue

@@ -30,7 +30,7 @@ public abstract class AbstractEphemeralSupportQueue<ID, DATA> extends AbstractQu
     }
 
     /**
-     * Disables/Enables ephemeral storage.
+     * Disable/Enable ephemeral storage.
      * 
      * @param ephemeralDisabled
      *            {@code true} to disable ephemeral storage, {@code false}
@@ -43,7 +43,7 @@ public abstract class AbstractEphemeralSupportQueue<ID, DATA> extends AbstractQu
     }
 
     /**
-     * Returns a positive integer as max number of items can be stored in the
+     * Return a positive integer as max number of items can be stored in the
      * ephemeral storage.
      * 
      * @return
@@ -53,7 +53,7 @@ public abstract class AbstractEphemeralSupportQueue<ID, DATA> extends AbstractQu
     }
 
     /**
-     * Provides a positive integer to limit size (max number of items) of
+     * Provide a positive integer to limit size (max number of items) of
      * ephemeral storage.
      * 
      * @param ephemeralMaxSize

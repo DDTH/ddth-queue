@@ -31,4 +31,7 @@ public class TestDisruptorQueueLargeEphemeralDisabled extends BaseQueueMultiThre
         return queue;
     }
 
+    protected int numTestMessages() {
+        return 10 * 1024 * 1024;
+    }
 }

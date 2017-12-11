@@ -31,4 +31,7 @@ public class TestDisruptorQueueXLarge extends BaseQueueMultiThreadsTest<Long> {
         return queue;
     }
 
+    protected int numTestMessages() {
+        return 10 * 1024 * 1024;
+    }
 }

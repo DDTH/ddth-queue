@@ -121,7 +121,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     /*----------------------------------------------------------------------*/
 
     /**
-     * Reads a message from head of queue storage.
+     * Read a message from head of queue storage.
      * 
      * @param conn
      * @return
@@ -129,7 +129,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     protected abstract IQueueMessage<ID, DATA> readFromQueueStorage(Connection conn);
 
     /**
-     * Reads a message from the ephemeral storage.
+     * Read a message from the ephemeral storage.
      * 
      * @param conn
      * @param msg
@@ -140,8 +140,8 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
             IQueueMessage<ID, DATA> msg);
 
     /**
-     * Gets all orphan messages (messages that were left in ephemeral storage
-     * for a long time).
+     * Get all orphan messages (messages that were left in ephemeral storage for
+     * a long time).
      * 
      * @param conn
      * @param thresholdTimestampMs
@@ -154,7 +154,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
             Connection conn, long thresholdTimestampMs);
 
     /**
-     * Puts a message to tail of the queue storage.
+     * Put a message to tail of the queue storage.
      * 
      * @param conn
      * @param msg
@@ -163,7 +163,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     protected abstract boolean putToQueueStorage(Connection conn, IQueueMessage<ID, DATA> msg);
 
     /**
-     * Puts a message to the ephemeral storage.
+     * Put a message to the ephemeral storage.
      * 
      * @param conn
      * @param msg
@@ -172,7 +172,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     protected abstract boolean putToEphemeralStorage(Connection conn, IQueueMessage<ID, DATA> msg);
 
     /**
-     * Removes a message from the queue storage.
+     * Remove a message from the queue storage.
      * 
      * @param conn
      * @param msg
@@ -181,7 +181,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     protected abstract boolean removeFromQueueStorage(Connection conn, IQueueMessage<ID, DATA> msg);
 
     /**
-     * Removes a message from the queue storage.
+     * Remove a message from the queue storage.
      * 
      * @param conn
      * @param msg
@@ -191,7 +191,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
             IQueueMessage<ID, DATA> msg);
 
     /**
-     * Queues a message, retry if deadlock.
+     * Queue a message, retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -262,7 +262,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Re-queues a message, retry if deadlock.
+     * Re-queue a message, retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -349,7 +349,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Re-queues a message silently, retry if deadlock.
+     * Re-queue a message silently, retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -429,7 +429,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Performs "finish" action, retry if deadlock.
+     * Perform "finish" action, retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -492,7 +492,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Takes a message from queue, retry if deadlock.
+     * Take a message from queue, retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -584,8 +584,8 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Gets all orphan messages (messages that were left in ephemeral storage
-     * for a long time), retry if deadlock.
+     * Get all orphan messages (messages that were left in ephemeral storage for
+     * a long time), retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -651,7 +651,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Moves a message from ephemeral back to queue storage, retry if deadlock.
+     * Move a message from ephemeral back to queue storage, retry if deadlock.
      * 
      * <p>
      * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
@@ -720,7 +720,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Gets number of items currently in queue storage.
+     * Get number of items currently in queue storage.
      * 
      * @param conn
      * @return
@@ -733,7 +733,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
-     * Gets number of items currently in ephemeral storage.
+     * Get number of items currently in ephemeral storage.
      * 
      * @param conn
      * @return

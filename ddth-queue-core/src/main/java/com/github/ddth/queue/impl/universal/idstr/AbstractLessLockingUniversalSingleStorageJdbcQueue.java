@@ -17,8 +17,8 @@ import org.springframework.dao.DuplicateKeyException;
 import com.github.ddth.dao.utils.DaoException;
 import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 import com.github.ddth.queue.utils.QueueUtils;
 
@@ -46,7 +46,7 @@ import com.github.ddth.queue.utils.QueueUtils;
  * </ul>
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.5.2
+ * @since 0.6.0
  */
 public class AbstractLessLockingUniversalSingleStorageJdbcQueue
         extends BaseUniversalJdbcQueue<UniversalIdStrQueueMessage, String> {

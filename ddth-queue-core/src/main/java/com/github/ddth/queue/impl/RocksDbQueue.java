@@ -198,13 +198,13 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
             LOGGER.error(e.getMessage(), e);
         }
 
+        RocksDbUtils.closeRocksObjects(batchPutToQueue, batchTake, dbOptions);
+
         try {
             rocksDbWrapper.close();
         } catch (Exception e) {
             LOGGER.error(e.getMessage(), e);
         }
-
-        RocksDbUtils.closeRocksObjects(batchPutToQueue, batchTake, dbOptions);
     }
 
     /**

@@ -22,7 +22,7 @@ public abstract class AbstractQueue<ID, DATA>
      * Get queue's name.
      * 
      * @return
-     * @since 0.5.2
+     * @since 0.6.0
      */
     public String getQueueName() {
         return queueName;
@@ -33,7 +33,7 @@ public abstract class AbstractQueue<ID, DATA>
      * 
      * @param queueName
      * @return
-     * @since 0.5.2
+     * @since 0.6.0
      */
     public AbstractQueue<ID, DATA> setQueueName(String queueName) {
         this.queueName = queueName;
