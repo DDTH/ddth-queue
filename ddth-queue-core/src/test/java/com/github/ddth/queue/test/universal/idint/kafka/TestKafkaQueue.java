@@ -9,7 +9,7 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 /*
- * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idint.kafka.TestKafkaQueue -DenableTestsKafka=true
+ * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idint.kafka.TestActiveMqQueue -DenableTestsKafka=true
  */
 
 public class TestKafkaQueue extends BaseQueueFunctionalTest<Long> {

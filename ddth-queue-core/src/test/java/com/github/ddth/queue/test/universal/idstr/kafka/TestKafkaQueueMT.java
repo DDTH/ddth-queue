@@ -9,7 +9,7 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 /*
- * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idstr.kafka.TestKafkaQueueMT -DenableTestsKafka=true
+ * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idstr.kafka.TestActiveMqQueueMT -DenableTestsKafka=true
  */
 
 public class TestKafkaQueueMT extends BaseQueueMultiThreadsTest<String> {

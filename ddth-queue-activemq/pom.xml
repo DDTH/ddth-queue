@@ -1,0 +1,44 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.github.ddth</groupId>
+		<artifactId>ddth-queue</artifactId>
+		<version>0.6.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>ddth-queue-activemq</artifactId>
+	<packaging>pom</packaging>
+
+	<name>ddth-queue-activemq</name>
+	<description>DDTH's Libary to interact with various queue implementations</description>
+	<url>https://github.com/DDTH/ddth-queue</url>
+
+	<developers>
+		<developer>
+			<id>btnguyen2k</id>
+			<name>Thanh Ba Nguyen</name>
+			<email>btnguyen2k@gmail.com</email>
+		</developer>
+	</developers>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.github.ddth</groupId>
+			<artifactId>ddth-queue-core</artifactId>
+			<version>0.6.1-SNAPSHOT</version>
+		</dependency>
+
+		<!-- for ActiveMQ-based queue -->
+		<dependency>
+			<groupId>org.apache.activemq</groupId>
+			<artifactId>activemq-client</artifactId>
+			<version>${version.activemq}</version>
+		</dependency>
+
+	</dependencies>
+</project>

@@ -1,13 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.ddth.kafka.KafkaClient;
 import com.github.ddth.kafka.KafkaClient.ProducerType;
 import com.github.ddth.kafka.KafkaMessage;
@@ -15,10 +7,17 @@ import com.github.ddth.queue.IPartitionSupport;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * (Experimental) Kafka implementation of {@link IQueue}.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.2
  */
@@ -38,7 +37,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Sends message to Kafka asynchronously or not (default {@code true}).
-     * 
+     *
      * @return
      * @since 0.5.0
      */
@@ -48,7 +47,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Sends message to Kafka asynchronously or not.
-     * 
+     *
      * @param value
      * @return
      */
@@ -67,9 +66,8 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Kafka bootstrap server list (format
-     * {@code host1:9092,host2:port2,host3:port3}).
-     * 
+     * Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}).
+     *
      * @return
      * @since 0.4.0
      */
@@ -78,9 +76,8 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Sets Kafka bootstrap server list (format
-     * {@code host1:9092,host2:port2,host3:port3}).
-     * 
+     * Sets Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}).
+     *
      * @param kafkaBootstrapServers
      * @return
      * @since 0.4.0
@@ -92,7 +89,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Gets Kafka producer's custom configuration properties.
-     * 
+     *
      * @return
      * @since 0.4.0
      */
@@ -102,7 +99,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Sets Kafka producer's custom configuration properties.
-     * 
+     *
      * @param kafkaProducerConfigs
      * @return
      * @since 0.4.0
@@ -114,7 +111,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Gets Kafka consumer's custom configuration properties.
-     * 
+     *
      * @return
      * @since 0.4.0
      */
@@ -124,7 +121,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Sets Kafka consumer's custom configuration properties.
-     * 
+     *
      * @param kafkaConsumerConfigs
      * @return
      * @since 0.4.0
@@ -136,7 +133,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Name of Kafka topic to store queue messages.
-     * 
+     *
      * @return
      */
     public String getTopicName() {
@@ -150,7 +147,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Kafka's group-id to consume messages.
-     * 
+     *
      * @return
      */
     public String getConsumerGroupId() {
@@ -167,10 +164,9 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * An external {@link KafkaClient} can be used. If not set,
-     * {@link KafkaQueue} will automatically create a {@link KafkaClient} for
-     * its own use.
-     * 
+     * An external {@link KafkaClient} can be used. If not set, {@link KafkaQueue} will
+     * automatically create a {@link KafkaClient} for its own use.
+     *
      * @param kafkaClient
      * @return
      */
@@ -184,7 +180,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Init method.
-     * 
+     *
      * @return
      * @throws Exception
      */
@@ -215,7 +211,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.4.0
      */
     @Override
@@ -225,7 +221,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Serializes a queue message to store in Kafka.
-     * 
+     *
      * @param msg
      * @return
      */
@@ -233,7 +229,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Deserilizes a queue message.
-     * 
+     *
      * @param msgData
      * @return
      */
@@ -241,31 +237,32 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * Takes a message from Kafka queue.
-     * 
+     *
      * @return
      * @since 0.3.3
      */
     protected IQueueMessage<ID, DATA> takeFromQueue() {
-        KafkaMessage kMsg = kafkaClient.consumeMessage(consumerGroupId, true, topicName, 1000,
-                TimeUnit.MILLISECONDS);
+        KafkaMessage kMsg = kafkaClient
+                .consumeMessage(consumerGroupId, true, topicName, 1000, TimeUnit.MILLISECONDS);
         return kMsg != null ? deserialize(kMsg.content()) : null;
     }
 
     /**
-     * Puts a message to Kafka queue, partitioning message by
-     * {@link IQueueMessage#qId()}
-     * 
+     * Puts a message to Kafka queue, partitioning message by {@link IQueueMessage#qId()}
+     *
      * @param msg
      * @return
      */
     protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
         byte[] msgData = serialize(msg);
-        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).qPartitionKey()
+        Object pKey = msg instanceof IPartitionSupport
+                ? ((IPartitionSupport) msg).qPartitionKey()
                 : msg.qId();
         if (pKey == null) {
             pKey = msg.qId();
         }
-        KafkaMessage kMsg = pKey != null ? new KafkaMessage(topicName, pKey.toString(), msgData)
+        KafkaMessage kMsg = pKey != null
+                ? new KafkaMessage(topicName, pKey.toString(), msgData)
                 : new KafkaMessage(topicName, msgData);
         if (sendAsync) {
             return kafkaClient.sendMessageRaw(producerType, kMsg) != null;
@@ -323,12 +320,13 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * This method throws {@link QueueException.OperationNotSupported}
      */
     @Override
     public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        throw new QueueException.OperationNotSupported();
+        throw new QueueException.OperationNotSupported(
+                "This queue does not support retrieving orphan messages");
     }
 
     /**
@@ -336,8 +334,8 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        throw new UnsupportedOperationException(
-                "Method [moveFromEphemeralToQueueStorage] is not supported!");
+        throw new QueueException.OperationNotSupported(
+                "This queue does not support ephemeral storage.");
     }
 
     /**

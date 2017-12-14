@@ -1,5 +1,11 @@
 # ddth-queue release notes
 
+## 0.6.1 - 2017-12-14
+
+- New queue implementations: `ActiveMQ` & `RabbitMQ`.
+- Bug fixes and enhancements.
+
+
 ## 0.6.0 - 2017-12-11
 
 - Refactoring:

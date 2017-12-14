@@ -19,7 +19,7 @@ Hence this library is born to fulfill my need.
 
 ## Installation
 
-Latest release version: `0.6.0`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.6.1`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency: if only a sub-set of `ddth-queue` functionality is used, choose the
 corresponding dependency artifact(s) to reduce the number of unused jar files.
@@ -30,7 +30,18 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue-core</artifactId>
-	<version>0.6.0</version>
+	<version>0.6.1</version>
+</dependency>
+```
+
+`ddth-queue-activemq`: include `ddth-queue-core` and [Apache ActiveMQ](http://activemq.apache.org) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-activemq</artifactId>
+    <version>0.6.1</version>
+    <type>pom</type>
 </dependency>
 ```
 
@@ -40,7 +51,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-disruptor</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
     <type>pom</type>
 </dependency>
 ```
@@ -51,7 +62,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jdbc</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
     <type>pom</type>
 </dependency>
 ```
@@ -62,7 +73,18 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-kafka</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
+    <type>pom</type>
+</dependency>
+```
+
+`ddth-queue-rabbitmq`: include `ddth-queue-core` and [`RabbitMQ`](https://www.rabbitmq.com) dependencies:
+
+```xml
+<dependency>
+    <groupId>com.github.ddth</groupId>
+    <artifactId>ddth-queue-rabbitmq</artifactId>
+    <version>0.6.1</version>
     <type>pom</type>
 </dependency>
 ```
@@ -73,7 +95,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jedis</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
     <type>pom</type>
 </dependency>
 ```
@@ -84,7 +106,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-rocskdb</artifactId>
-    <version>0.6.0</version>
+    <version>0.6.1</version>
     <type>pom</type>
 </dependency>
 ```
@@ -151,18 +173,20 @@ Provided via `IQueue` interface:
 
 | Implementation | Bounded Size | Persistent | Ephemeral Storage | Multi-Clients |
 |----------------|:------------:|:----------:|:-----------------:|:-------------:|
+| ActiveMQ       | No           | Yes (*)    | No                | Yes           |
 | Disruptor      | Yes          | No         | Yes               | No            |
 | In-memory      | Optional     | No         | Yes               | No            |
 | JDBC           | No           | Yes        | Yes               | Yes           |
 | Kafka          | No           | Yes        | No                | Yes           |
-| Redis          | No           | Yes (1)    | Yes               | Yes           |
+| RabbitMQ       | No           | Yes (*)    | No                | Yes           |
+| Redis          | No           | Yes (*)    | Yes               | Yes           |
 | RocksDB        | No           | Yes        | Yes               | No            |
 
 - *Bounded Size*: queue's size is bounded.
-  - Currently only in-memory queue(s), including Disruptor implementation, support bounded queue size
-  - Databases (JDBC), Kafka, Redis and RocksDB queues are virtually limited only by hardware's capability
+  - Currently only in-memory queue(s), including Disruptor implementation, support bounded queue size.
+  - Databases (JDBC), ActiveMQ, RabbitMQ, Kafka, Redis and RocksDB queues are virtually limited only by hardware's capacity.
 - *Persistent*: queue's items are persistent between JVM restarts.
-  - Redis backend: persistency depends on Redis server's configurations
+  - ActiveMQ, RabbitMQ, Redis: persistency is configured at the corresponding backend service.
 - *Ephemeral Storage*: supports retrieval of orphan messages.
 - *Multi-Clients*: multi-clients can share a same queue backend storage.
 
@@ -178,6 +202,16 @@ use [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as Queue storag
 and a `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
 Messages in in-memory queues are _not_ persistent between JVM restarts!
+
+### ActiveMQ Queue
+
+This queue implementation utilizes [Apache ActiveMQ](http://activemq.apache.org) as queue storage.
+
+_Ephemeral storage is currently not supported!_
+
+Queue messages are persistent.
+
+See [ActiveMqQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/ActiveMqQueue.java).
 
 ### JDBC Queue
 
@@ -196,6 +230,16 @@ _Ephemeral storage is currently not supported!_
 Queue messages are persistent.
 
 See [KafkaQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/KafkaQueue.java).
+
+### RabbitMQ Queue
+
+This queue implementation utilizes [RabbitMQ](https://www.rabbitmq.com) as queue storage.
+
+_Ephemeral storage is currently not supported!_
+
+Queue messages are persistent.
+
+See [RabbitMqQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/RabbitMqQueue.java).
 
 ### Redis Queue
 
@@ -217,7 +261,7 @@ Queue messages are persistent.
 See [RocksDbQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/RocksDbQueue.java).
 
 
-## Pre-made Convenient Classes
+## Pre-made Convenient implementations
 
 - `com.github.ddth.queue.impl.universal.base.*`: base implementations of universal queue message & queue implementations.
 - `com.github.ddth.queue.impl.universal.msg.*` : universal queue message implementations
@@ -245,13 +289,18 @@ and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
 `com.github.ddth.queue.impl.universal.idint.UniversalInmemQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalInmemQueue` to work with `UniversalIdStrQueueMessage`.
 
+### UniversalActiveMqQueue
+
+Universal queue implementation that uses [Apache ActiveMQ](http://activemq.apache.org) to store queue messages.
+
+- Ephemeral storage is currently _not_ supported.
+- `com.github.ddth.queue.impl.universal.idint.UniversalActiveMqQueue` to work with `UniversalIdIntQueueMessage`, and`com.github.ddth.queue.impl.universal.idstr.UniversalActiveMqQueue` to work with `UniversalIdStrQueueMessage`.
+
 ### UniversalDisruptorQueue
 
-Universal in-memory queue implementation that uses [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as Queue storage,
-and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
+Universal in-memory queue implementation that uses [LMAX Disruptor](https://lmax-exchange.github.io/disruptor/) as Queue storage, and `java.util.concurrent.ConcurrentMap` as Ephemeral storage.
 
-`com.github.ddth.queue.impl.universal.idint.UniversalDisruptorQueue` to work with `UniversalIdIntQueueMessage`, and
-`com.github.ddth.queue.impl.universal.idstr.UniversalDisruptorQueue` to work with `UniversalIdStrQueueMessage`.
+`com.github.ddth.queue.impl.universal.idint.UniversalDisruptorQueue` to work with `UniversalIdIntQueueMessage`, and`com.github.ddth.queue.impl.universal.idstr.UniversalDisruptorQueue` to work with `UniversalIdStrQueueMessage`.
 
 ### UniversalJdbcQueue
 
@@ -330,6 +379,13 @@ Universal queue implementation that uses [Apache Kafka](http://kafka.apache.org)
 
 - Ephemeral storage is currently _not_ supported.
 - `com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalKafkaQueue` to work with `UniversalIdStrQueueMessage`.
+
+### UniversalRabbitMqQueue
+
+Universal queue implementation that uses [RabbitMQ](https://www.rabbitmq.com) to store queue messages.
+
+- Ephemeral storage is currently _not_ supported.
+- `com.github.ddth.queue.impl.universal.idint.UniversalRabbitMqQueue` to work with `UniversalIdIntQueueMessage`, and`com.github.ddth.queue.impl.universal.idstr.UniversalRabbitMqQueue` to work with `UniversalIdStrQueueMessage`.
 
 ### UniversalRedisQueue
 

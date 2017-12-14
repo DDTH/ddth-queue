@@ -1,175 +1,197 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<groupId>com.github.ddth</groupId>
-		<artifactId>ddth-parent</artifactId>
-		<version>6</version>
-	</parent>
+    <parent>
+        <groupId>com.github.ddth</groupId>
+        <artifactId>ddth-parent</artifactId>
+        <version>6</version>
+    </parent>
 
-	<artifactId>ddth-queue</artifactId>
-	<version>0.6.1-SNAPSHOT</version>
-	<packaging>pom</packaging>
+    <artifactId>ddth-queue</artifactId>
+    <version>0.6.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
 
-	<name>ddth-queue</name>
-	<description>DDTH's Libary to interact with various queue implementations</description>
-	<url>https://github.com/DDTH/ddth-queue</url>
+    <name>ddth-queue</name>
+    <description>DDTH's Libary to interact with various queue implementations</description>
+    <url>https://github.com/DDTH/ddth-queue</url>
 
-	<modules>
-		<module>ddth-queue-core</module>
-		<module>ddth-queue-disruptor</module>
-		<module>ddth-queue-jdbc</module>
-		<module>ddth-queue-kafka</module>
-		<module>ddth-queue-redis</module>
-		<module>ddth-queue-rocksdb</module>
-	</modules>
+    <modules>
+        <module>ddth-queue-core</module>
+        <module>ddth-queue-activemq</module>
+        <module>ddth-queue-disruptor</module>
+        <module>ddth-queue-jdbc</module>
+        <module>ddth-queue-kafka</module>
+        <module>ddth-queue-rabbitmq</module>
+        <module>ddth-queue-redis</module>
+        <module>ddth-queue-rocksdb</module>
+    </modules>
 
-	<licenses>
-		<license>
-			<name>The MIT License (MIT)</name>
-			<url>http://opensource.org/licenses/MIT</url>
-			<distribution>repo</distribution>
-		</license>
-	</licenses>
+    <licenses>
+        <license>
+            <name>The MIT License (MIT)</name>
+            <url>http://opensource.org/licenses/MIT</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
-	<scm>
-		<url>git@github.com:DDTH/ddth-queue</url>
-		<connection>scm:git:git@github.com:DDTH/ddth-queue</connection>
-		<developerConnection>scm:git:git@github.com:DDTH/ddth-queue</developerConnection>
-	</scm>
-	<developers>
-		<developer>
-			<id>btnguyen2k</id>
-			<name>Thanh Ba Nguyen</name>
-			<email>btnguyen2k@gmail.com</email>
-		</developer>
-	</developers>
+    <scm>
+        <url>git@github.com:DDTH/ddth-queue</url>
+        <connection>scm:git:git@github.com:DDTH/ddth-queue</connection>
+        <developerConnection>scm:git:git@github.com:DDTH/ddth-queue</developerConnection>
+    </scm>
+    <developers>
+        <developer>
+            <id>btnguyen2k</id>
+            <name>Thanh Ba Nguyen</name>
+            <email>btnguyen2k@gmail.com</email>
+        </developer>
+    </developers>
 
-	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<skipTests>true</skipTests>
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <skipTests>true</skipTests>
 
-		<version.ddth_commons>0.7.1.1</version.ddth_commons>
-		<version.ddth_dao>0.8.3</version.ddth_dao>
-		<version.ddth_kafka>1.3.3</version.ddth_kafka>
-		<version.jedis>2.9.0</version.jedis>
-		<version.disruptor>3.3.7</version.disruptor>
-		<version.rocksdb>5.8.6</version.rocksdb>
-	</properties>
+        <version.ddth_commons>0.7.1.1</version.ddth_commons>
+        <version.ddth_dao>0.8.3</version.ddth_dao>
+        <version.ddth_kafka>1.3.3</version.ddth_kafka>
+        <version.jedis>2.9.0</version.jedis>
+        <version.disruptor>3.3.7</version.disruptor>
+        <version.rocksdb>5.8.6</version.rocksdb>
+        <version.rabbitmq>5.0.0</version.rabbitmq>
+        <version.activemq>5.15.2</version.activemq>
+    </properties>
 
-	<repositories>
-		<repository>
-			<id>sonatype-org</id>
-			<name>Sonatype Releases</name>
-			<url>http://oss.sonatype.org/content/repositories/releases/</url>
-		</repository>
-	</repositories>
+    <repositories>
+        <repository>
+            <id>sonatype-org</id>
+            <name>Sonatype Releases</name>
+            <url>http://oss.sonatype.org/content/repositories/releases/</url>
+        </repository>
+    </repositories>
 
-	<dependencies>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>mysql</groupId>
-			<artifactId>mysql-connector-java</artifactId>
-			<version>5.1.35</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>9.4-1201-jdbc41</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-dbcp2</artifactId>
-			<version>2.1</version>
-			<scope>test</scope>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.35</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.4-1201-jdbc41</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-dbcp2</artifactId>
+            <version>2.1</version>
+            <scope>test</scope>
+        </dependency>
 
-		<dependency>
-			<groupId>com.github.ddth</groupId>
-			<artifactId>ddth-dao-core</artifactId>
-			<version>${version.ddth_dao}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.github.ddth</groupId>
-			<artifactId>ddth-commons-core</artifactId>
-			<version>${version.ddth_commons}</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.11</version>
-		</dependency>
+        <dependency>
+            <groupId>com.github.ddth</groupId>
+            <artifactId>ddth-dao-core</artifactId>
+            <version>${version.ddth_dao}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ddth</groupId>
+            <artifactId>ddth-commons-core</artifactId>
+            <version>${version.ddth_commons}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.11</version>
+        </dependency>
 
-		<!-- for LMAX Disruptor-based queues -->
-		<dependency>
-			<groupId>com.lmax</groupId>
-			<artifactId>disruptor</artifactId>
-			<version>${version.disruptor}</version>
-			<optional>true</optional>
-		</dependency>
+        <!-- for LMAX Disruptor-based queues -->
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>${version.disruptor}</version>
+            <optional>true</optional>
+        </dependency>
 
-		<!-- for Jdbc-based queues -->
-		<dependency>
-			<groupId>com.github.ddth</groupId>
-			<artifactId>ddth-dao-jdbc</artifactId>
-			<version>${version.ddth_dao}</version>
-			<type>pom</type>
-			<optional>true</optional>
-		</dependency>
+        <!-- for Jdbc-based queues -->
+        <dependency>
+            <groupId>com.github.ddth</groupId>
+            <artifactId>ddth-dao-jdbc</artifactId>
+            <version>${version.ddth_dao}</version>
+            <type>pom</type>
+            <optional>true</optional>
+        </dependency>
 
-		<!-- for Redis-based queues -->
-		<dependency>
-			<groupId>redis.clients</groupId>
-			<artifactId>jedis</artifactId>
-			<version>${version.jedis}</version>
-			<optional>true</optional>
-		</dependency>
+        <!-- for Redis-based queues -->
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>${version.jedis}</version>
+            <optional>true</optional>
+        </dependency>
 
-		<!-- for Kafka-based queue -->
-		<dependency>
-			<groupId>com.github.ddth</groupId>
-			<artifactId>ddth-kafka</artifactId>
-			<version>${version.ddth_kafka}</version>
-			<optional>true</optional>
-		</dependency>
+        <!-- for Kafka-based queue -->
+        <dependency>
+            <groupId>com.github.ddth</groupId>
+            <artifactId>ddth-kafka</artifactId>
+            <version>${version.ddth_kafka}</version>
+            <optional>true</optional>
+        </dependency>
 
-		<!-- for RocksDb-based queue -->
-		<dependency>
-			<groupId>org.rocksdb</groupId>
-			<artifactId>rocksdbjni</artifactId>
-			<version>${version.rocksdb}</version>
-			<optional>true</optional>
-		</dependency>
-	</dependencies>
+        <!-- for RocksDb-based queue -->
+        <dependency>
+            <groupId>org.rocksdb</groupId>
+            <artifactId>rocksdbjni</artifactId>
+            <version>${version.rocksdb}</version>
+            <optional>true</optional>
+        </dependency>
 
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-surefire-plugin</artifactId>
-				<configuration>
-					<forkMode>always</forkMode>
-					<skipTests>${skipTests}</skipTests>
-					<systemPropertyVariables>
-						<log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
-					</systemPropertyVariables>
-					<runOrder>alphabetical</runOrder>
-				</configuration>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.10.3</version>
-				<configuration>
-					<additionalparam>-Xdoclint:none</additionalparam>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
+        <!-- for ActiveMQ-based queue -->
+        <dependency>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>activemq-client</artifactId>
+            <version>${version.activemq}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- for RabbitMQ-based queue -->
+        <dependency>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>${version.rabbitmq}</version>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkMode>always</forkMode>
+                    <skipTests>${skipTests}</skipTests>
+                    <systemPropertyVariables>
+                        <log4j.configuration>file:${basedir}/etc/log4j.xml</log4j.configuration>
+                    </systemPropertyVariables>
+                    <runOrder>alphabetical</runOrder>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.3</version>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
