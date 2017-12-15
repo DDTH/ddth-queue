@@ -1,6 +1,7 @@
 package com.github.ddth.queue.impl.universal.idstr;
 
 import java.sql.Connection;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DuplicateKeyException;
 
+import com.github.ddth.commons.utils.DPathUtils;
 import com.github.ddth.dao.utils.DaoException;
 import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueueMessage;
@@ -131,6 +133,52 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
     @Override
     public String getTableNameEphemeral() {
         return getTableName();
+    }
+
+    private final static String FIELD_COUNT = "num_entries";
+    private String SQL_COUNT = "SELECT COUNT(*) AS " + FIELD_COUNT + " FROM {0} WHERE "
+            + COL_QUEUE_NAME + "=? AND " + COL_EPHEMERAL_ID + " IS NULL";
+    private String SQL_COUNT_EPHEMERAL = "SELECT COUNT(*) AS " + FIELD_COUNT + " FROM {0} WHERE "
+            + COL_QUEUE_NAME + "=? AND " + COL_EPHEMERAL_ID + " IS NOT NULL";
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.2.3
+     */
+    @Override
+    public AbstractLessLockingUniversalSingleStorageJdbcQueue init() {
+        super.init();
+
+        SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());
+        SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, getTableNameEphemeral());
+
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.2.3
+     */
+    @Override
+    protected int queueSize(Connection conn) {
+        Map<String, Object> row = getJdbcHelper().executeSelectOne(conn, SQL_COUNT, getQueueName());
+        Integer result = DPathUtils.getValue(row, FIELD_COUNT, Integer.class);
+        return result != null ? result.intValue() : 0;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.2.3
+     */
+    @Override
+    protected int ephemeralSize(Connection conn) {
+        Map<String, Object> row = getJdbcHelper().executeSelectOne(conn, SQL_COUNT_EPHEMERAL,
+                getQueueName());
+        Integer result = DPathUtils.getValue(row, FIELD_COUNT, Integer.class);
+        return result != null ? result.intValue() : 0;
     }
 
     /*----------------------------------------------------------------------*/

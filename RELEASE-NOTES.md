@@ -1,6 +1,8 @@
 # ddth-queue release notes
 
-## 0.6.2.2 - 2017-12-15
+
+
+## 0.6.2.3 - 2017-12-15
 
 - Enhancements:
   - Review & Add default values for `*Cache` and `*CacheFactory`
