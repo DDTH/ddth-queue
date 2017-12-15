@@ -13,6 +13,73 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
     private ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<>();
     private IQueueObserver<ID, DATA> defaultObserver;
 
+    private boolean defaultEphemeralDisabled = false;
+    private int defaultMaxSize = QueueSpec.NO_BOUNDARY,
+            defaultEphemeralMaxSize = QueueSpec.NO_BOUNDARY;
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public boolean isDefaultEphemeralDisabled() {
+        return defaultEphemeralDisabled;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public boolean getDefaultEphemeralDisabled() {
+        return defaultEphemeralDisabled;
+    }
+
+    /**
+     * 
+     * @param defaultEphemeralDisabled
+     * @since 0.6.2
+     */
+    public void setDefaultEphemeralDisabled(boolean defaultEphemeralDisabled) {
+        this.defaultEphemeralDisabled = defaultEphemeralDisabled;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public int getDefaultMaxSize() {
+        return defaultMaxSize;
+    }
+
+    /**
+     * 
+     * @param defaultMaxSize
+     * @since 0.6.2
+     */
+    public void setDefaultMaxSize(int defaultMaxSize) {
+        this.defaultMaxSize = defaultMaxSize;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public int getDefaultEphemeralMaxSize() {
+        return defaultEphemeralMaxSize;
+    }
+
+    /**
+     * 
+     * @param defaultEphemeralMaxSize
+     * @since 0.6.2
+     */
+    public void setDefaultEphemeralMaxSize(int defaultEphemeralMaxSize) {
+        this.defaultEphemeralMaxSize = defaultEphemeralMaxSize;
+    }
+
     /**
      * Get default queue's event observer.
      * 

@@ -36,7 +36,8 @@ import com.github.ddth.queue.utils.QueueException;
  */
 public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
 
-    public static int DEFAULT_MAX_RETRIES = 3;
+    public final static int DEFAULT_MAX_RETRIES = 3;
+    public final static int DEFAULT_TRANX_ISOLATION_LEVEL = Connection.TRANSACTION_READ_COMMITTED;
 
     private Logger LOGGER = LoggerFactory.getLogger(JdbcQueue.class);
 
@@ -47,7 +48,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
 
     private IJdbcHelper jdbcHelper;
     private int maxRetries = DEFAULT_MAX_RETRIES;
-    private int transactionIsolationLevel = Connection.TRANSACTION_READ_COMMITTED;
+    private int transactionIsolationLevel = DEFAULT_TRANX_ISOLATION_LEVEL;
 
     /*----------------------------------------------------------------------*/
     public JdbcQueue<ID, DATA> setTableName(String tableName) {

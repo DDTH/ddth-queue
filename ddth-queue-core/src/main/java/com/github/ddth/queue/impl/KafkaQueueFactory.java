@@ -16,15 +16,74 @@ import com.github.ddth.queue.QueueSpec;
 public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA>
         extends AbstractQueueFactory<T, ID, DATA> {
 
-    public final static String SPEC_FIELD_CONSUMER_GROUP_ID = "consumer_group_id";
     public final static String SPEC_FIELD_BOOTSTRAP_SERVERS = "bootstrap_servers";
     public final static String SPEC_FIELD_TOPIC = "topic";
+    public final static String SPEC_FIELD_CONSUMER_GROUP_ID = "consumer_group_id";
     public final static String SPEC_FIELD_PRODUCER_TYPE = "producer_type";
     public final static String SPEC_FIELD_PRODUCER_PROPERTIES = "producer_properties";
     public final static String SPEC_FIELD_CONSUMER_PROPERTIES = "consumer_properties";
+    public final static String SPEC_FIELD_SEND_ASYNC = "send_async";
 
-    private ProducerType defaultProducerType = ProducerType.LEADER_ACK;
+    private String defaultBootstrapServers = KafkaQueue.DEFAULT_BOOTSTRAP_SERVERS;
+    private String defaultTopicName = KafkaQueue.DEFAULT_TOPIC_NAME;
+    private String defaultConsumerGroupId;
+    private ProducerType defaultProducerType = KafkaQueue.DEFAULT_PRODUCER_TYPE;
     private Properties defaultProducerProps, defaultConsumerProps;
+    private boolean defaultSendAsync = KafkaQueue.DEFAULT_SEND_ASYNC;
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public String getDefaultBootstrapServers() {
+        return defaultBootstrapServers;
+    }
+
+    /**
+     * 
+     * @param defaultBootstrapServers
+     * @since 0.6.2
+     */
+    public void setDefaultBootstrapServers(String defaultBootstrapServers) {
+        this.defaultBootstrapServers = defaultBootstrapServers;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public String getDefaultTopicName() {
+        return defaultTopicName;
+    }
+
+    /**
+     * 
+     * @param defaultTopicName
+     * @since 0.6.2
+     */
+    public void setDefaultTopicName(String defaultTopicName) {
+        this.defaultTopicName = defaultTopicName;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public String getDefaultConsumerGroupId() {
+        return defaultConsumerGroupId;
+    }
+
+    /**
+     * 
+     * @param defaultConsumerGroupId
+     * @since 0.6.2
+     */
+    public void setDefaultConsumerGroupId(String defaultConsumerGroupId) {
+        this.defaultConsumerGroupId = defaultConsumerGroupId;
+    }
 
     public ProducerType getDefaultProducerType() {
         return defaultProducerType;
@@ -51,6 +110,33 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public boolean isDefaultSendAsync() {
+        return defaultSendAsync;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public boolean getDefaultSendAsync() {
+        return defaultSendAsync;
+    }
+
+    /**
+     * 
+     * @param defaultSendAsync
+     * @since 0.6.2
+     */
+    public void setDefaultSendAsync(boolean defaultSendAsync) {
+        this.defaultSendAsync = defaultSendAsync;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
@@ -59,6 +145,31 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
 
         queue.setProducerType(defaultProducerType).setKafkaProducerProperties(defaultProducerProps)
                 .setKafkaConsumerProperties(defaultConsumerProps);
+        queue.setSendAsync(defaultSendAsync);
+
+        String bootstrapServers = spec.getField(SPEC_FIELD_BOOTSTRAP_SERVERS);
+        bootstrapServers = StringUtils.isBlank(bootstrapServers) ? defaultBootstrapServers
+                : bootstrapServers;
+        if (StringUtils.isBlank(bootstrapServers)) {
+            throw new IllegalArgumentException(
+                    "Empty or Invalid value for param [" + SPEC_FIELD_BOOTSTRAP_SERVERS + "]!");
+        }
+        queue.setKafkaBootstrapServers(bootstrapServers);
+
+        String consumerGroupId = spec.getField(SPEC_FIELD_CONSUMER_GROUP_ID);
+        consumerGroupId = StringUtils.isBlank(consumerGroupId) ? defaultConsumerGroupId
+                : consumerGroupId;
+        if (!StringUtils.isBlank(consumerGroupId)) {
+            queue.setConsumerGroupId(consumerGroupId);
+        }
+
+        String topicName = spec.getField(SPEC_FIELD_TOPIC);
+        topicName = StringUtils.isBlank(topicName) ? defaultTopicName : topicName;
+        if (StringUtils.isBlank(topicName)) {
+            throw new IllegalArgumentException(
+                    "Empty or Invalid value for param [" + SPEC_FIELD_TOPIC + "]!");
+        }
+        queue.setTopicName(topicName);
 
         String producerTypeStr = spec.getField(SPEC_FIELD_PRODUCER_TYPE);
         if (!StringUtils.isBlank(producerTypeStr)) {
@@ -81,24 +192,10 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
             queue.setKafkaConsumerProperties(consumerProps);
         }
 
-        String consumerGroupId = spec.getField(SPEC_FIELD_CONSUMER_GROUP_ID);
-        if (!StringUtils.isBlank(consumerGroupId)) {
-            queue.setConsumerGroupId(consumerGroupId);
+        Boolean sendAsync = spec.getField(SPEC_FIELD_SEND_ASYNC, Boolean.class);
+        if (sendAsync != null) {
+            queue.setSendAsync(sendAsync.booleanValue());
         }
-
-        String bootstrapServers = spec.getField(SPEC_FIELD_BOOTSTRAP_SERVERS);
-        if (StringUtils.isBlank(bootstrapServers)) {
-            throw new IllegalArgumentException(
-                    "Empty or Invalid value for param [" + SPEC_FIELD_BOOTSTRAP_SERVERS + "]!");
-        }
-        queue.setKafkaBootstrapServers(bootstrapServers);
-
-        String topicName = spec.getField(SPEC_FIELD_TOPIC);
-        if (StringUtils.isBlank(topicName)) {
-            throw new IllegalArgumentException(
-                    "Empty or Invalid value for param [" + SPEC_FIELD_TOPIC + "]!");
-        }
-        queue.setTopicName(topicName);
 
         try {
             queue.init();

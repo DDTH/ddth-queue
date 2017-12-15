@@ -1,7 +1,8 @@
 package com.github.ddth.queue.impl;
 
-import com.github.ddth.queue.QueueSpec;
 import org.apache.commons.lang3.StringUtils;
+
+import com.github.ddth.queue.QueueSpec;
 
 /**
  * Factory to create {@link ActiveMqQueue} instances.
@@ -17,7 +18,8 @@ public abstract class ActiveMqQueueFactory<T extends ActiveMqQueue<ID, DATA>, ID
     public final static String SPEC_FIELD_PASSWORD = "password";
     public final static String SPEC_FIELD_QUEUE_NAME = "queue_name";
 
-    private String defaultUri = ActiveMqQueue.DEFAULT_URI, defaultQueueName = ActiveMqQueue.DEFAULT_QUEUE_NAME;
+    private String defaultUri = ActiveMqQueue.DEFAULT_URI,
+            defaultQueueName = ActiveMqQueue.DEFAULT_QUEUE_NAME;
     private String defaultUsername = null, defaultPassword = null;
 
     public String getDefaultUri() {
@@ -59,11 +61,17 @@ public abstract class ActiveMqQueueFactory<T extends ActiveMqQueue<ID, DATA>, ID
     protected void initQueue(T queue, QueueSpec spec) {
         super.initQueue(queue, spec);
 
-        queue.setUri(defaultUri).setQueueName(defaultQueueName);
+        queue.setUri(defaultUri).setQueueName(defaultQueueName).setUsername(defaultUsername)
+                .setPassword(defaultPassword);
 
         String uri = spec.getField(SPEC_FIELD_URI);
         if (!StringUtils.isBlank(uri)) {
             queue.setUri(uri);
+        }
+
+        String queueName = spec.getField(SPEC_FIELD_QUEUE_NAME);
+        if (!StringUtils.isBlank(uri)) {
+            queue.setQueueName(queueName);
         }
 
         String username = spec.getField(SPEC_FIELD_USERNAME);
@@ -73,12 +81,7 @@ public abstract class ActiveMqQueueFactory<T extends ActiveMqQueue<ID, DATA>, ID
 
         String password = spec.getField(SPEC_FIELD_PASSWORD);
         if (!StringUtils.isBlank(password)) {
-            queue.setUsername(password);
-        }
-
-        String queueName = spec.getField(SPEC_FIELD_QUEUE_NAME);
-        if (!StringUtils.isBlank(uri)) {
-            queue.setQueueName(queueName);
+            queue.setPassword(password);
         }
 
         queue.init();

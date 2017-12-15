@@ -18,15 +18,41 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
     public final static String SPEC_FIELD_CF_QUEUE = "cf_queue";
     public final static String SPEC_FIELD_CF_METADATA = "cf_metadata";
 
-    private String defaultStorageDir = "/tmp/ddth-rocksdb-queue";
+    private String defaultStorageDir;
+    private String defaultCfNameQueue = RocksDbQueue.DEFAULT_CFNAME_QUEUE,
+            defaultCfNameMetaData = RocksDbQueue.DEFAULT_CFNAME_METADATA,
+            defaultCfNameEphemeral = RocksDbQueue.DEFAULT_CFNAME_EPHEMERAL;
 
     public String getDefaultStorageDir() {
         return defaultStorageDir;
     }
 
-    public RocksDbQueueFactory<T, ID, DATA> setDefaultStorageDir(String defaultStorageDir) {
+    public void setDefaultStorageDir(String defaultStorageDir) {
         this.defaultStorageDir = defaultStorageDir;
-        return this;
+    }
+
+    public String getDefaultCfNameQueue() {
+        return defaultCfNameQueue;
+    }
+
+    public void setDefaultCfNameQueue(String defaultCfNameQueue) {
+        this.defaultCfNameQueue = defaultCfNameQueue;
+    }
+
+    public String getDefaultCfNameMetaData() {
+        return defaultCfNameMetaData;
+    }
+
+    public void setDefaultCfNameMetaData(String defaultCfNameMetaData) {
+        this.defaultCfNameMetaData = defaultCfNameMetaData;
+    }
+
+    public String getDefaultCfNameEphemeral() {
+        return defaultCfNameEphemeral;
+    }
+
+    public void setDefaultCfNameEphemeral(String defaultCfNameEphemeral) {
+        this.defaultCfNameEphemeral = defaultCfNameEphemeral;
     }
 
     /**
@@ -36,6 +62,8 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
     protected void initQueue(T queue, QueueSpec spec) {
         super.initQueue(queue, spec);
 
+        queue.setEphemeralDisabled(getDefaultEphemeralDisabled())
+                .setEphemeralMaxSize(getDefaultEphemeralMaxSize());
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
                 Boolean.class);
         if (ephemeralDisabled != null) {
@@ -47,23 +75,21 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
         }
 
         String storageDir = spec.getField(SPEC_FIELD_STORAGE_DIR);
-        if (!StringUtils.isEmpty(storageDir)) {
+        storageDir = StringUtils.isBlank(storageDir) ? defaultStorageDir : storageDir;
+        if (!StringUtils.isBlank(storageDir)) {
             queue.setStorageDir(storageDir);
-        } else {
-            throw new IllegalArgumentException(
-                    "Empty or Invalid value for parameter [" + SPEC_FIELD_STORAGE_DIR + "]!");
         }
 
+        queue.setCfNameEphemeral(defaultCfNameEphemeral).setCfNameMetadata(defaultCfNameMetaData)
+                .setCfNameQueue(defaultCfNameEphemeral);
         String cfNameEphemeral = spec.getField(SPEC_FIELD_CF_EPHEMERAL);
         if (!StringUtils.isBlank(cfNameEphemeral)) {
             queue.setCfNameEphemeral(cfNameEphemeral);
         }
-
         String cfNameMetadata = spec.getField(SPEC_FIELD_CF_METADATA);
         if (!StringUtils.isBlank(cfNameMetadata)) {
             queue.setCfNameMetadata(cfNameMetadata);
         }
-
         String cfNameQueue = spec.getField(SPEC_FIELD_CF_QUEUE);
         if (!StringUtils.isBlank(cfNameQueue)) {
             queue.setCfNameQueue(cfNameQueue);

@@ -14,6 +14,7 @@ import com.github.ddth.queue.utils.QueueUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.Protocol;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
 
@@ -37,17 +38,24 @@ import redis.clients.jedis.Transaction;
  */
 public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
 
+    public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":"
+            + Protocol.DEFAULT_PORT;
+    public final static String DEFAULT_PASSWORD = null;
+    public final static String DEFAULT_HASH_NAME = "queue_h";
+    public final static String DEFAULT_LIST_NAME = "queue_l";
+    public final static String DEFAULT_SORTED_SET_NAME = "queue_s";
+
     private JedisPool jedisPool;
     private boolean myOwnJedisPool = true;
-    private String redisHostAndPort = "localhost:6379";
+    private String redisHostAndPort = DEFAULT_HOST_AND_PORT, redisPassword = DEFAULT_PASSWORD;
 
-    private String _redisHashName = "queue_h";
+    private String _redisHashName = DEFAULT_HASH_NAME;
     private byte[] redisHashName = _redisHashName.getBytes(QueueUtils.UTF8);
 
-    private String _redisListName = "queue_l";
+    private String _redisListName = DEFAULT_LIST_NAME;
     private byte[] redisListName = _redisListName.getBytes(QueueUtils.UTF8);
 
-    private String _redisSortedSetName = "queue_s";
+    private String _redisSortedSetName = DEFAULT_SORTED_SET_NAME;
     private byte[] redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
 
     /**
@@ -60,13 +68,35 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     }
 
     /**
-     * Sets Redis' host and port scheme (format {@code host:port}).
+     * Set Redis' host and port scheme (format {@code host:port}).
      * 
      * @param redisHostAndPort
      * @return
      */
     public RedisQueue<ID, DATA> setRedisHostAndPort(String redisHostAndPort) {
         this.redisHostAndPort = redisHostAndPort;
+        return this;
+    }
+
+    /**
+     * Redis' password
+     * 
+     * @return
+     * @since 0.6.2
+     */
+    public String getRedisPassword() {
+        return redisPassword;
+    }
+
+    /**
+     * Set Redis' password.
+     * 
+     * @param redisPassword
+     * @return
+     * @since 0.6.2
+     */
+    public RedisQueue<ID, DATA> setRedisPassword(String redisPassword) {
+        this.redisPassword = redisPassword;
         return this;
     }
 
@@ -129,9 +159,10 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     public RedisQueue<ID, DATA> init() {
         if (jedisPool == null) {
             JedisPoolConfig poolConfig = new JedisPoolConfig();
-            poolConfig.setMaxTotal(32);
+            int numProcesses = Runtime.getRuntime().availableProcessors();
+            poolConfig.setMaxTotal(numProcesses * 2);
             poolConfig.setMinIdle(1);
-            poolConfig.setMaxIdle(16);
+            poolConfig.setMaxIdle(numProcesses);
             poolConfig.setMaxWaitMillis(10000);
             // poolConfig.setTestOnBorrow(true);
             poolConfig.setTestWhileIdle(true);
@@ -139,7 +170,8 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
             String[] tokens = redisHostAndPort.split(":");
             String redisHost = tokens.length > 0 ? tokens[0] : "localhost";
             int redisPort = tokens.length > 1 ? Integer.parseInt(tokens[1]) : 6379;
-            jedisPool = new JedisPool(poolConfig, redisHost, redisPort);
+            jedisPool = new JedisPool(poolConfig, redisHost, redisPort, Protocol.DEFAULT_TIMEOUT,
+                    redisPassword);
             myOwnJedisPool = true;
         }
 
@@ -204,7 +236,7 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     }
 
     /**
-     * Serializes a queue message to store in Redis.
+     * Serialize a queue message to store in Redis.
      * 
      * @param msg
      * @return
@@ -212,7 +244,7 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
 
     /**
-     * Deserilizes a queue message.
+     * Deserilize a queue message.
      * 
      * @param msgData
      * @return
@@ -220,7 +252,7 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
 
     /**
-     * Removes a message completely.
+     * Remove a message completely.
      * 
      * @param msg
      * @return
@@ -243,7 +275,7 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     }
 
     /**
-     * Stores a new message.
+     * Store a new message.
      * 
      * @param msg
      * @return
@@ -263,7 +295,7 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     }
 
     /**
-     * Re-stores an old message (called by {@link #requeue(IQueueMessage)} or
+     * Re-store an old message (called by {@link #requeue(IQueueMessage)} or
      * {@link #requeueSilent(IQueueMessage)}.
      * 
      * @param msg

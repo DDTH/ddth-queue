@@ -1,7 +1,8 @@
 package com.github.ddth.queue.impl;
 
-import com.github.ddth.queue.QueueSpec;
 import org.apache.commons.lang3.StringUtils;
+
+import com.github.ddth.queue.QueueSpec;
 
 /**
  * Factory to create {@link RabbitMqQueue} instances.
@@ -15,7 +16,8 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
     public final static String SPEC_FIELD_URI = "uri";
     public final static String SPEC_FIELD_QUEUE_NAME = "queue_name";
 
-    private String defaultUri = "amqp://localhost:5672", defaultQueueName = "ddth-queue";
+    private String defaultUri = RabbitMqQueue.DEFAULT_URI,
+            defaultQueueName = RabbitMqQueue.DEFAULT_QUEUE_NAME;
 
     public String getDefaultUri() {
         return defaultUri;

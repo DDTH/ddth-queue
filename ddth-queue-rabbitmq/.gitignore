@@ -1,0 +1,7 @@
+/.settings
+/.classpath
+/.project
+/.cache
+/target
+*.log
+

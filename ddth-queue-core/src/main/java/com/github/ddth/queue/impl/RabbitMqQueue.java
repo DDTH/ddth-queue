@@ -21,14 +21,18 @@ import java.util.concurrent.TimeoutException;
  */
 public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
+    public final static String DEFAULT_URI = "amqp://localhost:5672";
+    public final static String DEFAULT_QUEUE_NAME = "ddth-queue";
+
     private ConnectionFactory connectionFactory;
     private boolean myOwnConnectionFactory = true;
-    private String uri = "amqp://localhost:5672";
-    private String queueName = "ddth-queue";
+    private String uri = DEFAULT_URI;
+    private String queueName = DEFAULT_QUEUE_NAME;
     private Connection connection;
 
     /**
-     * Get RabbitMQ's connection URI (format {@code amqp://username:password@host:port/virtualHost}).
+     * Get RabbitMQ's connection URI (format
+     * {@code amqp://username:password@host:port/virtualHost}).
      *
      * @return
      */
@@ -37,7 +41,8 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Set RabbitMQ's connection URI (format {@code amqp://username:password@host:port/virtualHost}).
+     * Set RabbitMQ's connection URI (format
+     * {@code amqp://username:password@host:port/virtualHost}).
      *
      * @param uri
      * @return
@@ -204,7 +209,8 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
 
     /**
-     * Puts a message to Kafka queue, partitioning message by {@link IQueueMessage#qId()}
+     * Puts a message to Kafka queue, partitioning message by
+     * {@link IQueueMessage#qId()}
      *
      * @param msg
      * @return
@@ -258,26 +264,26 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         // EMPTY
     }
 
-    //    protected static class RabbitMQMessage {
-    //        public final String consumerTag;
-    //        public final Envelope envelope;
-    //        public final AMQP.BasicProperties properties;
-    //        public final byte[] body;
+    // protected static class RabbitMQMessage {
+    // public final String consumerTag;
+    // public final Envelope envelope;
+    // public final AMQP.BasicProperties properties;
+    // public final byte[] body;
     //
-    //        public RabbitMQMessage(String consumerTag, Envelope envelope,
-    //                AMQP.BasicProperties properties, byte[] body) {
-    //            this.consumerTag = consumerTag;
-    //            this.envelope = envelope;
-    //            this.properties = properties;
-    //            this.body = body;
-    //        }
-    //    }
+    // public RabbitMQMessage(String consumerTag, Envelope envelope,
+    // AMQP.BasicProperties properties, byte[] body) {
+    // this.consumerTag = consumerTag;
+    // this.envelope = envelope;
+    // this.properties = properties;
+    // this.body = body;
+    // }
+    // }
 
     /**
      * {@inheritDoc}
      *
      * @throws QueueException.EphemeralIsFull
-     *         if the ephemeral storage is full
+     *             if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
@@ -288,13 +294,13 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
 
-
-//        try (Channel channel = createChannel()) {
-//            GetResponse msg = channel.basicGet(queueName, true);
-//            return msg != null ? deserialize(msg.getBody()) : null;
-//        } catch (Exception e) {
-//            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
-//        }
+        // try (Channel channel = createChannel()) {
+        // GetResponse msg = channel.basicGet(queueName, true);
+        // return msg != null ? deserialize(msg.getBody()) : null;
+        // } catch (Exception e) {
+        // throw e instanceof QueueException ? (QueueException) e : new
+        // QueueException(e);
+        // }
     }
 
     /**

@@ -51,6 +51,8 @@ public class AbstractLessLockingUniversalJdbcQueue
         extends BaseUniversalJdbcQueue<UniversalIdIntQueueMessage, Long> {
 
     private Logger LOGGER = LoggerFactory.getLogger(AbstractLessLockingUniversalJdbcQueue.class);
+    
+    public final static boolean DEFAULT_FIFO = true;
 
     /** Table's column name to store queue-id */
     public final static String COL_QUEUE_ID = "queue_id";
@@ -70,7 +72,7 @@ public class AbstractLessLockingUniversalJdbcQueue
     /** Table's column name to store message's content */
     public final static String COL_CONTENT = "msg_content";
 
-    private boolean fifo = true;
+    private boolean fifo = DEFAULT_FIFO;
 
     /**
      * When set to {@code true}, queue message with lower id is ensured to be

@@ -25,15 +25,21 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     private final Logger LOGGER = LoggerFactory.getLogger(KafkaQueue.class);
 
+    public final static String DEFAULT_BOOTSTRAP_SERVERS = "localhost:9092";
+    public final static String DEFAULT_TOPIC_NAME = "ddth-queue";
+    public final static ProducerType DEFAULT_PRODUCER_TYPE = ProducerType.LEADER_ACK;
+    public final static boolean DEFAULT_SEND_ASYNC = true;
+    public final static String DEFAULT_CONSUMER_GROUP_ID = "ddth-queue";
+
     private KafkaClient kafkaClient;
     private boolean myOwnKafkaClient = true;
 
-    private String bootstrapServers = "localhost:9092";
-    private String topicName = "ddth-queue";
-    private String consumerGroupId = "kafkaqueue-" + System.currentTimeMillis();
-    private ProducerType producerType = ProducerType.LEADER_ACK;
+    private String bootstrapServers = DEFAULT_BOOTSTRAP_SERVERS;
+    private String topicName = DEFAULT_TOPIC_NAME;
+    private String consumerGroupId = DEFAULT_CONSUMER_GROUP_ID + System.currentTimeMillis();
+    private ProducerType producerType = DEFAULT_PRODUCER_TYPE;
     private Properties producerProps, consumerProps;
-    private boolean sendAsync = true;
+    private boolean sendAsync = DEFAULT_SEND_ASYNC;
 
     /**
      * Sends message to Kafka asynchronously or not (default {@code true}).
@@ -66,7 +72,8 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}).
+     * Kafka bootstrap server list (format
+     * {@code host1:9092,host2:port2,host3:port3}).
      *
      * @return
      * @since 0.4.0
@@ -76,7 +83,8 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Sets Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}).
+     * Sets Kafka bootstrap server list (format
+     * {@code host1:9092,host2:port2,host3:port3}).
      *
      * @param kafkaBootstrapServers
      * @return
@@ -164,8 +172,9 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * An external {@link KafkaClient} can be used. If not set, {@link KafkaQueue} will
-     * automatically create a {@link KafkaClient} for its own use.
+     * An external {@link KafkaClient} can be used. If not set,
+     * {@link KafkaQueue} will automatically create a {@link KafkaClient} for
+     * its own use.
      *
      * @param kafkaClient
      * @return
@@ -242,27 +251,26 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      * @since 0.3.3
      */
     protected IQueueMessage<ID, DATA> takeFromQueue() {
-        KafkaMessage kMsg = kafkaClient
-                .consumeMessage(consumerGroupId, true, topicName, 1000, TimeUnit.MILLISECONDS);
+        KafkaMessage kMsg = kafkaClient.consumeMessage(consumerGroupId, true, topicName, 1000,
+                TimeUnit.MILLISECONDS);
         return kMsg != null ? deserialize(kMsg.content()) : null;
     }
 
     /**
-     * Puts a message to Kafka queue, partitioning message by {@link IQueueMessage#qId()}
+     * Puts a message to Kafka queue, partitioning message by
+     * {@link IQueueMessage#qId()}
      *
      * @param msg
      * @return
      */
     protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
         byte[] msgData = serialize(msg);
-        Object pKey = msg instanceof IPartitionSupport
-                ? ((IPartitionSupport) msg).qPartitionKey()
+        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).qPartitionKey()
                 : msg.qId();
         if (pKey == null) {
             pKey = msg.qId();
         }
-        KafkaMessage kMsg = pKey != null
-                ? new KafkaMessage(topicName, pKey.toString(), msgData)
+        KafkaMessage kMsg = pKey != null ? new KafkaMessage(topicName, pKey.toString(), msgData)
                 : new KafkaMessage(topicName, msgData);
         if (sendAsync) {
             return kafkaClient.sendMessageRaw(producerType, kMsg) != null;

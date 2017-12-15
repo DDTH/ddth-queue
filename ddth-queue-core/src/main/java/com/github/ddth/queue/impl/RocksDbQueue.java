@@ -45,14 +45,19 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         RocksDB.loadLibrary();
     }
 
-    private Logger LOGGER = LoggerFactory.getLogger(RocksDbQueue.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(RocksDbQueue.class);
+
+    public final static String DEFAULT_STORAGE_DIR = "/tmp/ddth-rocksdb-queue";
+    public final static String DEFAULT_CFNAME_QUEUE = "queue";
+    public final static String DEFAULT_CFNAME_METADATA = "metadata";
+    public final static String DEFAULT_CFNAME_EPHEMERAL = "ephemeral";
 
     private byte[] lastFetchedId = null;
     private Lock lockPut = new ReentrantLock(), lockTake = new ReentrantLock();
 
-    private String storageDir = "/tmp/ddth-rocksdb-queue";
-    private String cfNameQueue = "queue", cfNameMetadata = "metadata",
-            cfNameEphemeral = "ephemeral";
+    private String storageDir = DEFAULT_STORAGE_DIR + "/" + System.currentTimeMillis();
+    private String cfNameQueue = DEFAULT_CFNAME_QUEUE, cfNameMetadata = DEFAULT_CFNAME_METADATA,
+            cfNameEphemeral = DEFAULT_CFNAME_EPHEMERAL;
     private DBOptions dbOptions;
     private ReadOptions readOptions;
     private WriteOptions writeOptions;
