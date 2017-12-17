@@ -1,6 +1,6 @@
 # ddth-queue release notes
 
-## 0.6.2.4 - 2017-12-17
+## 0.6.2.5 - 2017-12-17
 
 - Bug fixes & Enhancements.
 
