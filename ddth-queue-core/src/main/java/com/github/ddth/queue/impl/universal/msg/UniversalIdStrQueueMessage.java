@@ -73,6 +73,18 @@ public class UniversalIdStrQueueMessage extends BaseUniversalQueueMessage<String
     }
 
     /**
+     * Create a new {@link UniversalIdStrQueueMessage}.
+     * 
+     * @param data
+     * @return
+     * @since 0.6.2.3
+     */
+    public static UniversalIdStrQueueMessage newInstance(Map<String, Object> data) {
+        UniversalIdStrQueueMessage msg = newInstance();
+        return msg.fromMap(data);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

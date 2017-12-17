@@ -54,8 +54,8 @@ public abstract class BaseUniversalQueueMessage<ID> extends GenericQueueMessage<
         return false;
     }
 
-    public final static String FIELD_QUEUE_ID = "qid", FIELD_ORG_TIMESTAMP = "orgTime",
-            FIELD_TIMESTAMP = "time", FIELD_NUM_REQUEUES = "numRequeues", FIELD_DATA = "data",
+    public final static String FIELD_QUEUE_ID = "qid", FIELD_ORG_TIMESTAMP = "org_time",
+            FIELD_TIMESTAMP = "time", FIELD_NUM_REQUEUES = "num_requeues", FIELD_DATA = "data",
             FIELD_PARTITION_KEY = "pkey";
 
     /**

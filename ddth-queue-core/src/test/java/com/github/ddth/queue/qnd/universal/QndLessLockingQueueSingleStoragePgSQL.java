@@ -23,8 +23,7 @@ public class QndLessLockingQueueSingleStoragePgSQL {
 
             try (LessLockingUniversalSingleStoragePgSQLQueue queue = new LessLockingUniversalSingleStoragePgSQLQueue()) {
                 queue.setTableName("queuellss").setJdbcHelper(jdbcHelper)
-                        .setQueueName(QndLessLockingQueueSingleStoragePgSQL.class.getSimpleName())
-                        .init();
+                        .setQueueName(QndGHNLLSSPgSQL.class.getSimpleName()).init();
 
                 UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                 msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());

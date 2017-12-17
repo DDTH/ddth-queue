@@ -5,7 +5,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -219,10 +218,7 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
         Collection<UniversalIdIntQueueMessage> result = new ArrayList<>();
         try (Stream<Map<String, Object>> dbRows = getJdbcHelper().executeSelectAsStream(conn,
                 SQL_GET_ORPHAN_MSGS, getQueueName(), threshold)) {
-            dbRows.forEach(row -> {
-                UniversalIdIntQueueMessage msg = new UniversalIdIntQueueMessage().fromMap(row);
-                result.add(msg);
-            });
+            dbRows.forEach(row -> result.add(UniversalIdIntQueueMessage.newInstance(row)));
         }
         return result;
     }
@@ -231,20 +227,15 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected boolean putToQueueStorage(Connection conn, IQueueMessage<Long, byte[]> _msg) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
+    protected boolean putToQueueStorage(Connection conn, IQueueMessage<Long, byte[]> msg) {
         Long qid = msg.qId();
         if (qid == null || qid.longValue() == 0) {
             int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE, getQueueName(),
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.qData());
             return numRows > 0;
         } else {
             int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, getQueueName(), qid,
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.qData());
             return numRows > 0;
         }
     }
@@ -271,13 +262,7 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected boolean removeFromEphemeralStorage(Connection conn,
-            IQueueMessage<Long, byte[]> _msg) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
+    protected boolean removeFromEphemeralStorage(Connection conn, IQueueMessage<Long, byte[]> msg) {
         int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, getQueueName(),
                 msg.qId());
         return numRows > 0;
@@ -288,13 +273,8 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected boolean _queueWithRetries(Connection conn, IQueueMessage<Long, byte[]> _msg,
+    protected boolean _queueWithRetries(Connection conn, IQueueMessage<Long, byte[]> msg,
             int numRetries, int maxRetries) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         try {
             Date now = new Date();
             msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
@@ -324,13 +304,8 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
     /**
      * {@inheritDoc}
      */
-    protected boolean _requeueWithRetries(Connection conn, IQueueMessage<Long, byte[]> _msg,
+    protected boolean _requeueWithRetries(Connection conn, IQueueMessage<Long, byte[]> msg,
             int numRetries, int maxRetries) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         try {
             int numRows = getJdbcHelper().execute(conn, SQL_REQUEUE, new Date(), getQueueName(),
                     msg.qId());
@@ -364,13 +339,8 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
     /**
      * {@inheritDoc}
      */
-    protected boolean _requeueSilentWithRetries(Connection conn, IQueueMessage<Long, byte[]> _msg,
+    protected boolean _requeueSilentWithRetries(Connection conn, IQueueMessage<Long, byte[]> msg,
             int numRetries, int maxRetries) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         try {
             int numRows = getJdbcHelper().execute(conn, SQL_REQUEUE_SILENT, getQueueName(),
                     msg.qId());
@@ -400,13 +370,8 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected void _finishWithRetries(Connection conn, IQueueMessage<Long, byte[]> _msg,
+    protected void _finishWithRetries(Connection conn, IQueueMessage<Long, byte[]> msg,
             int numRetries, int maxRetries) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         try {
             removeFromEphemeralStorage(conn, msg);
         } catch (DaoException de) {
@@ -434,13 +399,10 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
             int numRows = getJdbcHelper().execute(conn, SQL_UPDATE_EPHEMERAL_ID_TAKE, ephemeralId,
                     getQueueName());
             if (numRows > 0) {
-                List<Map<String, Object>> dbRows = getJdbcHelper().executeSelect(conn,
+                Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn,
                         SQL_READ_BY_EPHEMERAL_ID, getQueueName(), ephemeralId);
-                if (dbRows != null && dbRows.size() > 0) {
-                    Map<String, Object> dbRow = dbRows.get(0);
-                    // ensureContentIsByteArray(dbRow);
-                    msg = new UniversalIdIntQueueMessage();
-                    msg.fromMap(dbRow);
+                if (dbRow != null) {
+                    msg = UniversalIdIntQueueMessage.newInstance(dbRow);
                 }
             }
             return msg;
@@ -462,13 +424,8 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<Long, byte[]> _msg,
+    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<Long, byte[]> msg,
             Connection conn, int numRetries, int maxRetries) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         try {
             int numRows = getJdbcHelper().execute(conn, SQL_CLEAR_EPHEMERAL_ID, getQueueName(),
                     msg.qId());

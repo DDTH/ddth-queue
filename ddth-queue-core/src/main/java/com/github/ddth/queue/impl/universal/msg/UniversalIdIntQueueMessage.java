@@ -74,6 +74,18 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
     }
 
     /**
+     * Create a new {@link UniversalIdIntQueueMessage}.
+     * 
+     * @param data
+     * @return
+     * @since 0.6.2.3
+     */
+    public static UniversalIdIntQueueMessage newInstance(Map<String, Object> data) {
+        UniversalIdIntQueueMessage msg = newInstance();
+        return msg.fromMap(data);
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override

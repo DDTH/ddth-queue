@@ -2,6 +2,9 @@ package com.github.ddth.queue.impl;
 
 import java.util.Date;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import com.github.ddth.commons.utils.DateFormatUtils;
 import com.github.ddth.queue.IPartitionSupport;
 import com.github.ddth.queue.IQueueMessage;
 
@@ -148,4 +151,17 @@ public class GenericQueueMessage<ID, DATA>
         return this;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        ToStringBuilder tsb = new ToStringBuilder(this);
+        tsb.append("id", id).append("data", data)
+                .append("org_time",
+                        DateFormatUtils.toString(orgTimestamp, DateFormatUtils.DF_ISO8601))
+                .append("time", DateFormatUtils.toString(timestamp, DateFormatUtils.DF_ISO8601))
+                .append("num_requeues", numRequeues).append("partition", partitionKey);
+        return tsb.toString();
+    }
 }
