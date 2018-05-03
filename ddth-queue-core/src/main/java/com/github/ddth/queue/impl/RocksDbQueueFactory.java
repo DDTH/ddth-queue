@@ -57,9 +57,10 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      */
     @Override
-    protected void initQueue(T queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         super.initQueue(queue, spec);
 
         queue.setEphemeralDisabled(getDefaultEphemeralDisabled())

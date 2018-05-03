@@ -1,14 +1,23 @@
 package com.github.ddth.queue.impl;
 
-import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.utils.QueueException;
+import java.util.Collection;
+import java.util.Date;
+
+import javax.jms.BytesMessage;
+import javax.jms.Connection;
+import javax.jms.Destination;
+import javax.jms.JMSException;
+import javax.jms.Message;
+import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
+import javax.jms.Session;
+
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.jms.*;
-import java.util.Collection;
-import java.util.Date;
+import com.github.ddth.queue.IQueue;
+import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.utils.QueueException;
 
 /**
  * (Experimental) ActiveMQ implementation of {@link IQueue}.
@@ -28,7 +37,8 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     private Connection connection;
 
     /**
-     * Get ActiveMQ's connection URI (see http://activemq.apache.org/connection-configuration-uri.html).
+     * Get ActiveMQ's connection URI (see
+     * http://activemq.apache.org/connection-configuration-uri.html).
      *
      * @return
      */
@@ -37,7 +47,8 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Set ActiveMQ's connection URI (see http://activemq.apache.org/connection-configuration-uri.html).
+     * Set ActiveMQ's connection URI (see
+     * http://activemq.apache.org/connection-configuration-uri.html).
      *
      * @param uri
      * @return
@@ -178,15 +189,35 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     /*----------------------------------------------------------------------*/
 
     /**
+     * 
+     * @return
+     * @since 0.6.2.6
+     */
+    protected ActiveMQConnectionFactory buildConnectionFactory() {
+        String uri = getUri();
+        if (StringUtils.isBlank(uri)) {
+            throw new IllegalStateException("ActiveMQ Broker URI is not defined.");
+        }
+        ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(uri);
+        return cf;
+    }
+
+    /**
      * Init method.
      *
      * @return
+     * @throws Exception
      */
-    public ActiveMqQueue<ID, DATA> init() {
+    public ActiveMqQueue<ID, DATA> init() throws Exception {
         if (connectionFactory == null) {
-            ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory(getUri());
-            myOwnConnectionFactory = true;
-            this.connectionFactory = cf;
+            connectionFactory = buildConnectionFactory();
+            myOwnConnectionFactory = connectionFactory != null;
+        }
+
+        super.init();
+
+        if (connectionFactory == null) {
+            throw new IllegalStateException("ActiveMQ Connection factory is null.");
         }
 
         return this;
@@ -196,23 +227,18 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      * Destroy method.
      */
     public void destroy() {
-        closeQuietly(connection);
-        closeQuietly(messageProducer);
-        closeQuietly(producerSession);
-        closeQuietly(messageConsumer);
-        closeQuietly(consumerSession);
-
-        if (connectionFactory != null && myOwnConnectionFactory) {
-            connectionFactory = null;
+        try {
+            super.destroy();
+        } finally {
+            closeQuietly(connection);
+            closeQuietly(messageProducer);
+            closeQuietly(producerSession);
+            closeQuietly(messageConsumer);
+            closeQuietly(consumerSession);
+            if (connectionFactory != null && myOwnConnectionFactory) {
+                connectionFactory = null;
+            }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        destroy();
     }
 
     /**
@@ -272,7 +298,8 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Puts a message to Kafka queue, partitioning message by {@link IQueueMessage#qId()}
+     * Puts a message to Kafka queue, partitioning message by
+     * {@link IQueueMessage#qId()}
      *
      * @param msg
      * @return
@@ -331,14 +358,14 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      * {@inheritDoc}
      *
      * @throws QueueException.EphemeralIsFull
-     *         if the ephemeral storage is full
+     *             if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
         try {
             MessageConsumer consumer = getMessageConsumer();
             synchronized (consumer) {
-                //Message message = consumer.receiveNoWait();
+                // Message message = consumer.receiveNoWait();
                 Message message = consumer.receive(1000);
                 if (message instanceof BytesMessage) {
                     BytesMessage msg = (BytesMessage) message;

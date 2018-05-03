@@ -18,15 +18,15 @@ public class UniversalActiveMqQueueFactory
     @Override
     protected UniversalActiveMqQueue createQueueInstance(final QueueSpec spec) {
         UniversalActiveMqQueue queue = new UniversalActiveMqQueue() {
-            private boolean destroyed = false;
-
-            public void destroy() {
-                if (!destroyed) {
-                    destroyed = true;
-                    disposeQueue(spec, this);
-                    super.destroy();
-                }
-            }
+            // private boolean destroyed = false;
+            //
+            // public void destroy() {
+            // if (!destroyed) {
+            // destroyed = true;
+            // disposeQueue(spec, this);
+            // super.destroy();
+            // }
+            // }
         };
         return queue;
     }

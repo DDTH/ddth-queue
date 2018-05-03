@@ -1,16 +1,38 @@
 package com.github.ddth.queue.impl;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.github.ddth.queue.IQueueFactory;
 import com.github.ddth.queue.IQueueObserver;
 import com.github.ddth.queue.QueueSpec;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalListener;
+import com.google.common.cache.RemovalNotification;
 
 public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID, DATA>
-        implements IQueueFactory<ID, DATA> {
+        implements IQueueFactory<ID, DATA>, AutoCloseable {
 
-    private ConcurrentMap<QueueSpec, T> queueInstances = new ConcurrentHashMap<>();
+    private final Logger LOGGER = LoggerFactory.getLogger(AbstractQueueFactory.class);
+
+    private Cache<QueueSpec, T> queueInstances = CacheBuilder.newBuilder()
+            .expireAfterAccess(3600, TimeUnit.SECONDS)
+            .removalListener(new RemovalListener<QueueSpec, T>() {
+                @Override
+                public void onRemoval(RemovalNotification<QueueSpec, T> notification) {
+                    T queue = notification.getValue();
+                    try {
+                        queue.destroy();
+                    } catch (Exception e) {
+                        LOGGER.warn(e.getMessage(), e);
+                    }
+                }
+            }).build();
     private IQueueObserver<ID, DATA> defaultObserver;
 
     private boolean defaultEphemeralDisabled = false;
@@ -108,7 +130,11 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
     }
 
     public void destroy() {
-        queueInstances.clear();
+        queueInstances.invalidateAll();
+    }
+
+    public void close() {
+        destroy();
     }
 
     /**
@@ -135,7 +161,7 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      * @param queue
      * @param spec
      */
-    protected void initQueue(T queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         queue.setObserver(defaultObserver);
     }
 
@@ -144,21 +170,13 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      * 
      * @param spec
      * @return
+     * @throws Exception
      */
-    protected T createAndInitQueue(QueueSpec spec) {
+    protected T createAndInitQueue(QueueSpec spec) throws Exception {
         T queue = createQueueInstance(spec);
         queue.setQueueName(spec.name);
         initQueue(queue, spec);
         return queue;
-    }
-
-    protected void disposeQueue(T queue) {
-        queue.destroy();
-    }
-
-    protected void disposeQueue(QueueSpec id, T queue) {
-        queueInstances.remove(id, queue);
-        disposeQueue(queue);
     }
 
     /**
@@ -166,18 +184,17 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      */
     @Override
     public T getQueue(QueueSpec spec) {
-        T queue = queueInstances.get(spec);
-        if (queue == null) {
-            queue = createAndInitQueue(spec);
-            if (queue != null) {
-                T existingQueue = queueInstances.putIfAbsent(spec, queue);
-                if (existingQueue != null) {
-                    disposeQueue(queue);
-                    queue = existingQueue;
+        try {
+            T queue = queueInstances.get(spec, new Callable<T>() {
+                @Override
+                public T call() throws Exception {
+                    return createAndInitQueue(spec);
                 }
-            }
+            });
+            return queue;
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         }
-        return queue;
     }
 
 }

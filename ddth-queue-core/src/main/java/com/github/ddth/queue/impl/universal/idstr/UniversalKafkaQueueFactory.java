@@ -18,15 +18,15 @@ public class UniversalKafkaQueueFactory
     @Override
     protected UniversalKafkaQueue createQueueInstance(final QueueSpec spec) {
         UniversalKafkaQueue queue = new UniversalKafkaQueue() {
-            private boolean destroyed = false;
-
-            public void destroy() {
-                if (!destroyed) {
-                    destroyed = true;
-                    disposeQueue(spec, this);
-                    super.destroy();
-                }
-            }
+            // private boolean destroyed = false;
+            //
+            // public void destroy() {
+            // if (!destroyed) {
+            // destroyed = true;
+            // disposeQueue(spec, this);
+            // super.destroy();
+            // }
+            // }
         };
         return queue;
     }

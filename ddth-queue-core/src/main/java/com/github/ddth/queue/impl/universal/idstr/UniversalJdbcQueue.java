@@ -143,7 +143,7 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdStrQue
     private String SQL_PUT_NEW_TO_QUEUE, SQL_REPUT_TO_QUEUE, SQL_PUT_TO_EPHEMERAL;
     private String SQL_REMOVE_FROM_QUEUE, SQL_REMOVE_FROM_EPHEMERAL;
 
-    public UniversalJdbcQueue init() {
+    public UniversalJdbcQueue init() throws Exception {
         super.init();
 
         Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_ID,

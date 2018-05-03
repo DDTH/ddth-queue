@@ -104,8 +104,9 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
      * Init method.
      * 
      * @return
+     * @throws Exception
      */
-    public DisruptorQueue<ID, DATA> init() {
+    public DisruptorQueue<ID, DATA> init() throws Exception {
         /* single producer "seems" to offer better performance */
         ringBuffer = RingBuffer.createSingleProducer(EVENT_FACTORY, ringSize);
         // ringBuffer = RingBuffer.createMultiProducer(EVENT_FACTORY, ringSize);
@@ -122,15 +123,9 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         consumedSeq.set(cursor);
         knownPublishedSeq = cursor;
 
-        return this;
-    }
+        super.init();
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void destroy() {
-        // EMPTY
+        return this;
     }
 
     /**

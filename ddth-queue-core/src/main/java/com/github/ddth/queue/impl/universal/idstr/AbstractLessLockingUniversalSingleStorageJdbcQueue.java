@@ -142,11 +142,12 @@ public class AbstractLessLockingUniversalSingleStorageJdbcQueue
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      * 
      * @since 0.6.2.3
      */
     @Override
-    public AbstractLessLockingUniversalSingleStorageJdbcQueue init() {
+    public AbstractLessLockingUniversalSingleStorageJdbcQueue init() throws Exception {
         super.init();
 
         SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());

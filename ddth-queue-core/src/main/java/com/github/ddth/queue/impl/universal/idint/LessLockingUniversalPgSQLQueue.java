@@ -62,7 +62,7 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
         return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
     }
 
-    public LessLockingUniversalPgSQLQueue init() {
+    public LessLockingUniversalPgSQLQueue init() throws Exception {
         super.init();
 
         /*

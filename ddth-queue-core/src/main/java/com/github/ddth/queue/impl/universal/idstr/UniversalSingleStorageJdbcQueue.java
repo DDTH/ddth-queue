@@ -167,7 +167,7 @@ public class UniversalSingleStorageJdbcQueue
     private String SQL_PUT_NEW_TO_QUEUE, SQL_REPUT_TO_QUEUE, SQL_PUT_TO_EPHEMERAL;
     private String SQL_REMOVE_FROM_QUEUE, SQL_REMOVE_FROM_EPHEMERAL;
 
-    public UniversalSingleStorageJdbcQueue init() {
+    public UniversalSingleStorageJdbcQueue init() throws Exception {
         super.init();
 
         final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";

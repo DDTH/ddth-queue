@@ -11,11 +11,12 @@ import com.github.ddth.queue.QueueSpec;
 public abstract class InmemQueueFactory<T extends InmemQueue<ID, DATA>, ID, DATA>
         extends AbstractQueueFactory<T, ID, DATA> {
 
-    /**
+    /**s
      * {@inheritDoc}
+     * @throws Exception 
      */
     @Override
-    protected void initQueue(T queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         super.initQueue(queue, spec);
 
         queue.setBoundary(getDefaultMaxSize()).setEphemeralDisabled(getDefaultEphemeralDisabled())

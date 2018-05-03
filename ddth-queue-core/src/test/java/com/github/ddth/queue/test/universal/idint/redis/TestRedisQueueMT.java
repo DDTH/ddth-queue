@@ -23,7 +23,7 @@ public class TestRedisQueueMT extends BaseQueueMultiThreadsTest<Long> {
 
     private static class MyRedisQueue extends UniversalRedisQueue {
         public void flush() {
-            try (Jedis jedis = getJedisPool().getResource()) {
+            try (Jedis jedis = getJedisConnector().getJedis()) {
                 jedis.flushAll();
             }
         }

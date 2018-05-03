@@ -1,8 +1,12 @@
 package com.github.ddth.queue.impl;
 
+import javax.sql.DataSource;
+
 import org.apache.commons.lang3.StringUtils;
 
+import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.IJdbcHelper;
+import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.queue.QueueSpec;
 
 /**
@@ -19,7 +23,9 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     public final static String SPEC_FIELD_MAX_RETRIES = "max_retries";
     public final static String SPEC_FIELD_TRANSACTION_ISOLATION_LEVEL = "tranx_isolation_level";
 
+    private DataSource defaultDataSource;
     private IJdbcHelper defaultJdbcHelper;
+    private boolean myOwnJdbcHelper = false;
     private String defaultTableName, defaultTableNameEphemeral;
     private int defaultMaxRetries = JdbcQueue.DEFAULT_MAX_RETRIES;
     private int defaultTransactionIsolationLevel = JdbcQueue.DEFAULT_TRANX_ISOLATION_LEVEL;
@@ -112,13 +118,81 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
+     * 
+     * @return
+     * @since 0.6.2.6
+     */
+    public DataSource getDefaultDataSource() {
+        return defaultDataSource;
+    }
+
+    /**
+     * 
+     * @param dataSource
+     * @return
+     * @since 0.6.2.6
+     */
+    public JdbcQueueFactory<T, ID, DATA> setDefaultDataSource(DataSource dataSource) {
+        this.defaultDataSource = dataSource;
+        return this;
+    }
+
+    /**
+     * Build an {@link IJdbcHelper} to be used by this JDBC queue factory.
+     * 
+     * @return
+     * @since 0.6.2.6
+     */
+    protected IJdbcHelper buildJdbcHelper() {
+        if (getDefaultDataSource() == null) {
+            throw new IllegalStateException("Data source is null.");
+        }
+        DdthJdbcHelper jdbcHelper = new DdthJdbcHelper();
+        jdbcHelper.setDataSource(getDefaultDataSource()).init();
+        return jdbcHelper;
+    }
+
+    /**
      * {@inheritDoc}
+     * 
+     * @since 0.6.2.6
      */
     @Override
-    protected void initQueue(T queue, QueueSpec spec) {
+    public JdbcQueueFactory<T, ID, DATA> init() {
+        if (defaultJdbcHelper == null) {
+            defaultJdbcHelper = buildJdbcHelper();
+            myOwnJdbcHelper = defaultJdbcHelper != null;
+        }
+        super.init();
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.6.2.6
+     */
+    @Override
+    public void destroy() {
+        try {
+            super.destroy();
+        } finally {
+            if (myOwnJdbcHelper && defaultJdbcHelper != null) {
+                ((AbstractJdbcHelper) defaultJdbcHelper).destroy();
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @throws Exception
+     */
+    @Override
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         super.initQueue(queue, spec);
 
-        queue.setJdbcHelper(defaultJdbcHelper);
+        queue.setJdbcHelper(defaultJdbcHelper).setDataSource(defaultDataSource);
 
         queue.setEphemeralDisabled(getDefaultEphemeralDisabled())
                 .setEphemeralMaxSize(getDefaultEphemeralMaxSize());

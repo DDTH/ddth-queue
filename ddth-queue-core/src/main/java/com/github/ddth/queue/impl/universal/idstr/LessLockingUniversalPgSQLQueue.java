@@ -34,7 +34,7 @@ import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
  */
 public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversalJdbcQueue {
 
-    public LessLockingUniversalPgSQLQueue init() {
+    public LessLockingUniversalPgSQLQueue init() throws Exception {
         super.init();
 
         SQL_REQUEUE = "UPDATE {0} SET {1}=null, {2}={2}+1, {3}=? WHERE {4}=?";

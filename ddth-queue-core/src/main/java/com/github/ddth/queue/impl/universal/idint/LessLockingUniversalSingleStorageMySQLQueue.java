@@ -64,7 +64,7 @@ public class LessLockingUniversalSingleStorageMySQLQueue
         return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
     }
 
-    public LessLockingUniversalSingleStorageMySQLQueue init() {
+    public LessLockingUniversalSingleStorageMySQLQueue init() throws Exception {
         super.init();
 
         final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";

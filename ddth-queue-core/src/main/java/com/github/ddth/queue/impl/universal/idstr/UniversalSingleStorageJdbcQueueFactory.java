@@ -18,15 +18,15 @@ public class UniversalSingleStorageJdbcQueueFactory
     @Override
     protected UniversalSingleStorageJdbcQueue createQueueInstance(final QueueSpec spec) {
         UniversalSingleStorageJdbcQueue queue = new UniversalSingleStorageJdbcQueue() {
-            private boolean destroyed = false;
-
-            public void destroy() {
-                if (!destroyed) {
-                    destroyed = true;
-                    disposeQueue(spec, this);
-                    super.destroy();
-                }
-            }
+            // private boolean destroyed = false;
+            //
+            // public void destroy() {
+            // if (!destroyed) {
+            // destroyed = true;
+            // disposeQueue(spec, this);
+            // super.destroy();
+            // }
+            // }
         };
         return queue;
     }

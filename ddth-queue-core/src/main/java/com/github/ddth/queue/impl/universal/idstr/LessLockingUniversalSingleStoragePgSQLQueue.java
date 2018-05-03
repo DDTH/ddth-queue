@@ -34,7 +34,7 @@ import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 public class LessLockingUniversalSingleStoragePgSQLQueue
         extends AbstractLessLockingUniversalSingleStorageJdbcQueue {
 
-    public LessLockingUniversalSingleStoragePgSQLQueue init() {
+    public LessLockingUniversalSingleStoragePgSQLQueue init() throws Exception {
         super.init();
 
         final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";

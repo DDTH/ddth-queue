@@ -23,7 +23,7 @@ public class TestRedisQueueMTBoundEphemeralSize extends BaseQueueMultiThreadsTes
 
     private static class MyRedisQueue extends UniversalRedisQueue {
         public void flush() {
-            try (Jedis jedis = getJedisPool().getResource()) {
+            try (Jedis jedis = getJedisConnector().getJedis()) {
                 jedis.flushAll();
             }
         }

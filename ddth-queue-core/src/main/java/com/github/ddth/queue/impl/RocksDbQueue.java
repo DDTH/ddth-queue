@@ -13,6 +13,7 @@ import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.DBOptions;
 import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
@@ -158,8 +159,9 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      * Init method.
      * 
      * @return
+     * @throws Exception
      */
-    public RocksDbQueue<ID, DATA> init() {
+    public RocksDbQueue<ID, DATA> init() throws Exception {
         File STORAGE_DIR = new File(storageDir);
         LOGGER.info("Storage Directory: " + STORAGE_DIR.getAbsolutePath());
         try {
@@ -190,6 +192,8 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
             throw e instanceof RuntimeException ? (RuntimeException) e : new RuntimeException(e);
         }
 
+        super.init();
+
         return this;
     }
 
@@ -198,26 +202,22 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     public void destroy() {
         try {
-            saveLastFetchedId(lastFetchedId);
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            super.destroy();
+        } finally {
+            try {
+                saveLastFetchedId(lastFetchedId);
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+
+            RocksDbUtils.closeRocksObjects(batchPutToQueue, batchTake, dbOptions);
+
+            try {
+                rocksDbWrapper.close();
+            } catch (Exception e) {
+                LOGGER.error(e.getMessage(), e);
+            }
         }
-
-        RocksDbUtils.closeRocksObjects(batchPutToQueue, batchTake, dbOptions);
-
-        try {
-            rocksDbWrapper.close();
-        } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        destroy();
     }
 
     private final static byte[] keyLastFetchedId = "last-fetched-id".getBytes(QueueUtils.UTF8);
@@ -260,7 +260,8 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
 
-    protected boolean putToQueue(IQueueMessage<ID, DATA> msg, boolean removeFromEphemeral) {
+    protected boolean putToQueue(IQueueMessage<ID, DATA> msg, boolean removeFromEphemeral)
+            throws RocksDBException {
         byte[] value = serialize(msg);
         lockPut.lock();
         try {
@@ -270,7 +271,7 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
                 batchPutToQueue.put(cfQueue, key, value);
                 if (removeFromEphemeral && !isEphemeralDisabled()) {
                     byte[] _key = msg.qId().toString().getBytes(QueueUtils.UTF8);
-                    batchPutToQueue.remove(cfEphemeral, _key);
+                    batchPutToQueue.delete(cfEphemeral, _key);
                 }
                 rocksDbWrapper.write(writeOptions, batchPutToQueue);
             } finally {
@@ -290,7 +291,11 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
-        return putToQueue(msg, false);
+        try {
+            return putToQueue(msg, false);
+        } catch (RocksDBException e) {
+            throw new QueueException(e);
+        }
     }
 
     /**
@@ -301,7 +306,11 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
         msg.qIncNumRequeues().qTimestamp(now);
-        return putToQueue(msg, true);
+        try {
+            return putToQueue(msg, true);
+        } catch (RocksDBException e) {
+            throw new QueueException(e);
+        }
     }
 
     /**
@@ -309,7 +318,11 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     @Override
     public boolean requeueSilent(IQueueMessage<ID, DATA> msg) {
-        return putToQueue(msg.clone(), true);
+        try {
+            return putToQueue(msg.clone(), true);
+        } catch (RocksDBException e) {
+            throw new QueueException(e);
+        }
     }
 
     /**
@@ -351,13 +364,15 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
             byte[] value = itQueue.value();
             IQueueMessage<ID, DATA> msg = deserialize(value);
             try {
-                batchTake.remove(cfQueue, lastFetchedId);
+                batchTake.delete(cfQueue, lastFetchedId);
                 batchTake.put(cfMetadata, keyLastFetchedId, lastFetchedId);
                 if (!isEphemeralDisabled() && msg != null) {
                     byte[] _key = msg.qId().toString().getBytes(QueueUtils.UTF8);
                     batchTake.put(cfEphemeral, _key, value);
                 }
                 rocksDbWrapper.write(writeOptions, batchTake);
+            } catch (RocksDBException e) {
+                throw new QueueException(e);
             } finally {
                 batchTake.clear();
             }
@@ -397,7 +412,11 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        return putToQueue(msg, true);
+        try {
+            return putToQueue(msg, true);
+        } catch (RocksDBException e) {
+            throw new QueueException(e);
+        }
     }
 
     /**

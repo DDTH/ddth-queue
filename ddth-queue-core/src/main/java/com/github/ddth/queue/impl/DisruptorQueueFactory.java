@@ -13,9 +13,10 @@ public abstract class DisruptorQueueFactory<T extends DisruptorQueue<ID, DATA>, 
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      */
     @Override
-    protected void initQueue(T queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         super.initQueue(queue, spec);
 
         queue.setRingSize(getDefaultMaxSize()).setEphemeralDisabled(getDefaultEphemeralDisabled())

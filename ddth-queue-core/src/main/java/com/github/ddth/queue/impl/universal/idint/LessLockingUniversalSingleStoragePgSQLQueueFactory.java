@@ -48,15 +48,15 @@ public class LessLockingUniversalSingleStoragePgSQLQueueFactory
     protected LessLockingUniversalSingleStoragePgSQLQueue createQueueInstance(
             final QueueSpec spec) {
         LessLockingUniversalSingleStoragePgSQLQueue queue = new LessLockingUniversalSingleStoragePgSQLQueue() {
-            private boolean destroyed = false;
-
-            public void destroy() {
-                if (!destroyed) {
-                    destroyed = true;
-                    disposeQueue(spec, this);
-                    super.destroy();
-                }
-            }
+            // private boolean destroyed = false;
+            //
+            // public void destroy() {
+            // if (!destroyed) {
+            // destroyed = true;
+            // disposeQueue(spec, this);
+            // super.destroy();
+            // }
+            // }
         };
 
         queue.setFifo(defaultFifo);

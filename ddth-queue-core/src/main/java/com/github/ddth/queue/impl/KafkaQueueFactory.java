@@ -138,9 +138,10 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      */
     @Override
-    protected void initQueue(T queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         super.initQueue(queue, spec);
 
         queue.setProducerType(defaultProducerType).setKafkaProducerProperties(defaultProducerProps)

@@ -4,12 +4,9 @@ import java.sql.SQLException;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.IJdbcHelper;
-import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.NoopQueueObserver;
-import com.github.ddth.queue.impl.JdbcQueue;
 import com.github.ddth.queue.impl.universal.idstr.UniversalJdbcQueue;
 import com.github.ddth.queue.test.universal.BaseQueueFunctionalTest;
 
@@ -63,28 +60,22 @@ public class TestMySQLQueue extends BaseQueueFunctionalTest<String> {
         dataSource.setUsername(mysqlUser);
         dataSource.setPassword(mysqlPassword);
 
-        AbstractJdbcHelper jdbcHelper = new DdthJdbcHelper();
-        try {
-            jdbcHelper.setDataSource(dataSource).init();
-            MyJdbcQueue queue = new MyJdbcQueue();
-            queue.setObserver(new NoopQueueObserver<String, byte[]>() {
-                public void postDestroy(IQueue<String, byte[]> queue) {
-                    if (queue instanceof JdbcQueue) {
-                        IJdbcHelper jdbcHelper = ((JdbcQueue<?, ?>) queue).getJdbcHelper();
-                        if (jdbcHelper instanceof AbstractJdbcHelper) {
-                            ((AbstractJdbcHelper) jdbcHelper).destroy();
-                        }
-                    }
+        MyJdbcQueue queue = new MyJdbcQueue();
+        queue.setObserver(new NoopQueueObserver<String, byte[]>() {
+            public void postDestroy(IQueue<String, byte[]> queue) {
+                try {
+                    dataSource.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
-            });
-            queue.setJdbcHelper(jdbcHelper).setTableName(tableQueue)
-                    .setTableNameEphemeral(tableEphemeral).setEphemeralDisabled(false)
-                    .setEphemeralMaxSize(ephemeralMaxSize).init();
-            queue.flush();
-            return queue;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+            }
+        });
+        queue.setDataSource(dataSource).setTableName(tableQueue)
+                .setTableNameEphemeral(tableEphemeral).setEphemeralDisabled(false)
+                .setEphemeralMaxSize(ephemeralMaxSize).init();
+        queue.flush();
+
+        return queue;
     }
 
 }

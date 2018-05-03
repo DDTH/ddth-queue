@@ -64,9 +64,10 @@ public class LessLockingUniversalMySQLQueue extends AbstractLessLockingUniversal
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      */
     @Override
-    public LessLockingUniversalMySQLQueue init() {
+    public LessLockingUniversalMySQLQueue init() throws Exception {
         super.init();
 
         /*

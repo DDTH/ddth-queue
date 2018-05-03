@@ -99,28 +99,17 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
      * Init method.
      * 
      * @return
+     * @throws Exception
      */
-    public InmemQueue<ID, DATA> init() {
+    public InmemQueue<ID, DATA> init() throws Exception {
         queue = createQueue(boundary);
         if (!isEphemeralDisabled()) {
             ephemeralStorage = new ConcurrentHashMap<>();
         }
+
+        super.init();
+
         return this;
-    }
-
-    /**
-     * Destroy method.
-     */
-    public void destroy() {
-        // EMPTY
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        destroy();
     }
 
     /**

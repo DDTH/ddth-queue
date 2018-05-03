@@ -1,5 +1,15 @@
 package com.github.ddth.queue.impl;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
+import java.util.Date;
+import java.util.concurrent.TimeoutException;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -7,11 +17,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.concurrent.TimeoutException;
 
 /**
  * (Experimental) RabbitMQ implementation of {@link IQueue}.
@@ -132,22 +137,41 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /*----------------------------------------------------------------------*/
+    /**
+     * 
+     * @return
+     * @throws URISyntaxException
+     * @throws NoSuchAlgorithmException
+     * @throws KeyManagementException
+     * @since 0.6.2.6
+     */
+    protected ConnectionFactory buildConnectionFactory()
+            throws KeyManagementException, NoSuchAlgorithmException, URISyntaxException {
+        String uri = getUri();
+        if (StringUtils.isBlank(uri)) {
+            throw new IllegalStateException("RabbitMQ Broker URI is not defined.");
+        }
+        ConnectionFactory cf = new ConnectionFactory();
+        cf.setUri(uri);
+        return cf;
+    }
 
     /**
      * Init method.
      *
      * @return
+     * @throws Exception
      */
-    public RabbitMqQueue<ID, DATA> init() {
+    public RabbitMqQueue<ID, DATA> init() throws Exception {
         if (connectionFactory == null) {
-            ConnectionFactory cf = new ConnectionFactory();
-            try {
-                cf.setUri(uri);
-            } catch (Exception e) {
-                throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
-            }
-            myOwnConnectionFactory = true;
-            this.connectionFactory = cf;
+            connectionFactory = buildConnectionFactory();
+            myOwnConnectionFactory = connectionFactory != null;
+        }
+
+        super.init();
+
+        if (connectionFactory == null) {
+            throw new IllegalStateException("RabbitMQ Connection factory is null.");
         }
 
         return this;
@@ -157,12 +181,16 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      * Destroy method.
      */
     public void destroy() {
-        closeQuietly(connection);
-        closeQuietly(producerChannel);
-        closeQuietly(consumerChannel);
+        try {
+            super.destroy();
+        } finally {
+            closeQuietly(connection);
+            closeQuietly(producerChannel);
+            closeQuietly(consumerChannel);
 
-        if (connectionFactory != null && myOwnConnectionFactory) {
-            connectionFactory = null;
+            if (connectionFactory != null && myOwnConnectionFactory) {
+                connectionFactory = null;
+            }
         }
     }
 
@@ -182,14 +210,6 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
             } catch (Exception e) {
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        destroy();
     }
 
     /**

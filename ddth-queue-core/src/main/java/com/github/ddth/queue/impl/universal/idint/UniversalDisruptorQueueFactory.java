@@ -18,15 +18,15 @@ public class UniversalDisruptorQueueFactory
     @Override
     protected UniversalDisruptorQueue createQueueInstance(final QueueSpec spec) {
         UniversalDisruptorQueue queue = new UniversalDisruptorQueue() {
-            private boolean destroyed = false;
-
-            public void destroy() {
-                if (!destroyed) {
-                    destroyed = true;
-                    disposeQueue(spec, this);
-                    super.destroy();
-                }
-            }
+            // private boolean destroyed = false;
+            //
+            // public void destroy() {
+            // if (!destroyed) {
+            // destroyed = true;
+            // disposeQueue(spec, this);
+            // super.destroy();
+            // }
+            // }
         };
         return queue;
     }

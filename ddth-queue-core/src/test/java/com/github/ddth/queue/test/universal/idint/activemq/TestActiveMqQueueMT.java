@@ -3,8 +3,8 @@ package com.github.ddth.queue.test.universal.idint.activemq;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalActiveMqQueue;
-import com.github.ddth.queue.impl.universal.idint.UniversalRabbitMqQueue;
 import com.github.ddth.queue.test.universal.BaseQueueMultiThreadsTest;
+
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -18,8 +18,7 @@ public class TestActiveMqQueueMT extends BaseQueueMultiThreadsTest<Long> {
     }
 
     public static Test suite() {
-        return new TestSuite(
-                TestActiveMqQueueMT.class);
+        return new TestSuite(TestActiveMqQueueMT.class);
     }
 
     private static class MyActiveMqQueue extends UniversalActiveMqQueue {
@@ -32,9 +31,8 @@ public class TestActiveMqQueueMT extends BaseQueueMultiThreadsTest<Long> {
                 msg = take();
             }
             msg = take();
-            System.out.println(
-                    "* Flush " + numMsgs + " msgs from queue in " + (System.currentTimeMillis()
-                            - t1) + "ms.");
+            System.out.println("* Flush " + numMsgs + " msgs from queue in "
+                    + (System.currentTimeMillis() - t1) + "ms.");
         }
     }
 

@@ -7,13 +7,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.dao.DuplicateKeyException;
 
 import com.github.ddth.commons.utils.DPathUtils;
+import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
 import com.github.ddth.dao.jdbc.IJdbcHelper;
+import com.github.ddth.dao.jdbc.impl.DdthJdbcHelper;
 import com.github.ddth.dao.utils.DaoException;
 import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueue;
@@ -46,7 +50,9 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     private String SQL_COUNT = "SELECT COUNT(*) AS " + FIELD_COUNT + " FROM {0}";
     private String SQL_COUNT_EPHEMERAL = "SELECT COUNT(*) AS " + FIELD_COUNT + " FROM {0}";
 
+    private DataSource dataSource;
     private IJdbcHelper jdbcHelper;
+    private boolean myOwnJdbcHelper = false;
     private int maxRetries = DEFAULT_MAX_RETRIES;
     private int transactionIsolationLevel = DEFAULT_TRANX_ISOLATION_LEVEL;
 
@@ -94,7 +100,31 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
      * @since 0.5.1.1
      */
     public JdbcQueue<ID, DATA> setJdbcHelper(IJdbcHelper jdbcHelper) {
+        if (this.jdbcHelper != null && myOwnJdbcHelper) {
+            ((AbstractJdbcHelper) this.jdbcHelper).destroy();
+        }
         this.jdbcHelper = jdbcHelper;
+        myOwnJdbcHelper = false;
+        return this;
+    }
+
+    /**
+     * 
+     * @return
+     * @since 0.6.2.5
+     */
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    /**
+     * 
+     * @param dataSource
+     * @return
+     * @since 0.6.2.5
+     */
+    public JdbcQueue<ID, DATA> setDataSource(DataSource dataSource) {
+        this.dataSource = dataSource;
         return this;
     }
 
@@ -110,13 +140,56 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     /*----------------------------------------------------------------------*/
 
     /**
+     * Build an {@link IJdbcHelper} to be used by this JDBC queue.
+     * 
+     * @return
+     * @since 0.6.2.6
+     */
+    protected IJdbcHelper buildJdbcHelper() {
+        if (dataSource == null) {
+            throw new IllegalStateException("Data source is null.");
+        }
+        DdthJdbcHelper jdbcHelper = new DdthJdbcHelper();
+        jdbcHelper.setDataSource(getDataSource()).init();
+        return jdbcHelper;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @throws Exception
+     */
+    @Override
+    public JdbcQueue<ID, DATA> init() throws Exception {
+        SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());
+        SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, getTableNameEphemeral());
+
+        if (jdbcHelper == null) {
+            jdbcHelper = buildJdbcHelper();
+            myOwnJdbcHelper = jdbcHelper != null;
+        }
+
+        super.init();
+
+        if (jdbcHelper == null) {
+            throw new IllegalStateException("JDBC helper is null.");
+        }
+
+        return this;
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
-    public JdbcQueue<ID, DATA> init() {
-        SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());
-        SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, getTableNameEphemeral());
-        return this;
+    public void destroy() {
+        try {
+            super.destroy();
+        } finally {
+            if (myOwnJdbcHelper && jdbcHelper != null) {
+                ((AbstractJdbcHelper) jdbcHelper).destroy();
+            }
+        }
     }
 
     /*----------------------------------------------------------------------*/

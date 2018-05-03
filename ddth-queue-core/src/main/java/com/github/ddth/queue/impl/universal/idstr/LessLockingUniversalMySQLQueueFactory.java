@@ -47,15 +47,15 @@ public class LessLockingUniversalMySQLQueueFactory
     @Override
     protected LessLockingUniversalMySQLQueue createQueueInstance(final QueueSpec spec) {
         LessLockingUniversalMySQLQueue queue = new LessLockingUniversalMySQLQueue() {
-            private boolean destroyed = false;
-
-            public void destroy() {
-                if (!destroyed) {
-                    destroyed = true;
-                    disposeQueue(spec, this);
-                    super.destroy();
-                }
-            }
+            // private boolean destroyed = false;
+            //
+            // public void destroy() {
+            // if (!destroyed) {
+            // destroyed = true;
+            // disposeQueue(spec, this);
+            // super.destroy();
+            // }
+            // }
         };
 
         queue.setFifo(defaultFifo);

@@ -37,9 +37,10 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      */
     @Override
-    protected void initQueue(T queue, QueueSpec spec) {
+    protected void initQueue(T queue, QueueSpec spec) throws Exception {
         super.initQueue(queue, spec);
 
         queue.setUri(defaultUri).setQueueName(defaultQueueName);

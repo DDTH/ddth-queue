@@ -110,11 +110,12 @@ public class AbstractLessLockingUniversalJdbcQueue
 
     /**
      * {@inheritDoc}
+     * @throws Exception 
      * 
      * @since 0.6.0
      */
     @Override
-    public AbstractLessLockingUniversalJdbcQueue init() {
+    public AbstractLessLockingUniversalJdbcQueue init() throws Exception {
         super.init();
 
         SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());

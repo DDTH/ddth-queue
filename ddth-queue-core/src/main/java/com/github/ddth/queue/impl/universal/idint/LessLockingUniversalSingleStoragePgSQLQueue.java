@@ -64,7 +64,7 @@ public class LessLockingUniversalSingleStoragePgSQLQueue
         return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
     }
 
-    public LessLockingUniversalSingleStoragePgSQLQueue init() {
+    public LessLockingUniversalSingleStoragePgSQLQueue init() throws Exception {
         super.init();
 
         final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";

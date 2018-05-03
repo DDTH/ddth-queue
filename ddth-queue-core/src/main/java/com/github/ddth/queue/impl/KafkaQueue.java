@@ -1,5 +1,14 @@
 package com.github.ddth.queue.impl;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.ddth.kafka.KafkaClient;
 import com.github.ddth.kafka.KafkaClient.ProducerType;
 import com.github.ddth.kafka.KafkaMessage;
@@ -7,13 +16,6 @@ import com.github.ddth.queue.IPartitionSupport;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 /**
  * (Experimental) Kafka implementation of {@link IQueue}.
@@ -186,6 +188,15 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /*----------------------------------------------------------------------*/
+    protected KafkaClient buildKafkaClient() throws Exception {
+        if (StringUtils.isBlank(bootstrapServers)) {
+            throw new IllegalStateException("Kafka bootstrap server list is not defined.");
+        }
+        KafkaClient kafkaClient = new KafkaClient(bootstrapServers);
+        kafkaClient.setProducerProperties(consumerProps).setConsumerProperties(consumerProps);
+        kafkaClient.init();
+        return kafkaClient;
+    }
 
     /**
      * Init method.
@@ -195,11 +206,16 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     public KafkaQueue<ID, DATA> init() throws Exception {
         if (kafkaClient == null) {
-            kafkaClient = new KafkaClient(bootstrapServers);
-            kafkaClient.setProducerProperties(consumerProps).setConsumerProperties(consumerProps);
-            kafkaClient.init();
-            myOwnKafkaClient = true;
+            kafkaClient = buildKafkaClient();
+            myOwnKafkaClient = kafkaClient != null;
         }
+
+        super.init();
+
+        if (kafkaClient == null) {
+            throw new IllegalStateException("Kafka client is null.");
+        }
+
         return this;
     }
 
@@ -207,25 +223,19 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      * Destroy method.
      */
     public void destroy() {
-        if (kafkaClient != null && myOwnKafkaClient) {
-            try {
-                kafkaClient.destroy();
-            } catch (Exception e) {
-                LOGGER.warn(e.getMessage(), e);
-            } finally {
-                kafkaClient = null;
+        try {
+            super.destroy();
+        } finally {
+            if (kafkaClient != null && myOwnKafkaClient) {
+                try {
+                    kafkaClient.destroy();
+                } catch (Exception e) {
+                    LOGGER.warn(e.getMessage(), e);
+                } finally {
+                    kafkaClient = null;
+                }
             }
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @since 0.4.0
-     */
-    @Override
-    public void close() {
-        destroy();
     }
 
     /**

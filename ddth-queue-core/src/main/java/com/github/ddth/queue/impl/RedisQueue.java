@@ -1,19 +1,15 @@
 package com.github.ddth.queue.impl;
 
-import java.text.MessageFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
-
+import com.github.ddth.commons.redis.JedisConnector;
+import com.github.ddth.commons.redis.JedisUtils;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 import com.github.ddth.queue.utils.QueueUtils;
 
+import redis.clients.jedis.BinaryJedisCommands;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.JedisCommands;
 import redis.clients.jedis.Protocol;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Transaction;
@@ -36,31 +32,16 @@ import redis.clients.jedis.Transaction;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.1
  */
-public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
+public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
 
     public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":"
             + Protocol.DEFAULT_PORT;
-    public final static String DEFAULT_PASSWORD = null;
-    public final static String DEFAULT_HASH_NAME = "queue_h";
-    public final static String DEFAULT_LIST_NAME = "queue_l";
-    public final static String DEFAULT_SORTED_SET_NAME = "queue_s";
 
-    private JedisPool jedisPool;
-    private boolean myOwnJedisPool = true;
     private String redisHostAndPort = DEFAULT_HOST_AND_PORT, redisPassword = DEFAULT_PASSWORD;
-
-    private String _redisHashName = DEFAULT_HASH_NAME;
-    private byte[] redisHashName = _redisHashName.getBytes(QueueUtils.UTF8);
-
-    private String _redisListName = DEFAULT_LIST_NAME;
-    private byte[] redisListName = _redisListName.getBytes(QueueUtils.UTF8);
-
-    private String _redisSortedSetName = DEFAULT_SORTED_SET_NAME;
-    private byte[] redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
 
     /**
      * Redis' host and port scheme (format {@code host:port}).
-     * 
+     *
      * @return
      */
     public String getRedisHostAndPort() {
@@ -69,7 +50,7 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
 
     /**
      * Set Redis' host and port scheme (format {@code host:port}).
-     * 
+     *
      * @param redisHostAndPort
      * @return
      */
@@ -78,195 +59,71 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
         return this;
     }
 
+    /*----------------------------------------------------------------------*/
     /**
-     * Redis' password
-     * 
-     * @return
-     * @since 0.6.2
+     * {@inheritDoc}
      */
-    public String getRedisPassword() {
-        return redisPassword;
-    }
-
-    /**
-     * Set Redis' password.
-     * 
-     * @param redisPassword
-     * @return
-     * @since 0.6.2
-     */
-    public RedisQueue<ID, DATA> setRedisPassword(String redisPassword) {
-        this.redisPassword = redisPassword;
-        return this;
-    }
-
-    public String getRedisHashName() {
-        return _redisHashName;
-    }
-
-    public RedisQueue<ID, DATA> setRedisHashName(String redisHashName) {
-        _redisHashName = redisHashName;
-        this.redisHashName = _redisHashName.getBytes(QueueUtils.UTF8);
-        return this;
-    }
-
-    public String getRedisListName() {
-        return _redisListName;
-    }
-
-    public RedisQueue<ID, DATA> setRedisListName(String redisListName) {
-        _redisListName = redisListName;
-        this.redisListName = _redisListName.getBytes(QueueUtils.UTF8);
-        return this;
-    }
-
-    public String getRedisSortedSetName() {
-        return _redisSortedSetName;
-    }
-
-    public RedisQueue<ID, DATA> setRedisSortedSetName(String redisSortedSetName) {
-        _redisSortedSetName = redisSortedSetName;
-        this.redisSortedSetName = _redisSortedSetName.getBytes(QueueUtils.UTF8);
-        return this;
-    }
-
-    protected JedisPool getJedisPool() {
-        return jedisPool;
-    }
-
-    public RedisQueue<ID, DATA> setJedisPool(JedisPool jedisPool) {
-        this.jedisPool = jedisPool;
-        myOwnJedisPool = false;
-        return this;
+    @Override
+    protected JedisConnector buildJedisConnector() {
+        JedisConnector jedisConnector = new JedisConnector();
+        jedisConnector.setJedisPoolConfig(JedisUtils.defaultJedisPoolConfig())
+                .setRedisHostsAndPorts(redisHostAndPort).setRedisPassword(redisPassword).init();
+        return jedisConnector;
     }
 
     /*----------------------------------------------------------------------*/
     /**
-     * LUA script to take a message out of queue.
+     * {@inheritDoc}
      */
-    private String SCRIPT_TAKE;
-
-    /**
-     * LUA script to move a message from ephemeral storage to queue storage.
-     */
-    private String SCRIPT_MOVE;
-
-    /**
-     * Init method.
-     * 
-     * @return
-     */
-    public RedisQueue<ID, DATA> init() {
-        if (jedisPool == null) {
-            JedisPoolConfig poolConfig = new JedisPoolConfig();
-            int numProcesses = Runtime.getRuntime().availableProcessors();
-            poolConfig.setMaxTotal(numProcesses * 2);
-            poolConfig.setMinIdle(1);
-            poolConfig.setMaxIdle(numProcesses);
-            poolConfig.setMaxWaitMillis(10000);
-            // poolConfig.setTestOnBorrow(true);
-            poolConfig.setTestWhileIdle(true);
-
-            String[] tokens = redisHostAndPort.split(":");
-            String redisHost = tokens.length > 0 ? tokens[0] : "localhost";
-            int redisPort = tokens.length > 1 ? Integer.parseInt(tokens[1]) : 6379;
-            jedisPool = new JedisPool(poolConfig, redisHost, redisPort, Protocol.DEFAULT_TIMEOUT,
-                    redisPassword);
-            myOwnJedisPool = true;
-        }
-
-        if (isEphemeralDisabled()) {
-            /*
-             * Script details (ephemeral is disabled): lpop qId from the List
-             * and hget message's content from the Hash and remove it from the
-             * Hash, atomically. Finally, the message's content is returned.
-             * 
-             * Script's first argument (ARGV[1]) is the qId's associated
-             * timestamp to be used as score value for the SortedSet entry.
-             */
-            SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
-                    + "local qcontent=redis.call(\"hget\", \"{2}\", qid); "
-                    + "redis.call(\"hdel\", \"{2}\", qid); return qcontent "
-                    + "else return nil end";
-        } else {
-            /*
-             * Script details (ephemeral is enabled): lpop qId from the List and
-             * zadd {ARGV[1]:qId} to the SortedSet and hget message's content
-             * from the Hash, atomically. Finally, the message's content is
-             * returned.
-             */
-            SCRIPT_TAKE = "local qid=redis.call(\"lpop\",\"{0}\"); if qid then "
-                    + "redis.call(\"zadd\", \"{1}\", ARGV[1], qid); return redis.call(\"hget\", \"{2}\", qid) "
-                    + "else return nil end";
-        }
-        SCRIPT_TAKE = MessageFormat.format(SCRIPT_TAKE, _redisListName, _redisSortedSetName,
-                _redisHashName);
-
-        /*
-         * Script details: remove qId from the SortedSet and rpush it to the
-         * List, atomically.
-         * 
-         * Script's first argument (ARGV[1]) is qId.
-         */
-        SCRIPT_MOVE = "local result=redis.call(\"zrem\",\"{0}\",ARGV[1]); if result then "
-                + "redis.call(\"rpush\", \"{1}\",  ARGV[1]); return 1; else return 0; end";
-        SCRIPT_MOVE = MessageFormat.format(SCRIPT_MOVE, _redisSortedSetName, _redisListName);
-
-        return this;
-    }
-
-    /**
-     * Destroy method.
-     */
-    public void destroy() {
-        if (jedisPool != null && myOwnJedisPool) {
-            jedisPool.destroy();
-            jedisPool = null;
-        }
+    @Override
+    protected JedisCommands getJedisCommands() {
+        return getJedisConnector().getJedis();
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * @since 0.4.0
      */
     @Override
-    public void close() {
-        destroy();
+    protected BinaryJedisCommands getBinaryJedisCommands() {
+        return getJedisConnector().getJedis();
     }
 
     /**
-     * Serialize a queue message to store in Redis.
-     * 
-     * @param msg
-     * @return
+     * {@inheritDoc}
      */
-    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
+    @Override
+    protected void closeJedisCommands(JedisCommands jedisCommands) {
+        if (jedisCommands instanceof Jedis) {
+            ((Jedis) jedisCommands).close();
+        } else
+            throw new IllegalArgumentException("Argument is not of type [" + Jedis.class + "]!");
+    }
 
     /**
-     * Deserilize a queue message.
-     * 
-     * @param msgData
-     * @return
+     * {@inheritDoc}
      */
-    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
+    @Override
+    protected void closeJedisCommands(BinaryJedisCommands jedisCommands) {
+        if (jedisCommands instanceof Jedis) {
+            ((Jedis) jedisCommands).close();
+        } else
+            throw new IllegalArgumentException("Argument is not of type [" + Jedis.class + "]!");
+    }
 
     /**
-     * Remove a message completely.
-     * 
-     * @param msg
-     * @return
+     * {@inheritDoc}
      */
+    @Override
     protected boolean remove(IQueueMessage<ID, DATA> msg) {
         if (isEphemeralDisabled()) {
             return true;
         }
-        try (Jedis jedis = jedisPool.getResource()) {
+        try (Jedis jedis = getJedisConnector().getJedis()) {
             Transaction jt = jedis.multi();
 
             byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
-            Response<Long> response = jt.hdel(redisHashName, field);
-            jt.zrem(redisSortedSetName, field);
+            Response<Long> response = jt.hdel(getRedisHashNameAsBytes(), field);
+            jt.zrem(getRedisSortedSetNameAsBytes(), field);
 
             jt.exec();
             Long value = response.get();
@@ -275,19 +132,17 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     }
 
     /**
-     * Store a new message.
-     * 
-     * @param msg
-     * @return
+     * {@inheritDoc}
      */
+    @Override
     protected boolean storeNew(IQueueMessage<ID, DATA> msg) {
-        try (Jedis jedis = jedisPool.getResource()) {
+        try (Jedis jedis = getJedisConnector().getJedis()) {
             Transaction jt = jedis.multi();
 
             byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
             byte[] data = serialize(msg);
-            jt.hset(redisHashName, field, data);
-            jt.rpush(redisListName, field);
+            jt.hset(getRedisHashNameAsBytes(), field, data);
+            jt.rpush(getRedisListNameAsBytes(), field);
 
             jt.exec();
             return true;
@@ -295,63 +150,22 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
     }
 
     /**
-     * Re-store an old message (called by {@link #requeue(IQueueMessage)} or
-     * {@link #requeueSilent(IQueueMessage)}.
-     * 
-     * @param msg
-     * @return
+     * {@inheritDoc}
      */
+    @Override
     protected boolean storeOld(IQueueMessage<ID, DATA> msg) {
-        try (Jedis jedis = jedisPool.getResource()) {
+        try (Jedis jedis = getJedisConnector().getJedis()) {
             Transaction jt = jedis.multi();
 
             byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
             byte[] data = serialize(msg);
-            jt.hset(redisHashName, field, data);
-            jt.rpush(redisListName, field);
-            jt.zrem(redisSortedSetName, field);
+            jt.hset(getRedisHashNameAsBytes(), field, data);
+            jt.rpush(getRedisListNameAsBytes(), field);
+            jt.zrem(getRedisSortedSetNameAsBytes(), field);
 
             jt.exec();
             return true;
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
-        return storeNew(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.qIncNumRequeues().qTimestamp(now);
-        return isEphemeralDisabled() ? storeNew(msg) : storeOld(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> msg) {
-        return isEphemeralDisabled() ? storeNew(msg.clone()) : storeOld(msg.clone());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void finish(IQueueMessage<ID, DATA> msg) {
-        remove(msg);
     }
 
     /**
@@ -368,9 +182,9 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
                 throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
             }
         }
-        try (Jedis jedis = jedisPool.getResource()) {
+        try (Jedis jedis = getJedisConnector().getJedis()) {
             long now = System.currentTimeMillis();
-            Object response = jedis.eval(SCRIPT_TAKE, 0, String.valueOf(now));
+            Object response = jedis.eval(getScriptTake(), 0, String.valueOf(now));
             if (response == null) {
                 return null;
             }
@@ -383,63 +197,14 @@ public abstract class RedisQueue<ID, DATA> extends AbstractEphemeralSupportQueue
      * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        if (isEphemeralDisabled()) {
-            return null;
-        }
-        try (Jedis jedis = jedisPool.getResource()) {
-            long now = System.currentTimeMillis();
-            Collection<IQueueMessage<ID, DATA>> result = new HashSet<>();
-            byte[] min = "0".getBytes();
-            byte[] max = String.valueOf(now - thresholdTimestampMs).getBytes();
-            Set<byte[]> fields = jedis.zrangeByScore(redisSortedSetName, min, max, 0, 100);
-            for (byte[] field : fields) {
-                byte[] data = jedis.hget(redisHashName, field);
-                IQueueMessage<ID, DATA> msg = deserialize(data);
-                if (msg != null) {
-                    result.add(msg);
-                }
-            }
-            return result;
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
         if (isEphemeralDisabled()) {
             return true;
         }
-        try (Jedis jedis = jedisPool.getResource()) {
-            Object response = jedis.eval(SCRIPT_MOVE, 0, msg.qId().toString());
+        try (Jedis jedis = getJedisConnector().getJedis()) {
+            Object response = jedis.eval(getScriptMove(), 0, msg.qId().toString());
             return response != null && "1".equals(response.toString());
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int queueSize() {
-        try (Jedis jedis = jedisPool.getResource()) {
-            Long result = jedis.llen(redisListName);
-            return result != null ? result.intValue() : 0;
-        }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int ephemeralSize() {
-        if (isEphemeralDisabled()) {
-            return 0;
-        }
-        try (Jedis jedis = jedisPool.getResource()) {
-            Long result = jedis.zcard(redisSortedSetName);
-            return result != null ? result.intValue() : 0;
-        }
-    }
 }
