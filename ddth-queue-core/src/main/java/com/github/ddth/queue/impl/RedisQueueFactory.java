@@ -33,8 +33,9 @@ public abstract class RedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, DATA
      * @param defaultHostAndPort
      * @since 0.6.2
      */
-    public void setDefaultHostAndPort(String defaultHostAndPort) {
+    public RedisQueueFactory<T, ID, DATA> setDefaultHostAndPort(String defaultHostAndPort) {
         this.defaultHostAndPort = defaultHostAndPort;
+        return this;
     }
 
     /**

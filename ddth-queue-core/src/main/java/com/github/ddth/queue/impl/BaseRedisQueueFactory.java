@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.github.ddth.commons.redis.JedisConnector;
 
 /**
- * Base factory to create {@link RedisQueue} instances.
+ * Base factory to create {@link BaseRedisQueue} instances.
  * 
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.2.6
@@ -72,8 +72,9 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
      * @param defaultPassword
      * @since 0.6.2
      */
-    public void setDefaultPassword(String defaultPassword) {
+    public BaseRedisQueueFactory<T, ID, DATA> setDefaultPassword(String defaultPassword) {
         this.defaultPassword = defaultPassword;
+        return this;
     }
 
     /**
@@ -92,8 +93,9 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
      * @param defaultHashName
      * @since 0.6.2
      */
-    public void setDefaultHashName(String defaultHashName) {
+    public BaseRedisQueueFactory<T, ID, DATA> setDefaultHashName(String defaultHashName) {
         this.defaultHashName = defaultHashName;
+        return this;
     }
 
     /**
@@ -112,8 +114,9 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
      * @param defaultListName
      * @since 0.6.2
      */
-    public void setDefaultListName(String defaultListName) {
+    public BaseRedisQueueFactory<T, ID, DATA> setDefaultListName(String defaultListName) {
         this.defaultListName = defaultListName;
+        return this;
     }
 
     /**
@@ -132,8 +135,9 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
      * @param defaultSortedSetName
      * @since 0.6.2
      */
-    public void setDefaultSortedSetName(String defaultSortedSetName) {
+    public BaseRedisQueueFactory<T, ID, DATA> setDefaultSortedSetName(String defaultSortedSetName) {
         this.defaultSortedSetName = defaultSortedSetName;
+        return this;
     }
 
     /**

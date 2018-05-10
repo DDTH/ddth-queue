@@ -51,7 +51,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <skipTests>true</skipTests>
 
-        <version.ddth_commons>0.9.1.2</version.ddth_commons>
+        <version.ddth_commons>0.9.1.3</version.ddth_commons>
         <version.ddth_dao>0.8.4</version.ddth_dao>
         <version.ddth_kafka>1.3.3</version.ddth_kafka>
         <version.jedis>2.9.0</version.jedis>
