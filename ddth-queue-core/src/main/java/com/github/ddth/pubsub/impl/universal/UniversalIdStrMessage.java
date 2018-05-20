@@ -40,6 +40,20 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
     }
 
     /**
+     * Create a new {@link UniversalIdStrMessage} object with specified id and
+     * content.
+     * 
+     * @param id
+     * @param content
+     * @return
+     */
+    public static UniversalIdStrMessage newInstance(String id, String content) {
+        UniversalIdStrMessage msg = newInstance(content);
+        msg.setId(id);
+        return msg;
+    }
+
+    /**
      * Create a new {@link UniversalIdStrMessage} object with specified content.
      * 
      * @param content
@@ -48,6 +62,20 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
     public static UniversalIdStrMessage newInstance(byte[] content) {
         UniversalIdStrMessage msg = newInstance();
         msg.setContent(content);
+        return msg;
+    }
+
+    /**
+     * Create a new {@link UniversalIdStrMessage} object with specified id and
+     * content.
+     * 
+     * @param id
+     * @param content
+     * @return
+     */
+    public static UniversalIdStrMessage newInstance(String id, byte[] content) {
+        UniversalIdStrMessage msg = newInstance(content);
+        msg.setId(id);
         return msg;
     }
 

@@ -3,6 +3,7 @@ package com.github.ddth.queue.impl;
 import com.github.ddth.commons.utils.SerializationUtils;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.IQueueMessageFactory;
 import com.github.ddth.queue.IQueueObserver;
 
 /**
@@ -15,6 +16,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
 
     private String queueName;
     private IQueueObserver<ID, DATA> observer;
+    private IQueueMessageFactory<ID, DATA> messageFactory;
 
     /**
      * Get queue's name.
@@ -53,6 +55,29 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
     @Override
     public AbstractQueue<ID, DATA> setObserver(IQueueObserver<ID, DATA> observer) {
         this.observer = observer;
+        return this;
+    }
+
+    /**
+     * Getter for {@link #messageFactory}.
+     * 
+     * @return
+     * @since 0.7.0
+     */
+    public IQueueMessageFactory<ID, DATA> getMessageFactory() {
+        return messageFactory;
+    }
+
+    /**
+     * Setter for {@link #messageFactory}.
+     * 
+     * @param messageFactory
+     * @return
+     * @since 0.7.0
+     */
+    public AbstractQueue<ID, DATA> setMessageFactory(
+            IQueueMessageFactory<ID, DATA> messageFactory) {
+        this.messageFactory = messageFactory;
         return this;
     }
 
@@ -102,7 +127,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
      */
     @Override
     public IQueueMessage<ID, DATA> createMessage() {
-        return new GenericQueueMessage<>();
+        return messageFactory.createMessage();
     }
 
     /**
@@ -112,7 +137,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
      */
     @Override
     public IQueueMessage<ID, DATA> createMessage(DATA content) {
-        return GenericQueueMessage.newInstance(content);
+        return messageFactory.createMessage(content);
     }
 
     /**
@@ -122,7 +147,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
      */
     @Override
     public IQueueMessage<ID, DATA> createMessage(ID id, DATA content) {
-        return GenericQueueMessage.newInstance(id, content);
+        return messageFactory.createMessage(id, content);
     }
 
     /**
@@ -133,7 +158,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
      * @since 0.7.0
      */
     protected byte[] serialize(IQueueMessage<ID, DATA> queueMsg) {
-        return SerializationUtils.toByteArray(queueMsg);
+        return queueMsg != null ? SerializationUtils.toByteArray(queueMsg) : null;
     }
 
     /**
@@ -159,6 +184,6 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
      * @since 0.7.0
      */
     protected <T extends IQueueMessage<ID, DATA>> T deserialize(byte[] data, Class<T> clazz) {
-        return SerializationUtils.fromByteArray(data, clazz);
+        return data != null ? SerializationUtils.fromByteArray(data, clazz) : null;
     }
 }

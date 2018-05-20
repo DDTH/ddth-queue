@@ -133,35 +133,4 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
         }
     }
 
-    /**
-     * Serialize a queue message to store in Redis.
-     * 
-     * @param msg
-     * @return
-     */
-    protected byte[] serialize(IMessage<ID, DATA> msg) {
-        return msg != null ? SerializationUtils.toByteArray(msg) : null;
-    }
-
-    /**
-     * Deserialize a message.
-     * 
-     * @param msgData
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    protected IMessage<ID, DATA> deserialize(byte[] msgData) {
-        return deserialize(msgData, IMessage.class);
-    }
-
-    /**
-     * Deserialize a message.
-     * 
-     * @param msgData
-     * @return
-     */
-    protected <T extends IMessage<ID, DATA>> T deserialize(byte[] msgData, Class<T> clazz) {
-        return msgData != null ? SerializationUtils.fromByteArray(msgData, clazz) : null;
-    }
-
 }

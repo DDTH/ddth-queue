@@ -15,38 +15,6 @@ import com.github.ddth.queue.utils.QueueUtils;
 public class UniversalIdStrQueueMessage extends BaseUniversalQueueMessage<String> {
 
     /**
-     * {@inheritDoc}
-     * 
-     * @since 0.7.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage fromBytes(byte[] data) {
-        try {
-            UniversalIdStrQueueMessage other = BaseUniversalQueueMessage.fromBytes(data,
-                    UniversalIdStrQueueMessage.class);
-            fromMap(other.toMap());
-            return this;
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    // /**
-    // * Deserializes from a {@code byte[]} - which has been serialized by
-    // * {@link #toBytes()}.
-    // *
-    // * @param msgData
-    // * @return
-    // * @throws IllegalAccessException
-    // * @throws InstantiationException
-    // */
-    // public static UniversalIdStrQueueMessage fromBytes(byte[] data)
-    // throws InstantiationException, IllegalAccessException {
-    // return BaseUniversalQueueMessage.fromBytes(data,
-    // UniversalIdStrQueueMessage.class);
-    // }
-
-    /**
      * Creates a new {@link UniversalIdStrQueueMessage} object.
      * 
      * @return
@@ -75,6 +43,21 @@ public class UniversalIdStrQueueMessage extends BaseUniversalQueueMessage<String
     }
 
     /**
+     * Create a new {@link UniversalIdStrQueueMessage} object with specified id
+     * and content.
+     * 
+     * @param id
+     * @param content
+     * @return
+     * @since 0.7.0
+     */
+    public static UniversalIdStrQueueMessage newInstance(String id, String content) {
+        UniversalIdStrQueueMessage msg = newInstance(content);
+        msg.setId(id);
+        return msg;
+    }
+
+    /**
      * Create a new {@link UniversalIdStrQueueMessage} object with specified
      * content.
      * 
@@ -85,6 +68,21 @@ public class UniversalIdStrQueueMessage extends BaseUniversalQueueMessage<String
     public static UniversalIdStrQueueMessage newInstance(byte[] content) {
         UniversalIdStrQueueMessage msg = newInstance();
         msg.setContent(content);
+        return msg;
+    }
+
+    /**
+     * Create a new {@link UniversalIdStrQueueMessage} object with specified id
+     * and content.
+     * 
+     * @param id
+     * @param content
+     * @return
+     * @since 0.7.0
+     */
+    public static UniversalIdStrQueueMessage newInstance(String id, byte[] content) {
+        UniversalIdStrQueueMessage msg = newInstance(content);
+        msg.setId(id);
         return msg;
     }
 
@@ -100,12 +98,31 @@ public class UniversalIdStrQueueMessage extends BaseUniversalQueueMessage<String
         return msg.fromMap(data);
     }
 
+    /*----------------------------------------------------------------------*/
+
     /**
      * {@inheritDoc}
      */
     @Override
     public UniversalIdStrQueueMessage clone() {
         return (UniversalIdStrQueueMessage) super.clone();
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.7.0
+     */
+    @Override
+    public UniversalIdStrQueueMessage fromBytes(byte[] data) {
+        try {
+            UniversalIdStrQueueMessage other = BaseUniversalQueueMessage.fromBytes(data,
+                    UniversalIdStrQueueMessage.class);
+            fromMap(other.toMap());
+            return this;
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**

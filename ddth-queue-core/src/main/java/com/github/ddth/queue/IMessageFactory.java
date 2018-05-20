@@ -21,4 +21,13 @@ public interface IMessageFactory<ID, DATA> {
      * @return
      */
     IMessage<ID, DATA> createMessage(DATA data);
+
+    /**
+     * Create a new message, supplying its initial id and data.
+     * 
+     * @param id
+     * @param data
+     * @return
+     */
+    IMessage<ID, DATA> createMessage(ID id, DATA data);
 }

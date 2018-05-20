@@ -28,4 +28,12 @@ public class UniversalIdStrMessageFactory implements IMessageFactory<String, byt
         return UniversalIdStrMessage.newInstance(data);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public UniversalIdStrMessage createMessage(String id, byte[] data) {
+        return UniversalIdStrMessage.newInstance(id, data);
+    }
+
 }

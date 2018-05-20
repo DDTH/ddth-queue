@@ -26,6 +26,15 @@ public interface IPubSubHub<ID, DATA> {
     IMessage<ID, DATA> createMessage(DATA data);
 
     /**
+     * Create a new message, supplying its initial id and data.
+     * 
+     * @param id
+     * @param data
+     * @return
+     */
+    IMessage<ID, DATA> createMessage(ID id, DATA data);
+
+    /**
      * Publish a message to a channel.
      * 
      * @param channel
