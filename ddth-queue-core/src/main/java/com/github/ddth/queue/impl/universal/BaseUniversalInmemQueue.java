@@ -1,4 +1,4 @@
-package com.github.ddth.queue.impl.universal.base;
+package com.github.ddth.queue.impl.universal;
 
 import com.github.ddth.queue.impl.InmemQueue;
 

@@ -3,8 +3,8 @@ package com.github.ddth.queue.impl.universal.idstr;
 import java.text.MessageFormat;
 
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 
 /**
  * Same as {@link UniversalJdbcQueue}, but using a less-locking algorithm -

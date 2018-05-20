@@ -2,9 +2,9 @@ package com.github.ddth.queue.impl.universal.idstr;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.ActiveMqQueue;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalActiveMqQueue;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalQueueMessage;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalActiveMqQueue;
+import com.github.ddth.queue.impl.universal.BaseUniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 /**

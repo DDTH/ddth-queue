@@ -12,8 +12,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**

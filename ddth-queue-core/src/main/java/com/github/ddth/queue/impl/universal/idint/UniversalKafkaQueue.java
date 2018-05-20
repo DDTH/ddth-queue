@@ -2,9 +2,9 @@ package com.github.ddth.queue.impl.universal.idint;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.KafkaQueue;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalKafkaQueue;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalQueueMessage;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalKafkaQueue;
+import com.github.ddth.queue.impl.universal.BaseUniversalQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 /**

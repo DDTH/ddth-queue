@@ -17,8 +17,8 @@ import com.github.ddth.commons.utils.DPathUtils;
 import com.github.ddth.dao.utils.DaoException;
 import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 import com.github.ddth.queue.utils.QueueUtils;
 

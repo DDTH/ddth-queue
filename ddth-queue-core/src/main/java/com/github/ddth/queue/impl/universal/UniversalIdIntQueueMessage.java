@@ -1,9 +1,8 @@
-package com.github.ddth.queue.impl.universal.msg;
+package com.github.ddth.queue.impl.universal;
 
 import java.util.Date;
 import java.util.Map;
 
-import com.github.ddth.queue.impl.universal.base.BaseUniversalQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**

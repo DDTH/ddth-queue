@@ -1,17 +1,16 @@
-package com.github.ddth.queue.impl.universal.base;
+package com.github.ddth.queue.impl.universal;
 
-import com.github.ddth.queue.impl.RocksDbQueue;
+import com.github.ddth.queue.impl.RabbitMqQueue;
 
 /**
- * Base class for universal RocksDB queue implementations.
- * 
- * @author Thanh Nguyen
- * 
+ * Base class for universal RabbitMQ queue implementations.
+ *
  * @param <T>
- * @since 0.4.0
+ * @author Thanh Nguyen
+ * @since 0.6.1
  */
-public abstract class BaseUniversalRocksDbQueue<T extends BaseUniversalQueueMessage<ID>, ID>
-        extends RocksDbQueue<ID, byte[]> {
+public abstract class BaseUniversalRabbitMqQueue<T extends BaseUniversalQueueMessage<ID>, ID>
+        extends RabbitMqQueue<ID, byte[]> {
 
     // /**
     // * {@inheritDoc}
@@ -23,9 +22,10 @@ public abstract class BaseUniversalRocksDbQueue<T extends BaseUniversalQueueMess
     // return null;
     // }
     // if (!(_msg instanceof BaseUniversalQueueMessage)) {
-    // throw new IllegalArgumentException("This method requires an argument of
-    // type ["
-    // + BaseUniversalQueueMessage.class.getName() + "]!");
+    // throw new IllegalArgumentException(
+    // "This method requires an argument of type [" +
+    // BaseUniversalQueueMessage.class
+    // .getName() + "]!");
     // }
     //
     // BaseUniversalQueueMessage<ID> msg = (BaseUniversalQueueMessage<ID>) _msg;
@@ -33,7 +33,7 @@ public abstract class BaseUniversalRocksDbQueue<T extends BaseUniversalQueueMess
     // return msg.toBytes();
     // } catch (Exception e) {
     // throw new QueueException.CannotSerializeQueueMessage(e);
-    // O }
+    // }
     // }
 
     /**

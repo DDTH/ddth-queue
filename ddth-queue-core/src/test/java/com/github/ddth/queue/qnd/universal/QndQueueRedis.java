@@ -2,8 +2,8 @@ package com.github.ddth.queue.qnd.universal;
 
 import java.util.Date;
 
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalRedisQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 public class QndQueueRedis {
 

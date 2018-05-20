@@ -1,4 +1,4 @@
-package com.github.ddth.queue.impl.universal.base;
+package com.github.ddth.queue.impl.universal;
 
 import java.util.Arrays;
 import java.util.Date;

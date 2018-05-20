@@ -1,8 +1,8 @@
 package com.github.ddth.queue.impl.universal.idint;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalDisruptorQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalDisruptorQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 
 /**
  * Universal LMAX Disruptor implementation of {@link IQueue}.

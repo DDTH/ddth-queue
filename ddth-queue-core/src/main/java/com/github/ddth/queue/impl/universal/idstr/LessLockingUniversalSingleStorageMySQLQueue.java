@@ -3,7 +3,7 @@ package com.github.ddth.queue.impl.universal.idstr;
 import java.text.MessageFormat;
 
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 
 /**
  * MySQL-specific implementation of

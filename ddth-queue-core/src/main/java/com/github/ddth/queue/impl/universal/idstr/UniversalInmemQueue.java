@@ -1,8 +1,8 @@
 package com.github.ddth.queue.impl.universal.idstr;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.universal.base.BaseUniversalInmemQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalInmemQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
 
 /**
  * Universal in-memory implementation of {@link IQueue}.

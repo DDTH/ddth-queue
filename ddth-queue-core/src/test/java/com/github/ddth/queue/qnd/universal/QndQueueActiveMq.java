@@ -2,8 +2,8 @@ package com.github.ddth.queue.qnd.universal;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalActiveMqQueue;
-import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 import java.util.Date;
 
