@@ -15,6 +15,7 @@ import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
@@ -106,36 +107,6 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdStrQue
         return fifo;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage() {
-        return UniversalIdStrQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(byte[] data) {
-        return UniversalIdStrQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
-    }
-
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -145,6 +116,10 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdStrQue
 
     public UniversalJdbcQueue init() throws Exception {
         super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
+        }
 
         Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_ID,
                 COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
@@ -266,7 +241,8 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdStrQue
         }
         UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
         int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, msg.getId(),
-                msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(), msg.getContent());
+                msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                msg.getContent());
         return numRows > 0;
     }
 

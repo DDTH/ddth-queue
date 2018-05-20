@@ -13,6 +13,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
 
 /**
  * Same as {@link UniversalJdbcQueue} but messages from all queues are stored in
@@ -129,36 +130,6 @@ public class UniversalSingleStorageJdbcQueue
         return fifo;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage() {
-        return UniversalIdIntQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(byte[] data) {
-        return UniversalIdIntQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
-    }
-
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -168,6 +139,10 @@ public class UniversalSingleStorageJdbcQueue
 
     public UniversalSingleStorageJdbcQueue init() throws Exception {
         super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
+        }
 
         final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";
         final String WHERE_QUEUE_NAME_AND = WHERE_QUEUE_NAME + " AND ";

@@ -3,6 +3,7 @@ package com.github.ddth.queue.impl.universal.idint;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.universal.BaseUniversalDisruptorQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
 
 /**
  * Universal LMAX Disruptor implementation of {@link IQueue}.
@@ -27,31 +28,17 @@ public class UniversalDisruptorQueue
     /**
      * {@inheritDoc}
      * 
-     * @since 0.6.0
+     * @since 0.7.0
      */
     @Override
-    public UniversalIdIntQueueMessage createMessage() {
-        return UniversalIdIntQueueMessage.newInstance();
-    }
+    public UniversalDisruptorQueue init() throws Exception {
+        super.init();
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(byte[] data) {
-        return UniversalIdIntQueueMessage.newInstance(data);
-    }
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
+        }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
+        return this;
     }
 
 }

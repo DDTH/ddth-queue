@@ -3,6 +3,7 @@ package com.github.ddth.queue.impl.universal.idstr;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.universal.BaseUniversalInmemQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
 
 /**
  * Universal in-memory implementation of {@link IQueue}.
@@ -26,30 +27,17 @@ public class UniversalInmemQueue
     /**
      * {@inheritDoc}
      * 
-     * @since 0.6.0
+     * @since 0.7.0
      */
     @Override
-    public UniversalIdStrQueueMessage createMessage() {
-        return UniversalIdStrQueueMessage.newInstance();
+    public UniversalInmemQueue init() throws Exception {
+        super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
+        }
+
+        return this;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(byte[] data) {
-        return UniversalIdStrQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
-    }
 }

@@ -2,10 +2,9 @@ package com.github.ddth.queue.impl.universal.idint;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RedisQueue;
-import com.github.ddth.queue.impl.universal.BaseUniversalQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalRedisQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
-import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
 
 /**
  * Universal Redis implementation of {@link IQueue}.
@@ -26,31 +25,17 @@ public class UniversalRedisQueue extends BaseUniversalRedisQueue<UniversalIdIntQ
     /**
      * {@inheritDoc}
      * 
-     * @since 0.6.0
+     * @since 0.7.0
      */
     @Override
-    public UniversalIdIntQueueMessage createMessage() {
-        return UniversalIdIntQueueMessage.newInstance();
-    }
+    public UniversalRedisQueue init() throws Exception {
+        super.init();
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(byte[] data) {
-        return UniversalIdIntQueueMessage.newInstance(data);
-    }
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
+        }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
+        return this;
     }
 
     /**
@@ -58,10 +43,6 @@ public class UniversalRedisQueue extends BaseUniversalRedisQueue<UniversalIdIntQ
      */
     @Override
     protected UniversalIdIntQueueMessage deserialize(byte[] msgData) {
-        try {
-            return BaseUniversalQueueMessage.fromBytes(msgData, UniversalIdIntQueueMessage.class);
-        } catch (Exception e) {
-            throw new QueueException.CannotDeserializeQueueMessage(e);
-        }
+        return deserialize(msgData, UniversalIdIntQueueMessage.class);
     }
 }

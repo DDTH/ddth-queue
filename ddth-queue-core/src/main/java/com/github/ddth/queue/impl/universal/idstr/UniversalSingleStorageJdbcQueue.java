@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
 import com.github.ddth.queue.utils.QueueUtils;
 
 /**
@@ -131,35 +132,6 @@ public class UniversalSingleStorageJdbcQueue
         return fifo;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage() {
-        return UniversalIdStrQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(byte[] data) {
-        return UniversalIdStrQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
-    }
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -169,6 +141,10 @@ public class UniversalSingleStorageJdbcQueue
 
     public UniversalSingleStorageJdbcQueue init() throws Exception {
         super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
+        }
 
         final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";
         final String WHERE_QUEUE_NAME_AND = WHERE_QUEUE_NAME + " AND ";

@@ -14,6 +14,7 @@ import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
 
 /**
  * Universal JDBC implementation of {@link IQueue}.
@@ -134,36 +135,6 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
         return fifo;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage() {
-        return UniversalIdIntQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(byte[] data) {
-        return UniversalIdIntQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
-    }
-
     /*----------------------------------------------------------------------*/
 
     private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
@@ -173,6 +144,10 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
 
     public UniversalJdbcQueue init() throws Exception {
         super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
+        }
 
         Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
                 COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,

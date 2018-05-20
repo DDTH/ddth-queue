@@ -2,10 +2,9 @@ package com.github.ddth.queue.impl.universal.idstr;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RocksDbQueue;
-import com.github.ddth.queue.impl.universal.BaseUniversalQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalRocksDbQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
-import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
 
 /**
  * Universal RocskDB implementation of {@link IQueue}.
@@ -26,43 +25,26 @@ public class UniversalRocksDbQueue
 
     /**
      * {@inheritDoc}
+     * 
+     * @since 0.7.0
+     */
+    @Override
+    public UniversalRocksDbQueue init() throws Exception {
+        super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
+        }
+
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
      */
     @Override
     protected UniversalIdStrQueueMessage deserialize(byte[] msgData) {
-        try {
-            return BaseUniversalQueueMessage.fromBytes(msgData, UniversalIdStrQueueMessage.class);
-        } catch (Exception e) {
-            throw new QueueException.CannotDeserializeQueueMessage(e);
-        }
+        return deserialize(msgData, UniversalIdStrQueueMessage.class);
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage() {
-        return UniversalIdStrQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(byte[] data) {
-        return UniversalIdStrQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
-    }
 }
