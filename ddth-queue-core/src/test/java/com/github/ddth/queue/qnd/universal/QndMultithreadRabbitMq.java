@@ -26,11 +26,11 @@ public class QndMultithreadRabbitMq {
 
     private static boolean DONE = false;
 
-    private static void emptyQueue(IQueue queue) throws Exception {
+    private static void emptyQueue(IQueue<Long, byte[]> queue) throws Exception {
         long t1 = System.currentTimeMillis();
         System.out.println("Emptying queue...");
         long counter = 0;
-        IQueueMessage msg;
+        IQueueMessage<?, ?> msg;
         do {
             try {
                 msg = queue.take();
@@ -84,7 +84,7 @@ public class QndMultithreadRabbitMq {
         }
     }
 
-    private static void queueMessages(IQueue queue, long numItems) {
+    private static void queueMessages(IQueue<Long, byte[]> queue, long numItems) {
         for (int i = 0; i < NUM_ITEMS; i++) {
             UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();

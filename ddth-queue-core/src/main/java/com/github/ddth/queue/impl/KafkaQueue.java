@@ -239,22 +239,6 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Serializes a queue message to store in Kafka.
-     *
-     * @param msg
-     * @return
-     */
-    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg) throws QueueException;
-
-    /**
-     * Deserilizes a queue message.
-     *
-     * @param msgData
-     * @return
-     */
-    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData) throws QueueException;
-
-    /**
      * Takes a message from Kafka queue.
      *
      * @return
@@ -275,10 +259,10 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
         byte[] msgData = serialize(msg);
-        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).qPartitionKey()
-                : msg.qId();
+        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).getPartitionKey()
+                : msg.getId();
         if (pKey == null) {
-            pKey = msg.qId();
+            pKey = msg.getId();
         }
         KafkaMessage kMsg = pKey != null ? new KafkaMessage(topicName, pKey.toString(), msgData)
                 : new KafkaMessage(topicName, msgData);
@@ -296,7 +280,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     public boolean queue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
         return putToQueue(msg);
     }
 
@@ -307,7 +291,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     public boolean requeue(final IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qIncNumRequeues().qTimestamp(now);
+        msg.incNumRequeues().setQueueTimestamp(now);
         return putToQueue(msg);
     }
 

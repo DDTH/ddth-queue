@@ -58,8 +58,8 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
         SQL_READ_BY_EPHEMERAL_ID = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE {6}=?";
         SQL_READ_BY_EPHEMERAL_ID = MessageFormat.format(SQL_READ_BY_EPHEMERAL_ID, getTableName(),
                 COL_QUEUE_ID + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdStrQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdStrQueueMessage.FIELD_DATA, COL_EPHEMERAL_ID);
 
@@ -67,8 +67,8 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
                 + " IS NOT null AND " + COL_TIMESTAMP + "<?";
         SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS, getTableNameEphemeral(),
                 COL_QUEUE_ID + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdStrQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdStrQueueMessage.FIELD_DATA);
 
@@ -114,6 +114,6 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
      */
     @Override
     public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
     }
 }

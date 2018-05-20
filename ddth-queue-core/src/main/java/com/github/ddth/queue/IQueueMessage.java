@@ -8,7 +8,7 @@ import java.util.Date;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.1.0
  */
-public interface IQueueMessage<ID, DATA> extends Cloneable {
+public interface IQueueMessage<ID, DATA> extends IMessage<ID, DATA> {
 
     /**
      * Clone this message.
@@ -22,6 +22,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * Message's unique id in queue.
      * 
      * @return
+     * @deprecated since v0.7.0 use {@link #getId()}.
      */
     ID qId();
 
@@ -30,6 +31,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * 
      * @param id
      * @return
+     * @deprecated since v0.7.0 use {@link #setId(Object)}.
      */
     IQueueMessage<ID, DATA> qId(ID queueId);
 
@@ -37,6 +39,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * Message's first-queued timestamp.
      * 
      * @return
+     * @deprecated since v0.7.0 use {@link #getTimestamp()}.
      */
     Date qOriginalTimestamp();
 
@@ -45,13 +48,32 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * 
      * @param timestamp
      * @return
+     * @deprecated since v0.7.0 use {@link #setTimestamp(Date)}.
      */
     IQueueMessage<ID, DATA> qOriginalTimestamp(Date timestamp);
+
+    /**
+     * Get message's last-queued timestamp.
+     * 
+     * @return
+     * @since 0.7.0
+     */
+    Date getQueueTimestamp();
+
+    /**
+     * Set message's last-queued timestamp.
+     * 
+     * @param timestamp
+     * @return
+     * @since 0.7.0
+     */
+    IQueueMessage<ID, DATA> setQueueTimestamp(Date timestamp);
 
     /**
      * Message's last-queued timestamp.
      * 
      * @return
+     * @deprecated since v0.7.0 use {@link #getQueueTimestamp()}.
      */
     Date qTimestamp();
 
@@ -60,6 +82,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * 
      * @param timestamp
      * @return
+     * @deprecated since v0.7.0 use {@link #setQueueTimestamp(Date)}.
      */
     IQueueMessage<ID, DATA> qTimestamp(Date timestamp);
 
@@ -67,6 +90,32 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * How many times message has been re-queued?
      * 
      * @return
+     * @since 0.7.0
+     */
+    int getNumRequeues();
+
+    /**
+     * Set message's number of re-queue times.
+     * 
+     * @param numRequeues
+     * @return
+     * @since 0.7.0
+     */
+    IQueueMessage<ID, DATA> setNumRequeues(int numRequeues);
+
+    /**
+     * Increase message's number of re-queue times by 1.
+     * 
+     * @return
+     * @since 0.7.0
+     */
+    IQueueMessage<ID, DATA> incNumRequeues();
+
+    /**
+     * How many times message has been re-queued?
+     * 
+     * @return
+     * @deprecated since v0.7.0 use {@link #getNumRequeues()}.
      */
     int qNumRequeues();
 
@@ -75,6 +124,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * 
      * @param numRequeues
      * @return
+     * @deprecated since v0.7.0 use {@link #setNumRequeues(int)}.
      */
     IQueueMessage<ID, DATA> qNumRequeues(int numRequeues);
 
@@ -82,6 +132,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * Increase message's number of re-queue times by 1.
      * 
      * @return
+     * @deprecated since v0.7.0 use {$link {@link #incNumRequeues()}}.
      */
     IQueueMessage<ID, DATA> qIncNumRequeues();
 
@@ -90,6 +141,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * 
      * @return
      * @since 0.4.2
+     * @deprecated since v0.7.0 use {@link #getData()}.
      */
     DATA qData();
 
@@ -99,6 +151,7 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * @param data
      * @return
      * @since 0.4.2
+     * @deprecated since v0.7.0 use {$link {@link #setData(Object)}.
      */
     IQueueMessage<ID, DATA> qData(DATA data);
 
@@ -108,71 +161,96 @@ public interface IQueueMessage<ID, DATA> extends Cloneable {
      * @author Thanh Nguyen <btnguyen2k@gmail.com>
      * @since 0.3.3
      */
-    static class EmptyQueueMessage implements IQueueMessage<Object, Object> {
+    @SuppressWarnings("rawtypes")
+    static class EmptyQueueMessage extends EmptyMessage implements IQueueMessage {
         /**
          * {@inheritDoc}
          */
         @Override
         public EmptyQueueMessage clone() {
-            try {
-                return (EmptyQueueMessage) super.clone();
-            } catch (CloneNotSupportedException e) {
-                throw new RuntimeException(e);
-            }
+            return (EmptyQueueMessage) super.clone();
         }
 
         @Override
         public Object qId() {
-            return null;
+            return getId();
         }
 
         @Override
         public EmptyQueueMessage qId(Object queueId) {
+            setId(queueId);
             return this;
         }
 
         @Override
         public Date qOriginalTimestamp() {
-            return null;
+            return getTimestamp();
         }
 
         @Override
         public EmptyQueueMessage qOriginalTimestamp(Date timestamp) {
+            setTimestamp(timestamp);
+            return this;
+        }
+
+        @Override
+        public Date getQueueTimestamp() {
+            return null;
+        }
+
+        @Override
+        public EmptyQueueMessage setQueueTimestamp(Date timestamp) {
             return this;
         }
 
         @Override
         public Date qTimestamp() {
-            return null;
+            return getQueueTimestamp();
         }
 
         @Override
         public EmptyQueueMessage qTimestamp(Date timestamp) {
+            return setQueueTimestamp(timestamp);
+        }
+
+        @Override
+        public int getNumRequeues() {
+            return 0;
+        }
+
+        @Override
+        public EmptyQueueMessage setNumRequeues(int numRequeues) {
+            return this;
+        }
+
+        @Override
+        public EmptyQueueMessage incNumRequeues() {
             return this;
         }
 
         @Override
         public int qNumRequeues() {
-            return 0;
+            return getNumRequeues();
         }
 
         @Override
         public EmptyQueueMessage qNumRequeues(int numRequeues) {
-            return null;
+            return setNumRequeues(numRequeues);
         }
 
         @Override
         public EmptyQueueMessage qIncNumRequeues() {
-            return this;
+            return incNumRequeues();
         }
 
         @Override
         public Object qData() {
-            return null;
+            return getData();
         }
 
         @Override
         public EmptyQueueMessage qData(Object data) {
+            setData(data);
             return this;
         }
     }

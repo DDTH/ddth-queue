@@ -2,6 +2,7 @@ package com.github.ddth.queue.impl.universal.idint;
 
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.RocksDbQueue;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalQueueMessage;
 import com.github.ddth.queue.impl.universal.base.BaseUniversalRocksDbQueue;
 import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -50,7 +51,7 @@ public class UniversalRocksDbQueue
      */
     @Override
     public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
     }
 
     /**
@@ -59,7 +60,7 @@ public class UniversalRocksDbQueue
     @Override
     protected UniversalIdIntQueueMessage deserialize(byte[] msgData) {
         try {
-            return UniversalIdIntQueueMessage.fromBytes(msgData);
+            return BaseUniversalQueueMessage.fromBytes(msgData, UniversalIdIntQueueMessage.class);
         } catch (Exception e) {
             throw new QueueException.CannotDeserializeQueueMessage(e);
         }

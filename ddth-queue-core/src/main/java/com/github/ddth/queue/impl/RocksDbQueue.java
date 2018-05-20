@@ -20,10 +20,10 @@ import org.rocksdb.WriteOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.github.ddth.commons.rocksdb.RocksDbUtils;
+import com.github.ddth.commons.rocksdb.RocksDbWrapper;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.rocksdb.RocksDbUtils;
-import com.github.ddth.queue.impl.rocksdb.RocksDbWrapper;
 import com.github.ddth.queue.utils.QueueException;
 import com.github.ddth.queue.utils.QueueUtils;
 
@@ -220,7 +220,10 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         }
     }
 
-    private final static byte[] keyLastFetchedId = "last-fetched-id".getBytes(QueueUtils.UTF8);
+    // private final static byte[] keyLastFetchedId =
+    // "last-fetched-id".getBytes(QueueUtils.UTF8);
+    private final static String keyLastFetchedId = "last-fetched-id";
+    private final static byte[] keyLastFetchedIdBytes = keyLastFetchedId.getBytes(QueueUtils.UTF8);
 
     /**
      * Loads last saved last-fetched-id.
@@ -229,7 +232,8 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      * @since 0.4.0.1
      */
     private byte[] loadLastFetchedId() {
-        return rocksDbWrapper.get(cfMetadata, readOptions, keyLastFetchedId);
+        // return rocksDbWrapper.get(cfMetadata, readOptions, keyLastFetchedId);
+        return rocksDbWrapper.get(cfNameMetadata, readOptions, keyLastFetchedId);
     }
 
     /**
@@ -240,25 +244,9 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     private void saveLastFetchedId(byte[] lastFetchedId) {
         if (lastFetchedId != null) {
-            rocksDbWrapper.put(cfMetadata, writeOptions, keyLastFetchedId, lastFetchedId);
+            rocksDbWrapper.put(cfNameMetadata, writeOptions, keyLastFetchedId, lastFetchedId);
         }
     }
-
-    /**
-     * Serializes a queue message to byte[].
-     * 
-     * @param msg
-     * @return
-     */
-    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
-
-    /**
-     * Deserilizes a queue message.
-     * 
-     * @param msgData
-     * @return
-     */
-    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
 
     protected boolean putToQueue(IQueueMessage<ID, DATA> msg, boolean removeFromEphemeral)
             throws RocksDBException {
@@ -270,7 +258,7 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
             try {
                 batchPutToQueue.put(cfQueue, key, value);
                 if (removeFromEphemeral && !isEphemeralDisabled()) {
-                    byte[] _key = msg.qId().toString().getBytes(QueueUtils.UTF8);
+                    byte[] _key = msg.getId().toString().getBytes(QueueUtils.UTF8);
                     batchPutToQueue.delete(cfEphemeral, _key);
                 }
                 rocksDbWrapper.write(writeOptions, batchPutToQueue);
@@ -290,7 +278,7 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     public boolean queue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
         try {
             return putToQueue(msg, false);
         } catch (RocksDBException e) {
@@ -305,7 +293,7 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     public boolean requeue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qIncNumRequeues().qTimestamp(now);
+        msg.incNumRequeues().setQueueTimestamp(now);
         try {
             return putToQueue(msg, true);
         } catch (RocksDBException e) {
@@ -331,8 +319,8 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     @Override
     public void finish(IQueueMessage<ID, DATA> msg) {
         if (!isEphemeralDisabled()) {
-            byte[] key = msg.qId().toString().getBytes(QueueUtils.UTF8);
-            rocksDbWrapper.delete(cfEphemeral, writeOptions, key);
+            String key = msg.getId().toString();
+            rocksDbWrapper.delete(cfNameEphemeral, writeOptions, key);
         }
     }
 
@@ -365,9 +353,10 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
             IQueueMessage<ID, DATA> msg = deserialize(value);
             try {
                 batchTake.delete(cfQueue, lastFetchedId);
-                batchTake.put(cfMetadata, keyLastFetchedId, lastFetchedId);
+                // batchTake.put(cfMetadata, keyLastFetchedId, lastFetchedId);
+                batchTake.put(cfMetadata, keyLastFetchedIdBytes, lastFetchedId);
                 if (!isEphemeralDisabled() && msg != null) {
-                    byte[] _key = msg.qId().toString().getBytes(QueueUtils.UTF8);
+                    byte[] _key = msg.getId().toString().getBytes(QueueUtils.UTF8);
                     batchTake.put(cfEphemeral, _key, value);
                 }
                 rocksDbWrapper.write(writeOptions, batchTake);
@@ -398,7 +387,7 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
             while (itEphemeral.isValid()) {
                 byte[] value = itEphemeral.value();
                 IQueueMessage<ID, DATA> msg = deserialize(value);
-                if (msg.qTimestamp().getTime() + thresholdTimestampMs < now) {
+                if (msg.getQueueTimestamp().getTime() + thresholdTimestampMs < now) {
                     orphanMessages.add(msg);
                 }
                 itEphemeral.next();

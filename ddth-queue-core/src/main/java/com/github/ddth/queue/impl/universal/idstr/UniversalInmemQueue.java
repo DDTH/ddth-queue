@@ -50,6 +50,6 @@ public class UniversalInmemQueue
      */
     @Override
     public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
     }
 }

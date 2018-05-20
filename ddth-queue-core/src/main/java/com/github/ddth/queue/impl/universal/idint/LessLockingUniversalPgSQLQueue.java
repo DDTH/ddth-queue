@@ -59,7 +59,7 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
      */
     @Override
     public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
     }
 
     public LessLockingUniversalPgSQLQueue init() throws Exception {
@@ -102,8 +102,8 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
         SQL_READ_BY_EPHEMERAL_ID = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE {6}=?";
         SQL_READ_BY_EPHEMERAL_ID = MessageFormat.format(SQL_READ_BY_EPHEMERAL_ID, getTableName(),
                 COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdIntQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdIntQueueMessage.FIELD_DATA, COL_EPHEMERAL_ID);
 
@@ -111,8 +111,8 @@ public class LessLockingUniversalPgSQLQueue extends AbstractLessLockingUniversal
                 + "!=0 AND " + COL_TIMESTAMP + "<?";
         SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS, getTableNameEphemeral(),
                 COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdIntQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdIntQueueMessage.FIELD_DATA);
 

@@ -10,11 +10,10 @@ import com.lmax.disruptor.dsl.ProducerType;
 
 public class QndDisruptor2 {
 
-    @SuppressWarnings("unchecked")
     static void qndSingleThread(int numItems) {
         final AtomicLong COUNTER_RECEIVED = new AtomicLong(0);
         final Disruptor<LongEvent> disruptor = new Disruptor<>(LongEvent.FACTORY, 128,
-                Executors.defaultThreadFactory(), ProducerType.MULTI, new YieldingWaitStrategy());
+                Executors.defaultThreadFactory(), ProducerType.SINGLE, new YieldingWaitStrategy());
         disruptor.handleEventsWith(
                 (event, sequence, endOfBatch) -> COUNTER_RECEIVED.incrementAndGet());
         disruptor.start();
@@ -33,7 +32,6 @@ public class QndDisruptor2 {
         disruptor.shutdown();
     }
 
-    @SuppressWarnings("unchecked")
     static void qndMultiThreads(int numItems, int numThreads) throws InterruptedException {
         final AtomicLong COUNTER_RECEIVED = new AtomicLong(0);
         final Disruptor<LongEvent> disruptor = new Disruptor<>(LongEvent.FACTORY, 128,
@@ -61,7 +59,7 @@ public class QndDisruptor2 {
 
         long d = System.currentTimeMillis() - t;
         NumberFormat nf = NumberFormat.getInstance();
-        System.out.println("========== qndSingleThread:");
+        System.out.println("========== qndMultiThreads:");
         System.out.println("Sent: " + nf.format(numItems) + " / Received: "
                 + nf.format(COUNTER_RECEIVED.get()) + " / Duration: " + d + " / Speed: "
                 + NumberFormat.getInstance().format((numItems * 1000.0 / d)) + " items/sec");

@@ -158,7 +158,7 @@ public class UniversalSingleStorageJdbcQueue
      */
     @Override
     public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
     }
     /*----------------------------------------------------------------------*/
 
@@ -174,8 +174,8 @@ public class UniversalSingleStorageJdbcQueue
         final String WHERE_QUEUE_NAME_AND = WHERE_QUEUE_NAME + " AND ";
 
         Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdStrQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdStrQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdStrQueueMessage.FIELD_DATA };
 
@@ -254,7 +254,7 @@ public class UniversalSingleStorageJdbcQueue
     protected UniversalIdStrQueueMessage readFromEphemeralStorage(Connection conn,
             IQueueMessage<String, byte[]> msg) {
         Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_EPHEMERAL,
-                getQueueName(), msg.qId());
+                getQueueName(), msg.getId());
         if (dbRow != null) {
             UniversalIdStrQueueMessage myMsg = new UniversalIdStrQueueMessage();
             return myMsg.fromMap(dbRow);
@@ -290,12 +290,13 @@ public class UniversalSingleStorageJdbcQueue
                     + UniversalIdStrQueueMessage.class.getName() + "]!");
         }
         UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
-        String qid = msg.qId();
+        String qid = msg.getId();
         if (StringUtils.isEmpty(qid)) {
             qid = QueueUtils.IDGEN.generateId128Hex();
         }
         int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, getQueueName(), qid,
-                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+                msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                msg.getContent());
         return numRows > 0;
     }
 
@@ -309,8 +310,9 @@ public class UniversalSingleStorageJdbcQueue
                     + UniversalIdStrQueueMessage.class.getName() + "]!");
         }
         UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, getQueueName(), msg.qId(),
-                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, getQueueName(),
+                msg.getId(), msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                msg.getContent());
         return numRows > 0;
     }
 
@@ -325,7 +327,7 @@ public class UniversalSingleStorageJdbcQueue
         }
         UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
         int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE, getQueueName(),
-                msg.qId());
+                msg.getId());
         return numRows > 0;
     }
 
@@ -341,7 +343,7 @@ public class UniversalSingleStorageJdbcQueue
         }
         UniversalIdStrQueueMessage msg = (UniversalIdStrQueueMessage) _msg;
         int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, getQueueName(),
-                msg.qId());
+                msg.getId());
         return numRows > 0;
     }
 

@@ -121,7 +121,7 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
         try (Jedis jedis = getJedisConnector().getJedis()) {
             Transaction jt = jedis.multi();
 
-            byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
+            byte[] field = msg.getId().toString().getBytes(QueueUtils.UTF8);
             Response<Long> response = jt.hdel(getRedisHashNameAsBytes(), field);
             jt.zrem(getRedisSortedSetNameAsBytes(), field);
 
@@ -139,7 +139,7 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
         try (Jedis jedis = getJedisConnector().getJedis()) {
             Transaction jt = jedis.multi();
 
-            byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
+            byte[] field = msg.getId().toString().getBytes(QueueUtils.UTF8);
             byte[] data = serialize(msg);
             jt.hset(getRedisHashNameAsBytes(), field, data);
             jt.rpush(getRedisListNameAsBytes(), field);
@@ -157,7 +157,7 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
         try (Jedis jedis = getJedisConnector().getJedis()) {
             Transaction jt = jedis.multi();
 
-            byte[] field = msg.qId().toString().getBytes(QueueUtils.UTF8);
+            byte[] field = msg.getId().toString().getBytes(QueueUtils.UTF8);
             byte[] data = serialize(msg);
             jt.hset(getRedisHashNameAsBytes(), field, data);
             jt.rpush(getRedisListNameAsBytes(), field);
@@ -202,7 +202,7 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
             return true;
         }
         try (Jedis jedis = getJedisConnector().getJedis()) {
-            Object response = jedis.eval(getScriptMove(), 0, msg.qId().toString());
+            Object response = jedis.eval(getScriptMove(), 0, msg.getId().toString());
             return response != null && "1".equals(response.toString());
         }
     }

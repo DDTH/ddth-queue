@@ -30,7 +30,7 @@ public class QndLessLockingQueuePgSQL {
                 System.out.println("Queue: " + queue.queue(msg));
 
                 msg = queue.take();
-                while (msg.qNumRequeues() < 2) {
+                while (msg.getNumRequeues() < 2) {
                     System.out.println(msg);
                     System.out.println("Requeue: " + queue.requeue(msg));
                     msg = queue.take();

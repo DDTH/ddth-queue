@@ -3,8 +3,6 @@ package com.github.ddth.queue.impl.universal.msg;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.ddth.queue.impl.universal.base.BaseUniversalQueueMessage;
 import com.github.ddth.queue.utils.QueueUtils;
 
@@ -18,30 +16,49 @@ import com.github.ddth.queue.utils.QueueUtils;
 public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> {
 
     /**
-     * Deserializes from a {@code byte[]} - which has been serialized by
-     * {@link #toBytes()}.
-     *
-     * @param msgData
-     * @return
-     * @throws IllegalAccessException
-     * @throws InstantiationException
-     * @since 0.6.0
+     * {@inheritDoc}
+     * 
+     * @since 0.7.0
      */
-    public static UniversalIdIntQueueMessage fromBytes(byte[] data)
-            throws InstantiationException, IllegalAccessException {
-        return BaseUniversalQueueMessage.fromBytes(data, UniversalIdIntQueueMessage.class);
+    @Override
+    public UniversalIdIntQueueMessage fromBytes(byte[] data) {
+        try {
+            UniversalIdIntQueueMessage other = BaseUniversalQueueMessage.fromBytes(data,
+                    UniversalIdIntQueueMessage.class);
+            fromMap(other.toMap());
+            return this;
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
+
+    // /**
+    // * Deserializes from a {@code byte[]} - which has been serialized by
+    // * {@link #toBytes()}.
+    // *
+    // * @param msgData
+    // * @return
+    // * @throws IllegalAccessException
+    // * @throws InstantiationException
+    // * @since 0.6.0
+    // */
+    // public static UniversalIdIntQueueMessage fromBytes(byte[] data)
+    // throws InstantiationException, IllegalAccessException {
+    // return BaseUniversalQueueMessage.fromBytes(data,
+    // UniversalIdIntQueueMessage.class);
+    // }
 
     /**
      * Create a new {@link UniversalIdIntQueueMessage} object.
      * 
      * @return
      */
+    @SuppressWarnings("unchecked")
     public static UniversalIdIntQueueMessage newInstance() {
         Date now = new Date();
         UniversalIdIntQueueMessage msg = new UniversalIdIntQueueMessage();
-        msg.qId(QueueUtils.IDGEN.generateId64()).qNumRequeues(0).qOriginalTimestamp(now)
-                .qTimestamp(now);
+        msg.setQueueTimestamp(now).setNumRequeues(0).setId(QueueUtils.IDGEN.generateId64())
+                .setTimestamp(now);
         return msg;
     }
 
@@ -55,7 +72,7 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
      */
     public static UniversalIdIntQueueMessage newInstance(String content) {
         UniversalIdIntQueueMessage msg = newInstance();
-        msg.content(content);
+        msg.setContent(content);
         return msg;
     }
 
@@ -69,7 +86,7 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
      */
     public static UniversalIdIntQueueMessage newInstance(byte[] content) {
         UniversalIdIntQueueMessage msg = newInstance();
-        msg.content(content);
+        msg.setContent(content);
         return msg;
     }
 
@@ -99,28 +116,5 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
     @Override
     public UniversalIdIntQueueMessage fromMap(Map<String, Object> dataMap) {
         return (UniversalIdIntQueueMessage) super.fromMap(dataMap);
-    }
-
-    public static void main(String[] args) throws Exception {
-        UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-        msg.content("content".getBytes());
-
-        String json1 = msg.toJson();
-        System.out.println("Json: " + json1);
-        System.out.println("Content: " + new String(msg.content()));
-
-        byte[] data = msg.toBytes();
-        msg = BaseUniversalQueueMessage.fromBytes(data, UniversalIdIntQueueMessage.class);
-
-        String json2 = msg.toJson();
-        System.out.println("Json: " + json2);
-        System.out.println("Content: " + new String(msg.content()));
-
-        System.out.println(StringUtils.equals(json1, json2));
-
-        msg.fromJson(json1);
-        String json3 = msg.toJson();
-        System.out.println("Json: " + json3);
-        System.out.println("Content: " + new String(msg.content()));
     }
 }

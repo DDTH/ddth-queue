@@ -292,7 +292,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
             int numRetries, int maxRetries) {
         try {
             Date now = new Date();
-            msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+            msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
             return putToQueueStorage(conn, msg);
         } catch (DuplicatedValueException dve) {
             LOGGER.warn(dve.getMessage(), dve);
@@ -368,7 +368,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                 removeFromEphemeralStorage(conn, msg);
             }
             Date now = new Date();
-            msg.qIncNumRequeues().qTimestamp(now);
+            msg.incNumRequeues().setQueueTimestamp(now);
             boolean result = putToQueueStorage(conn, msg);
             jdbcHelper.commitTransaction(conn);
             return result;

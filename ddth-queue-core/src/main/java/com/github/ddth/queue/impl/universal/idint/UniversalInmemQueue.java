@@ -49,6 +49,6 @@ public class UniversalInmemQueue extends BaseUniversalInmemQueue<UniversalIdIntQ
      */
     @Override
     public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
     }
 }

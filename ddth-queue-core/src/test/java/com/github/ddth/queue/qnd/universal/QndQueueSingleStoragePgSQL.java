@@ -32,7 +32,7 @@ public class QndQueueSingleStoragePgSQL {
                 System.out.println("Queue: " + queue.queue(msg));
 
                 msg = queue.take();
-                while (msg.qNumRequeues() < 2) {
+                while (msg.getNumRequeues() < 2) {
                     System.out.println("Message: " + msg);
                     System.out.println("Content: " + new String(msg.content()));
                     System.out.println("Requeue: " + queue.requeue(msg));

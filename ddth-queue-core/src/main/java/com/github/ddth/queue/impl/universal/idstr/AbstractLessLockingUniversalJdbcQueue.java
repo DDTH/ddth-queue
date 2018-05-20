@@ -110,7 +110,8 @@ public class AbstractLessLockingUniversalJdbcQueue
 
     /**
      * {@inheritDoc}
-     * @throws Exception 
+     * 
+     * @throws Exception
      * 
      * @since 0.6.0
      */
@@ -197,12 +198,12 @@ public class AbstractLessLockingUniversalJdbcQueue
      */
     @Override
     protected boolean putToQueueStorage(Connection conn, IQueueMessage<String, byte[]> msg) {
-        String qid = msg.qId();
+        String qid = msg.getId();
         if (StringUtils.isEmpty(qid)) {
             qid = QueueUtils.IDGEN.generateId128Hex();
         }
-        int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, qid,
-                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.qData());
+        int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, qid, msg.getTimestamp(),
+                msg.getQueueTimestamp(), msg.getNumRequeues(), msg.getData());
         return numRows > 0;
     }
 
@@ -230,7 +231,7 @@ public class AbstractLessLockingUniversalJdbcQueue
     @Override
     protected boolean removeFromEphemeralStorage(Connection conn,
             IQueueMessage<String, byte[]> msg) {
-        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, msg.qId());
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, msg.getId());
         return numRows > 0;
     }
 
@@ -243,7 +244,7 @@ public class AbstractLessLockingUniversalJdbcQueue
             int numRetries, int maxRetries) {
         try {
             Date now = new Date();
-            msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+            msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
             boolean result = putToQueueStorage(conn, msg);
             return result;
         } catch (DuplicatedValueException dve) {
@@ -273,7 +274,7 @@ public class AbstractLessLockingUniversalJdbcQueue
     protected boolean _requeueWithRetries(Connection conn, IQueueMessage<String, byte[]> msg,
             int numRetries, int maxRetries) {
         try {
-            int numRows = getJdbcHelper().execute(conn, SQL_REQUEUE, new Date(), msg.qId());
+            int numRows = getJdbcHelper().execute(conn, SQL_REQUEUE, new Date(), msg.getId());
             return numRows > 0;
         } catch (DuplicatedValueException dve) {
             LOGGER.warn(dve.getMessage(), dve);
@@ -307,7 +308,7 @@ public class AbstractLessLockingUniversalJdbcQueue
     protected boolean _requeueSilentWithRetries(Connection conn, IQueueMessage<String, byte[]> msg,
             int numRetries, int maxRetries) {
         try {
-            int numRows = getJdbcHelper().execute(conn, SQL_REQUEUE_SILENT, msg.qId());
+            int numRows = getJdbcHelper().execute(conn, SQL_REQUEUE_SILENT, msg.getId());
             return numRows > 0;
         } catch (DuplicatedValueException dve) {
             LOGGER.warn(dve.getMessage(), dve);
@@ -390,7 +391,7 @@ public class AbstractLessLockingUniversalJdbcQueue
     protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<String, byte[]> msg,
             Connection conn, int numRetries, int maxRetries) {
         try {
-            int numRows = getJdbcHelper().execute(conn, SQL_CLEAR_EPHEMERAL_ID, msg.qId());
+            int numRows = getJdbcHelper().execute(conn, SQL_CLEAR_EPHEMERAL_ID, msg.getId());
             return numRows > 0;
         } catch (DaoException de) {
             if (de.getCause() instanceof ConcurrencyFailureException) {

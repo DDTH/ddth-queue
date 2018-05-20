@@ -9,8 +9,8 @@ import com.github.ddth.queue.impl.universal.msg.UniversalIdIntQueueMessage;
 
 public class QndQueueKafka {
 
-    private static void emptyQueue(IQueue queue) {
-        IQueueMessage msg = queue.take();
+    private static void emptyQueue(IQueue<Long, byte[]> queue) {
+        IQueueMessage<Long, byte[]> msg = queue.take();
         while (msg != null) {
             queue.finish(msg);
             msg = queue.take();
@@ -31,7 +31,7 @@ public class QndQueueKafka {
             System.out.println("Queue: " + queue.queue(msg));
 
             msg = queue.take();
-            while (msg.qNumRequeues() < 2) {
+            while (msg.getNumRequeues() < 2) {
                 System.out.println("Message: " + msg);
                 System.out.println("Content: " + new String(msg.content()));
                 System.out.println("Requeue: " + queue.requeue(msg));

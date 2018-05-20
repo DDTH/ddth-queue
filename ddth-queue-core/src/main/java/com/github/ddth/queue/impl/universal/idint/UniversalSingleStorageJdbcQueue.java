@@ -156,7 +156,7 @@ public class UniversalSingleStorageJdbcQueue
      */
     @Override
     public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
     }
 
     /*----------------------------------------------------------------------*/
@@ -173,8 +173,8 @@ public class UniversalSingleStorageJdbcQueue
         final String WHERE_QUEUE_NAME_AND = WHERE_QUEUE_NAME + " AND ";
 
         Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdIntQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdIntQueueMessage.FIELD_DATA };
 
@@ -253,7 +253,7 @@ public class UniversalSingleStorageJdbcQueue
     protected UniversalIdIntQueueMessage readFromEphemeralStorage(Connection conn,
             IQueueMessage<Long, byte[]> msg) {
         Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_EPHEMERAL,
-                getQueueName(), msg.qId());
+                getQueueName(), msg.getId());
         if (dbRow != null) {
             UniversalIdIntQueueMessage myMsg = new UniversalIdIntQueueMessage();
             return myMsg.fromMap(dbRow);
@@ -289,14 +289,16 @@ public class UniversalSingleStorageJdbcQueue
                     + UniversalIdIntQueueMessage.class.getName() + "]!");
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        Long qid = msg.qId();
+        Long qid = msg.getId();
         if (qid == null || qid.longValue() == 0) {
             int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE, getQueueName(),
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+                    msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                    msg.getContent());
             return numRows > 0;
         } else {
             int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, getQueueName(), qid,
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+                    msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                    msg.getContent());
             return numRows > 0;
         }
     }
@@ -311,8 +313,9 @@ public class UniversalSingleStorageJdbcQueue
                     + UniversalIdIntQueueMessage.class.getName() + "]!");
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, getQueueName(), msg.qId(),
-                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, getQueueName(),
+                msg.getId(), msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                msg.getContent());
         return numRows > 0;
     }
 
@@ -327,7 +330,7 @@ public class UniversalSingleStorageJdbcQueue
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE, getQueueName(),
-                msg.qId());
+                msg.getId());
         return numRows > 0;
     }
 
@@ -343,7 +346,7 @@ public class UniversalSingleStorageJdbcQueue
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
         int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, getQueueName(),
-                msg.qId());
+                msg.getId());
         return numRows > 0;
     }
 

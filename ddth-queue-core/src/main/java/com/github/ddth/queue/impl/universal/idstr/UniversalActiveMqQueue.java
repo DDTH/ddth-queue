@@ -3,15 +3,20 @@ package com.github.ddth.queue.impl.universal.idstr;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.impl.ActiveMqQueue;
 import com.github.ddth.queue.impl.universal.base.BaseUniversalActiveMqQueue;
+import com.github.ddth.queue.impl.universal.base.BaseUniversalQueueMessage;
 import com.github.ddth.queue.impl.universal.msg.UniversalIdStrQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
 
 /**
  * (Experimental) Universal ActiveMQ implementation of {@link IQueue}.
  *
- * <p> Queue and Take {@link UniversalIdStrQueueMessage}s. </p>
+ * <p>
+ * Queue and Take {@link UniversalIdStrQueueMessage}s.
+ * </p>
  *
- * <p> Implementation: see {@link ActiveMqQueue}. </p>
+ * <p>
+ * Implementation: see {@link ActiveMqQueue}.
+ * </p>
  *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
@@ -25,7 +30,7 @@ public class UniversalActiveMqQueue
     @Override
     protected UniversalIdStrQueueMessage deserialize(byte[] msgData) {
         try {
-            return UniversalIdStrQueueMessage.fromBytes(msgData);
+            return BaseUniversalQueueMessage.fromBytes(msgData, UniversalIdStrQueueMessage.class);
         } catch (Exception e) {
             throw new QueueException.CannotDeserializeQueueMessage(e);
         }
@@ -58,6 +63,6 @@ public class UniversalActiveMqQueue
      */
     @Override
     public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
     }
 }

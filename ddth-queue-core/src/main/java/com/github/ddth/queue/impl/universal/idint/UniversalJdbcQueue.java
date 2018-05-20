@@ -161,7 +161,7 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
      */
     @Override
     public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).qId(id);
+        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
     }
 
     /*----------------------------------------------------------------------*/
@@ -175,8 +175,8 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
         super.init();
 
         Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
-                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_ORG_TIMESTAMP,
-                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
+                COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdIntQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdIntQueueMessage.FIELD_DATA };
 
@@ -250,7 +250,7 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
     protected UniversalIdIntQueueMessage readFromEphemeralStorage(Connection conn,
             IQueueMessage<Long, byte[]> msg) {
         Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_EPHEMERAL,
-                msg.qId());
+                msg.getId());
         if (dbRow != null) {
             UniversalIdIntQueueMessage myMsg = new UniversalIdIntQueueMessage();
             return myMsg.fromMap(dbRow);
@@ -286,14 +286,14 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
                     + UniversalIdIntQueueMessage.class.getName() + "]!");
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        Long qid = msg.qId();
+        Long qid = msg.getId();
         if (qid == null || qid.longValue() == 0) {
-            int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE,
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+            int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE, msg.getTimestamp(),
+                    msg.getQueueTimestamp(), msg.getNumRequeues(), msg.getContent());
             return numRows > 0;
         } else {
-            int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, qid,
-                    msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+            int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, qid, msg.getTimestamp(),
+                    msg.getQueueTimestamp(), msg.getNumRequeues(), msg.getContent());
             return numRows > 0;
         }
     }
@@ -308,8 +308,9 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
                     + UniversalIdIntQueueMessage.class.getName() + "]!");
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, msg.qId(),
-                msg.qOriginalTimestamp(), msg.qTimestamp(), msg.qNumRequeues(), msg.content());
+        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, msg.getId(),
+                msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
+                msg.getContent());
         return numRows > 0;
     }
 
@@ -323,7 +324,7 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
                     + UniversalIdIntQueueMessage.class.getName() + "]!");
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE, msg.qId());
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE, msg.getId());
         return numRows > 0;
     }
 
@@ -338,7 +339,7 @@ public class UniversalJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQue
                     + UniversalIdIntQueueMessage.class.getName() + "]!");
         }
         UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, msg.qId());
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, msg.getId());
         return numRows > 0;
     }
 

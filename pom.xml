@@ -52,7 +52,7 @@
         <skipTests>true</skipTests>
 
         <version.ddth_commons>0.9.1.3</version.ddth_commons>
-        <version.ddth_dao>0.8.4</version.ddth_dao>
+        <version.ddth_dao>0.8.5.1</version.ddth_dao>
         <version.ddth_kafka>1.3.3</version.ddth_kafka>
         <version.jedis>2.9.0</version.jedis>
         <version.disruptor>3.4.2</version.disruptor>

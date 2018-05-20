@@ -341,22 +341,6 @@ public abstract class BaseRedisQueue<ID, DATA> extends AbstractEphemeralSupportQ
         }
     }
 
-    /**
-     * Serialize a queue message to store in Redis.
-     * 
-     * @param msg
-     * @return
-     */
-    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
-
-    /**
-     * Deserilize a queue message.
-     * 
-     * @param msgData
-     * @return
-     */
-    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
-
     /*----------------------------------------------------------------------*/
     /**
      * Get {@link JedisCommands} instance.
@@ -422,7 +406,7 @@ public abstract class BaseRedisQueue<ID, DATA> extends AbstractEphemeralSupportQ
     public boolean queue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
         return storeNew(msg);
     }
 
@@ -433,7 +417,7 @@ public abstract class BaseRedisQueue<ID, DATA> extends AbstractEphemeralSupportQ
     public boolean requeue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qIncNumRequeues().qTimestamp(now);
+        msg.incNumRequeues().setQueueTimestamp(now);
         return isEphemeralDisabled() ? storeNew(msg) : storeOld(msg);
     }
 

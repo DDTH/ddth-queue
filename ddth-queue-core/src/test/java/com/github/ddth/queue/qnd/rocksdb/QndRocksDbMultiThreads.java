@@ -4,7 +4,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 
-import com.github.ddth.queue.impl.rocksdb.RocksDbWrapper;
+import com.github.ddth.commons.rocksdb.RocksDbWrapper;
 import com.github.ddth.queue.utils.QueueUtils;
 
 public class QndRocksDbMultiThreads {

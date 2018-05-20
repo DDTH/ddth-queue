@@ -136,7 +136,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
     public boolean queue(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
         putToQueue(msg);
         return true;
     }
@@ -151,10 +151,10 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
     public boolean requeue(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qIncNumRequeues().qTimestamp(now);
+        msg.incNumRequeues().setQueueTimestamp(now);
         putToQueue(msg);
         if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.qId());
+            ephemeralStorage.remove(msg.getId());
         }
         return true;
     }
@@ -170,7 +170,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
         IQueueMessage<ID, DATA> msg = _msg.clone();
         putToQueue(msg);
         if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.qId());
+            ephemeralStorage.remove(msg.getId());
         }
         return true;
     }
@@ -181,7 +181,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
     @Override
     public void finish(IQueueMessage<ID, DATA> msg) {
         if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.qId());
+            ephemeralStorage.remove(msg.getId());
         }
     }
 
@@ -210,7 +210,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
         }
         IQueueMessage<ID, DATA> msg = takeFromQueue();
         if (msg != null && !isEphemeralDisabled()) {
-            ephemeralStorage.putIfAbsent(msg.qId(), msg);
+            ephemeralStorage.putIfAbsent(msg.getId(), msg);
         }
         return msg;
     }
@@ -226,7 +226,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
         Collection<IQueueMessage<ID, DATA>> orphanMessages = new HashSet<>();
         long now = System.currentTimeMillis();
         ephemeralStorage.forEach((key, msg) -> {
-            if (msg.qTimestamp().getTime() + thresholdTimestampMs < now)
+            if (msg.getQueueTimestamp().getTime() + thresholdTimestampMs < now)
                 orphanMessages.add(msg);
         });
         return orphanMessages;
@@ -238,13 +238,13 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
     @Override
     public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> _msg) {
         if (!isEphemeralDisabled()) {
-            IQueueMessage<ID, DATA> msg = ephemeralStorage.remove(_msg.qId());
+            IQueueMessage<ID, DATA> msg = ephemeralStorage.remove(_msg.getId());
             if (msg != null) {
                 try {
                     putToQueue(msg);
                     return true;
                 } catch (QueueException.QueueIsFull e) {
-                    ephemeralStorage.putIfAbsent(msg.qId(), msg);
+                    ephemeralStorage.putIfAbsent(msg.getId(), msg);
                     return false;
                 }
             }

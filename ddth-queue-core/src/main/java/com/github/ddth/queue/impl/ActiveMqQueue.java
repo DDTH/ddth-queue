@@ -241,22 +241,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         }
     }
 
-    /**
-     * Serializes a queue message to store in Redis.
-     *
-     * @param msg
-     * @return
-     */
-    protected abstract byte[] serialize(IQueueMessage<ID, DATA> msg);
-
-    /**
-     * Deserilizes a queue message.
-     *
-     * @param msgData
-     * @return
-     */
-    protected abstract IQueueMessage<ID, DATA> deserialize(byte[] msgData);
-
     protected void closeQuietly(Connection connection) {
         try {
             if (connection != null) {
@@ -322,7 +306,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     public boolean queue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qNumRequeues(0).qOriginalTimestamp(now).qTimestamp(now);
+        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
         return putToQueue(msg);
     }
 
@@ -333,7 +317,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     public boolean requeue(IQueueMessage<ID, DATA> _msg) {
         IQueueMessage<ID, DATA> msg = _msg.clone();
         Date now = new Date();
-        msg.qIncNumRequeues().qTimestamp(now);
+        msg.incNumRequeues().setQueueTimestamp(now);
         return putToQueue(msg);
     }
 

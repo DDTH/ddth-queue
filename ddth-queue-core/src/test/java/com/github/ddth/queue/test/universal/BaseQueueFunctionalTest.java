@@ -109,7 +109,7 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, new String((byte[]) msg2.qData(), QueueUtils.UTF8));
+        assertEquals(content, new String((byte[]) msg2.getData(), QueueUtils.UTF8));
         queueSize = queue.queueSize();
         assertTrue(queueSize == 0 || queueSize < 0);
         ephemeralSize = queue.ephemeralSize();
@@ -152,7 +152,7 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, new String(msg2.qData(), QueueUtils.UTF8));
+        assertEquals(content, new String(msg2.getData(), QueueUtils.UTF8));
         queueSize = queue.queueSize();
         assertTrue(queueSize == 0 || queueSize < 0);
         ephemeralSize = queue.ephemeralSize();
@@ -198,7 +198,7 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, new String(msg2.qData(), QueueUtils.UTF8));
+        assertEquals(content, new String(msg2.getData(), QueueUtils.UTF8));
         assertEquals(0, queue.queueSize());
         assertEquals(0, queue.ephemeralSize());
 

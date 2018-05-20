@@ -189,7 +189,7 @@ public abstract class BaseQueueMultiThreadsTest<I> extends TestCase {
                             IQueueMessage<I, byte[]> _msg = queue.take();
                             if (_msg != null) {
                                 queue.finish(_msg);
-                                String content = new String(_msg.qData(), QueueUtils.UTF8);
+                                String content = new String(_msg.getData(), QueueUtils.UTF8);
                                 if (!STORAGE_RECEIVED.add(content)) {
                                     throw new IllegalStateException("Something wrong!");
                                 }
@@ -223,7 +223,7 @@ public abstract class BaseQueueMultiThreadsTest<I> extends TestCase {
                             IQueueMessage<I, byte[]> _msg = queue.take();
                             if (_msg != null) {
                                 queue.finish(_msg);
-                                String content = new String(_msg.qData(), QueueUtils.UTF8);
+                                String content = new String(_msg.getData(), QueueUtils.UTF8);
                                 if (!STORAGE_RECEIVED.add(content)) {
                                     throw new IllegalStateException("Something wrong!");
                                 }
