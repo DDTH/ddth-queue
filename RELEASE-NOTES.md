@@ -1,5 +1,18 @@
 # ddth-queue release notes
 
+## 0.7.0 - 2018-05-20
+
+Refactoring & New features:
+
+- New interface `IMessage` as super-class of `IQueueMessage`
+- (Breaking changes!) `IQueueMessage`: new getters & setters.
+- New factory interfaces `IMessageFactory` and `IQueueMessageFactory`
+- Pub/Sub implementations:
+  - In-memory
+  - Redis.
+- Other refactoring, improvements and bug fixes.
+
+
 ## 0.6.2.6 - 2018-05-03
 
 - Bug fixes & Improvements.

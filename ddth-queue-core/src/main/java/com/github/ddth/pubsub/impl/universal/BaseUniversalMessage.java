@@ -53,7 +53,7 @@ public abstract class BaseUniversalMessage<ID> extends GenericMessage<ID, byte[]
         return false;
     }
 
-    public final static String FIELD_QUEUE_ID = "id", FIELD_TIMESTAMP = "time", FIELD_DATA = "data",
+    public final static String FIELD_ID = "id", FIELD_TIMESTAMP = "time", FIELD_DATA = "data",
             FIELD_PARTITION_KEY = "pkey";
 
     /**
@@ -65,7 +65,7 @@ public abstract class BaseUniversalMessage<ID> extends GenericMessage<ID, byte[]
         return new HashMap<String, Object>() {
             private static final long serialVersionUID = 1L;
             {
-                put(FIELD_QUEUE_ID, getId());
+                put(FIELD_ID, getId());
                 put(FIELD_TIMESTAMP, getTimestamp());
                 put(FIELD_DATA, getData());
                 put(FIELD_PARTITION_KEY, getPartitionKey());
@@ -81,7 +81,7 @@ public abstract class BaseUniversalMessage<ID> extends GenericMessage<ID, byte[]
      */
     @SuppressWarnings("unchecked")
     public BaseUniversalMessage<ID> fromMap(Map<String, Object> dataMap) {
-        Object queueId = DPathUtils.getValue(dataMap, FIELD_QUEUE_ID);
+        Object queueId = DPathUtils.getValue(dataMap, FIELD_ID);
         if (queueId != null) {
             setId((ID) queueId);
         }
