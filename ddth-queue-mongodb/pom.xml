@@ -1,0 +1,43 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>com.github.ddth</groupId>
+		<artifactId>ddth-queue</artifactId>
+		<version>0.7.1-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>ddth-queue-mongodb</artifactId>
+	<packaging>pom</packaging>
+
+	<name>ddth-queue-mongodb</name>
+	<description>DDTH's Libary to interact with various queue implementations</description>
+	<url>https://github.com/DDTH/ddth-queue</url>
+
+	<developers>
+		<developer>
+			<id>btnguyen2k</id>
+			<name>Thanh Ba Nguyen</name>
+			<email>btnguyen2k@gmail.com</email>
+		</developer>
+	</developers>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>com.github.ddth</groupId>
+			<artifactId>ddth-queue-core</artifactId>
+			<version>0.7.1-SNAPSHOT</version>
+		</dependency>
+
+		<!-- for MongoDB-based queues -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>${version.mongodb}</version>
+        </dependency>
+	</dependencies>
+</project>

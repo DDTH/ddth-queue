@@ -2,8 +2,6 @@ package com.github.ddth.queue.impl;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.github.ddth.commons.redis.JedisConnector;
-import com.github.ddth.commons.redis.JedisUtils;
 import com.github.ddth.queue.QueueSpec;
 
 /**
@@ -40,25 +38,11 @@ public abstract class RedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, DATA
 
     /**
      * {@inheritDoc}
-     */
-    @Override
-    protected JedisConnector buildJedisConnector() {
-        JedisConnector jedisConnector = new JedisConnector();
-        jedisConnector.setJedisPoolConfig(JedisUtils.defaultJedisPoolConfig())
-                .setRedisPassword(getDefaultPassword())
-                .setRedisHostsAndPorts(getDefaultHostAndPort()).init();
-        return jedisConnector;
-    }
-
-    /**
-     * {@inheritDoc}
      * 
      * @throws Exception
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) throws Exception {
-        super.initQueue(queue, spec);
-
         queue.setEphemeralDisabled(getDefaultEphemeralDisabled())
                 .setEphemeralMaxSize(getDefaultEphemeralMaxSize());
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
@@ -72,7 +56,7 @@ public abstract class RedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, DATA
         }
 
         queue.setRedisHostAndPort(getDefaultHostAndPort()).setRedisPassword(getDefaultPassword())
-                .setJedisConnector(getJedisConnector());
+                .setJedisConnector(getDefaultJedisConnector());
         String redisHostAndPort = spec.getField(SPEC_FIELD_HOST_AND_PORT);
         if (!StringUtils.isBlank(redisHostAndPort)) {
             queue.setRedisHostAndPort(redisHostAndPort);
@@ -99,7 +83,7 @@ public abstract class RedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, DATA
                     + SPEC_FIELD_SORTED_SET_NAME + "] or none at all!");
         }
 
-        queue.init();
+        super.initQueue(queue, spec);
     }
 
 }

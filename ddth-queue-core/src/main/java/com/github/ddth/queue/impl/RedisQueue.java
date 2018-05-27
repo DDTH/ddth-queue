@@ -193,18 +193,19 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        if (isEphemeralDisabled()) {
-            return true;
-        }
-        try (Jedis jedis = getJedisConnector().getJedis()) {
-            Object response = jedis.eval(getScriptMove(), 0, msg.getId().toString());
-            return response != null && "1".equals(response.toString());
-        }
-    }
+    // /**
+    // * {@inheritDoc}
+    // */
+    // @Override
+    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
+    // msg) {
+    // if (isEphemeralDisabled()) {
+    // return true;
+    // }
+    // try (Jedis jedis = getJedisConnector().getJedis()) {
+    // Object response = jedis.eval(getScriptMove(), 0, msg.getId().toString());
+    // return response != null && "1".equals(response.toString());
+    // }
+    // }
 
 }

@@ -178,8 +178,7 @@ public interface IQueueMessage<ID, DATA> extends IMessage<ID, DATA> {
 
         @Override
         public EmptyQueueMessage qId(Object queueId) {
-            setId(queueId);
-            return this;
+            return (EmptyQueueMessage) setId(queueId);
         }
 
         @Override
@@ -189,13 +188,14 @@ public interface IQueueMessage<ID, DATA> extends IMessage<ID, DATA> {
 
         @Override
         public EmptyQueueMessage qOriginalTimestamp(Date timestamp) {
-            setTimestamp(timestamp);
-            return this;
+            return (EmptyQueueMessage) setTimestamp(timestamp);
         }
+
+        private Date now = new Date();
 
         @Override
         public Date getQueueTimestamp() {
-            return null;
+            return now;
         }
 
         @Override
@@ -219,7 +219,7 @@ public interface IQueueMessage<ID, DATA> extends IMessage<ID, DATA> {
         }
 
         @Override
-        public EmptyQueueMessage setNumRequeues(int numRequeues) {
+        public EmptyQueueMessage setNumRequeues(int EmptyQueueMessage) {
             return this;
         }
 
@@ -250,8 +250,7 @@ public interface IQueueMessage<ID, DATA> extends IMessage<ID, DATA> {
 
         @Override
         public EmptyQueueMessage qData(Object data) {
-            setData(data);
-            return this;
+            return (EmptyQueueMessage) setData(data);
         }
     }
 }

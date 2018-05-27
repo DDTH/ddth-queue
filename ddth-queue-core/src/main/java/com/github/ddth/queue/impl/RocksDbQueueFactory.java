@@ -27,42 +27,46 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
         return defaultStorageDir;
     }
 
-    public void setDefaultStorageDir(String defaultStorageDir) {
+    public RocksDbQueueFactory<T, ID, DATA> setDefaultStorageDir(String defaultStorageDir) {
         this.defaultStorageDir = defaultStorageDir;
+        return this;
     }
 
     public String getDefaultCfNameQueue() {
         return defaultCfNameQueue;
     }
 
-    public void setDefaultCfNameQueue(String defaultCfNameQueue) {
+    public RocksDbQueueFactory<T, ID, DATA> setDefaultCfNameQueue(String defaultCfNameQueue) {
         this.defaultCfNameQueue = defaultCfNameQueue;
+        return this;
     }
 
     public String getDefaultCfNameMetaData() {
         return defaultCfNameMetaData;
     }
 
-    public void setDefaultCfNameMetaData(String defaultCfNameMetaData) {
+    public RocksDbQueueFactory<T, ID, DATA> setDefaultCfNameMetaData(String defaultCfNameMetaData) {
         this.defaultCfNameMetaData = defaultCfNameMetaData;
+        return this;
     }
 
     public String getDefaultCfNameEphemeral() {
         return defaultCfNameEphemeral;
     }
 
-    public void setDefaultCfNameEphemeral(String defaultCfNameEphemeral) {
+    public RocksDbQueueFactory<T, ID, DATA> setDefaultCfNameEphemeral(
+            String defaultCfNameEphemeral) {
         this.defaultCfNameEphemeral = defaultCfNameEphemeral;
+        return this;
     }
 
     /**
      * {@inheritDoc}
-     * @throws Exception 
+     * 
+     * @throws Exception
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) throws Exception {
-        super.initQueue(queue, spec);
-
         queue.setEphemeralDisabled(getDefaultEphemeralDisabled())
                 .setEphemeralMaxSize(getDefaultEphemeralMaxSize());
         Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
@@ -96,7 +100,7 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
             queue.setCfNameQueue(cfNameQueue);
         }
 
-        queue.init();
+        super.initQueue(queue, spec);
     }
 
 }

@@ -1,5 +1,15 @@
 # ddth-queue release notes
 
+## 0.7.1 - 2018-05-27
+
+- (Experimental) MongoDB-based implementations if `IPubSubHub`:
+  - `MongodbPubSubHub` and `UniversalMongodbPubSubHub`
+- (Experimental) MongoDB-based implementations if `IQueue`:
+  - `MongodbQueue` and `MongodbQueueFactory`
+  - `BaseUniversalMongodbQueue`, `UniversalMongodbQueue` and `UniversalMongodbQueueFactory`
+- Bug fixes and improvements.
+
+
 ## 0.7.0 - 2018-05-20
 
 Refactoring & New features:

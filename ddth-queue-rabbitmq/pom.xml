@@ -39,6 +39,5 @@
 			<artifactId>amqp-client</artifactId>
 			<version>${version.rabbitmq}</version>
 		</dependency>
-
 	</dependencies>
 </project>

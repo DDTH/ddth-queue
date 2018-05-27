@@ -5,6 +5,7 @@ import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.IQueueMessageFactory;
 import com.github.ddth.queue.IQueueObserver;
+import com.github.ddth.queue.utils.QueueException;
 
 /**
  * Abstract queue implementation.
@@ -185,5 +186,17 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
      */
     protected <T extends IQueueMessage<ID, DATA>> T deserialize(byte[] data, Class<T> clazz) {
         return data != null ? SerializationUtils.fromByteArray(data, clazz) : null;
+    }
+
+    /**
+     * {@inheritDoc}
+     * 
+     * @since 0.7.1
+     */
+    @Deprecated
+    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg)
+            throws QueueException.OperationNotSupported {
+        throw new QueueException.OperationNotSupported(
+                "This method is deprecated, use requeue() or requeueSilent() instead!");
     }
 }

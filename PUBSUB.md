@@ -32,6 +32,7 @@ Provided via `IPubSubHub` interface:
 | Implementation | Inter-process |
 |----------------|:-------------:|
 | In-memory      | No            |
+| MongoDB        | Yes           |
 | Redis          | Yes           |
 
 - *Inter-process*: publishers and subscribers can be from different JVMs.
@@ -43,9 +44,17 @@ Publishers and Subscribers are on the same JVM.
 
 See [InmemPubSubHub.java](ddth-queue-core/src/main/java/com/github/ddth/pubsub/impl/InmemPubSubHub.java).
 
+### MongoDB Pub/Sub
+
+Utilize MongoDB as pub/sub backend.
+
+Publishers and Subscribers can be on different JVMs.
+
+See [MongodbPubSubHub.java](ddth-queue-core/src/main/java/com/github/ddth/pubsub/impl/MongodbPubSubHub.java).
+
 ### Redis Pub/Sub
 
-Utilize Redis' pub/sub to distribute messages.
+Utilize Redis' pub/sub feature to distribute messages.
 
 Publishers and Subscribers can be on different JVMs.
 
@@ -57,7 +66,7 @@ See [RedisPubSubHub.java](ddth-queue-core/src/main/java/com/github/ddth/pubsub/i
 - `com.github.ddth.pubsub.impl.universal.*`:
   - `UniversalIdIntMessage`: "universal" implementation of message where content is `byte[]` and id is `Long`
   - `UniversalIdStrMessage`: "universal" implementation of message where content is `byte[]` and id is `String`
-  - Factory to create `UniversalIdIntMessage` and `UniversalIdStrMessage`
+  - `UniversalIdIntMessageFactory` to create `UniversalIdIntMessage`, and `UniversalIdStrMessageFactory` for `UniversalIdStrMessage`
 - `com.github.ddth.pubsub.impl.universal.idint.*`: universal pub/sub implementations, where message's id is `Long`.
 - `com.github.ddth.pubsub.impl.universal.idstr.*`: universal pub/sub implementations, where message's id is `String`.
 
@@ -83,9 +92,16 @@ Universal in-memory pub/sub implementation: publishers and subscribers need to b
 `com.github.ddth.pubsub.impl.universal.idint.UniversalInmemPubSubHub` to work with `UniversalIdIntMessage`,
 and `com.github.ddth.pubsub.impl.universal.idstr.UniversalInmemPubSubHub` to work with `UniversalIdStrMessage`.
 
+### UniversalMongodbPubSubHub
+
+Universal pub/sub implementation that uses [MongoDB](https://www.mongodb.com) as medium backend to transit messages: publishers and subscribers can be on different JVMs.
+
+`com.github.ddth.pubsub.impl.universal.idint.UniversalMongodbPubSubHub` to work with `UniversalIdIntMessage`,
+and `com.github.ddth.pubsub.impl.universal.idstr.UniversalMongodbPubSubHub` to work with `UniversalIdStrMessage`.
+
 ### UniversalRedisPubSubHub
 
-Universal pub/sub implementation that uses [Redis](http://redis.io) to transit messages: publishers and subscribers can be on different JVMs.
+Universal pub/sub implementation that uses [Redis](http://redis.io)'s pub/sub feature distribute messages: publishers and subscribers can be on different JVMs.
 
 `com.github.ddth.pubsub.impl.universal.idint.UniversalRedisPubSubHub` to work with `UniversalIdIntMessage`,
 and `com.github.ddth.pubsub.impl.universal.idstr.UniversalRedisPubSubHub` to work with `UniversalIdStrMessage`.

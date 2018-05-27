@@ -66,6 +66,8 @@ public interface IMessage<ID, DATA> extends Cloneable {
      */
     IMessage<ID, DATA> setData(DATA data);
 
+    /*----------------------------------------------------------------------*/
+
     /**
      * An empty message.
      * 
@@ -89,17 +91,19 @@ public interface IMessage<ID, DATA> extends Cloneable {
 
         @Override
         public Object getId() {
-            return null;
+            return "";
         }
 
         @Override
-        public EmptyMessage setId(Object queueId) {
+        public EmptyMessage setId(Object id) {
             return this;
         }
 
+        private Date now = new Date();
+
         @Override
         public Date getTimestamp() {
-            return null;
+            return now;
         }
 
         @Override

@@ -174,6 +174,23 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
+     * Setter for {@link #kafkaClient}.
+     * 
+     * @param kafkaClient
+     * @param setMyOwnKafkaClient
+     * @return
+     */
+    protected KafkaQueue<ID, DATA> setKafkaClient(KafkaClient kafkaClient,
+            boolean setMyOwnKafkaClient) {
+        if (this.kafkaClient != null && myOwnKafkaClient) {
+            this.kafkaClient.destroy();
+        }
+        this.kafkaClient = kafkaClient;
+        myOwnKafkaClient = setMyOwnKafkaClient;
+        return this;
+    }
+
+    /**
      * An external {@link KafkaClient} can be used. If not set,
      * {@link KafkaQueue} will automatically create a {@link KafkaClient} for
      * its own use.
@@ -182,9 +199,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      * @return
      */
     public KafkaQueue<ID, DATA> setKafkaClient(KafkaClient kafkaClient) {
-        this.kafkaClient = kafkaClient;
-        myOwnKafkaClient = false;
-        return this;
+        return setKafkaClient(kafkaClient, false);
     }
 
     /*----------------------------------------------------------------------*/
@@ -206,8 +221,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     public KafkaQueue<ID, DATA> init() throws Exception {
         if (kafkaClient == null) {
-            kafkaClient = buildKafkaClient();
-            myOwnKafkaClient = kafkaClient != null;
+            setKafkaClient(buildKafkaClient(), true);
         }
 
         super.init();
@@ -331,21 +345,22 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 "This queue does not support retrieving orphan messages");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        throw new QueueException.OperationNotSupported(
-                "This queue does not support ephemeral storage.");
-    }
+    // /**
+    // * {@inheritDoc}
+    // */
+    // @Override
+    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
+    // msg) {
+    // throw new QueueException.OperationNotSupported(
+    // "This queue does not support ephemeral storage.");
+    // }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public int queueSize() {
-        return -1;
+        return SIZE_NOT_SUPPORTED;
     }
 
     /**
@@ -353,7 +368,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     @Override
     public int ephemeralSize() {
-        return -1;
+        return SIZE_NOT_SUPPORTED;
     }
 
 }

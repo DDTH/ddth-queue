@@ -17,17 +17,7 @@ public class UniversalRocksDbQueueFactory
      */
     @Override
     protected UniversalRocksDbQueue createQueueInstance(final QueueSpec spec) {
-        UniversalRocksDbQueue queue = new UniversalRocksDbQueue() {
-            // private boolean destroyed = false;
-            //
-            // public void destroy() {
-            // if (!destroyed) {
-            // destroyed = true;
-            // disposeQueue(spec, this);
-            // super.destroy();
-            // }
-            // }
-        };
+        UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
         return queue;
     }
 

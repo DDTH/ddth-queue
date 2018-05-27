@@ -20,6 +20,7 @@ import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
 import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
 import com.github.ddth.queue.impl.universal.idint.UniversalJdbcQueue;
 import com.github.ddth.queue.utils.QueueException;
 import com.github.ddth.queue.utils.QueueUtils;
@@ -118,6 +119,10 @@ public class AbstractLessLockingUniversalJdbcQueue
     @Override
     public AbstractLessLockingUniversalJdbcQueue init() throws Exception {
         super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
+        }
 
         SQL_COUNT = MessageFormat.format(SQL_COUNT, getTableName());
         SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, getTableNameEphemeral());
@@ -384,28 +389,28 @@ public class AbstractLessLockingUniversalJdbcQueue
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<String, byte[]> msg,
-            Connection conn, int numRetries, int maxRetries) {
-        try {
-            int numRows = getJdbcHelper().execute(conn, SQL_CLEAR_EPHEMERAL_ID, msg.getId());
-            return numRows > 0;
-        } catch (DaoException de) {
-            if (de.getCause() instanceof ConcurrencyFailureException) {
-                if (numRetries > maxRetries) {
-                    throw new QueueException(de);
-                } else {
-                    return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
-                            maxRetries);
-                }
-            }
-            throw de;
-        } catch (Exception e) {
-            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
-        }
-    }
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<String, byte[]> msg,
+//            Connection conn, int numRetries, int maxRetries) {
+//        try {
+//            int numRows = getJdbcHelper().execute(conn, SQL_CLEAR_EPHEMERAL_ID, msg.getId());
+//            return numRows > 0;
+//        } catch (DaoException de) {
+//            if (de.getCause() instanceof ConcurrencyFailureException) {
+//                if (numRetries > maxRetries) {
+//                    throw new QueueException(de);
+//                } else {
+//                    return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
+//                            maxRetries);
+//                }
+//            }
+//            throw de;
+//        } catch (Exception e) {
+//            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
+//        }
+//    }
 
 }

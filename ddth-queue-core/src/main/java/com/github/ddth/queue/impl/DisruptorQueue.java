@@ -278,25 +278,25 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         return orphanMessages;
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> _msg) {
-        if (!isEphemeralDisabled()) {
-            IQueueMessage<ID, DATA> msg = ephemeralStorage.remove(_msg.getId());
-            if (msg != null) {
-                try {
-                    putToRingBuffer(msg);
-                    return true;
-                } catch (QueueException.QueueIsFull e) {
-                    ephemeralStorage.putIfAbsent(msg.getId(), msg);
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> _msg) {
+//        if (!isEphemeralDisabled()) {
+//            IQueueMessage<ID, DATA> msg = ephemeralStorage.remove(_msg.getId());
+//            if (msg != null) {
+//                try {
+//                    putToRingBuffer(msg);
+//                    return true;
+//                } catch (QueueException.QueueIsFull e) {
+//                    ephemeralStorage.putIfAbsent(msg.getId(), msg);
+//                    return false;
+//                }
+//            }
+//        }
+//        return true;
+//    }
 
     /**
      * {@inheritDoc}

@@ -27,6 +27,14 @@ import com.github.ddth.queue.utils.QueueException;
 public interface IQueue<ID, DATA> {
 
     /**
+     * Return this value to indicate that get-size functionality is not
+     * supported.
+     * 
+     * @since 0.7.1
+     */
+    static int SIZE_NOT_SUPPORTED = -1;
+
+    /**
      * Create a new, empty queue message.
      * 
      * @return
@@ -228,7 +236,10 @@ public interface IQueue<ID, DATA> {
      *         (e.g. the message didn't exist in ephemeral storage)
      * @since 0.2.1
      * @throws QueueException.OperationNotSupported
+     * @deprecated since v0.7.1 use {@link #requeue(IQueueMessage)} or
+     *             {@link #requeueSilent(IQueueMessage)}
      */
+    @Deprecated
     boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg)
             throws QueueException.OperationNotSupported;
 

@@ -94,18 +94,32 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
+     * Setter for {@link #jdbcHelper}.
+     * 
+     * @param jdbcHelper
+     * @param setMyOwnJdbcHelper
+     * @return
+     * @since 0.7.1
+     */
+    protected JdbcQueue<ID, DATA> setJdbcHelper(IJdbcHelper jdbcHelper,
+            boolean setMyOwnJdbcHelper) {
+        if (this.jdbcHelper != null && myOwnJdbcHelper
+                && this.jdbcHelper instanceof AbstractJdbcHelper) {
+            ((AbstractJdbcHelper) this.jdbcHelper).destroy();
+        }
+        this.jdbcHelper = jdbcHelper;
+        myOwnJdbcHelper = setMyOwnJdbcHelper;
+        return this;
+    }
+
+    /**
      * 
      * @param jdbcHelper
      * @return
      * @since 0.5.1.1
      */
     public JdbcQueue<ID, DATA> setJdbcHelper(IJdbcHelper jdbcHelper) {
-        if (this.jdbcHelper != null && myOwnJdbcHelper) {
-            ((AbstractJdbcHelper) this.jdbcHelper).destroy();
-        }
-        this.jdbcHelper = jdbcHelper;
-        myOwnJdbcHelper = false;
-        return this;
+        return setJdbcHelper(jdbcHelper, false);
     }
 
     /**
@@ -165,8 +179,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
         SQL_COUNT_EPHEMERAL = MessageFormat.format(SQL_COUNT_EPHEMERAL, getTableNameEphemeral());
 
         if (jdbcHelper == null) {
-            jdbcHelper = buildJdbcHelper();
-            myOwnJdbcHelper = jdbcHelper != null;
+            setJdbcHelper(buildJdbcHelper(), true);
         }
 
         super.init();
@@ -186,7 +199,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
         try {
             super.destroy();
         } finally {
-            if (myOwnJdbcHelper && jdbcHelper != null) {
+            if (myOwnJdbcHelper && jdbcHelper != null && jdbcHelper instanceof AbstractJdbcHelper) {
                 ((AbstractJdbcHelper) jdbcHelper).destroy();
             }
         }
@@ -724,74 +737,82 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
         }
     }
 
-    /**
-     * Move a message from ephemeral back to queue storage, retry if deadlock.
-     * 
-     * <p>
-     * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
-     * </p>
-     * <p>
-     * InnoDB uses automatic row-level locking. You can get deadlocks even in
-     * the case of transactions that just insert or delete a single row. That is
-     * because these operations are not really "atomic"; they automatically set
-     * locks on the (possibly several) index records of the row inserted or
-     * deleted.
-     * </p>
-     * 
-     * @param msg
-     * @param conn
-     * @param numRetries
-     * @param maxRetries
-     * @return
-     */
-    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<ID, DATA> msg,
-            Connection conn, int numRetries, int maxRetries) {
-        try {
-            jdbcHelper.startTransaction(conn);
-            conn.setTransactionIsolation(transactionIsolationLevel);
-            IQueueMessage<ID, DATA> orphanMsg = readFromEphemeralStorage(conn, msg);
-            if (orphanMsg != null) {
-                removeFromEphemeralStorage(conn, msg);
-                boolean result = putToQueueStorage(conn, msg);
-                jdbcHelper.commitTransaction(conn);
-                return result;
-            }
-            jdbcHelper.rollbackTransaction(conn);
-            return false;
-        } catch (DaoException de) {
-            if (de.getCause() instanceof ConcurrencyFailureException) {
-                jdbcHelper.rollbackTransaction(conn);
-                if (numRetries > maxRetries) {
-                    throw new QueueException(de);
-                } else {
-                    return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
-                            maxRetries);
-                }
-            }
-            throw de;
-        } catch (Exception e) {
-            jdbcHelper.rollbackTransaction(conn);
-            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
-        }
-    }
+    // /**
+    // * Move a message from ephemeral back to queue storage, retry if deadlock.
+    // *
+    // * <p>
+    // * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
+    // * </p>
+    // * <p>
+    // * InnoDB uses automatic row-level locking. You can get deadlocks even in
+    // * the case of transactions that just insert or delete a single row. That
+    // is
+    // * because these operations are not really "atomic"; they automatically
+    // set
+    // * locks on the (possibly several) index records of the row inserted or
+    // * deleted.
+    // * </p>
+    // *
+    // * @param msg
+    // * @param conn
+    // * @param numRetries
+    // * @param maxRetries
+    // * @return
+    // */
+    // protected boolean
+    // _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<ID, DATA> msg,
+    // Connection conn, int numRetries, int maxRetries) {
+    // try {
+    // jdbcHelper.startTransaction(conn);
+    // conn.setTransactionIsolation(transactionIsolationLevel);
+    // IQueueMessage<ID, DATA> orphanMsg = readFromEphemeralStorage(conn, msg);
+    // if (orphanMsg != null) {
+    // removeFromEphemeralStorage(conn, msg);
+    // boolean result = putToQueueStorage(conn, msg);
+    // jdbcHelper.commitTransaction(conn);
+    // return result;
+    // }
+    // jdbcHelper.rollbackTransaction(conn);
+    // return false;
+    // } catch (DaoException de) {
+    // if (de.getCause() instanceof ConcurrencyFailureException) {
+    // jdbcHelper.rollbackTransaction(conn);
+    // if (numRetries > maxRetries) {
+    // throw new QueueException(de);
+    // } else {
+    // return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries
+    // + 1,
+    // maxRetries);
+    // }
+    // }
+    // throw de;
+    // } catch (Exception e) {
+    // jdbcHelper.rollbackTransaction(conn);
+    // throw e instanceof QueueException ? (QueueException) e : new
+    // QueueException(e);
+    // }
+    // }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        if (isEphemeralDisabled()) {
-            return true;
-        }
-        try (Connection conn = jdbcHelper.getConnection()) {
-            return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0, this.maxRetries);
-        } catch (Exception e) {
-            final String logMsg = "(moveFromEphemeralToQueueStorage) Exception ["
-                    + e.getClass().getName() + "]: " + e.getMessage();
-            LOGGER.error(logMsg, e);
-            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
-        }
-    }
+    // /**
+    // * {@inheritDoc}
+    // */
+    // @Override
+    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
+    // msg) {
+    // if (isEphemeralDisabled()) {
+    // return true;
+    // }
+    // try (Connection conn = jdbcHelper.getConnection()) {
+    // return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0,
+    // this.maxRetries);
+    // } catch (Exception e) {
+    // final String logMsg = "(moveFromEphemeralToQueueStorage) Exception ["
+    // + e.getClass().getName() + "]: " + e.getMessage();
+    // LOGGER.error(logMsg, e);
+    // throw e instanceof QueueException ? (QueueException) e : new
+    // QueueException(e);
+    // }
+    // }
 
     /**
      * Get number of items currently in queue storage.

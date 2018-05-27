@@ -22,7 +22,7 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
     public final static String SPEC_FIELD_HOST_AND_PORT = "host_and_port";
     public final static String SPEC_FIELD_PASSWORD = "password";
 
-    private JedisConnector jedisConnector;
+    private JedisConnector defaultJedisConnector;
     /**
      * Flag to mark if the Redis resource (e.g. Redis client pool) is created
      * and handled by the factory.
@@ -35,25 +35,52 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
             defaultSortedSetName = RedisQueue.DEFAULT_SORTED_SET_NAME;
 
     /**
+     * Getter for {@link #defaultJedisConnector}.
+     * 
+     * <p>
+     * If all {@link BaseRedisQueue} instances are connecting to one Redis
+     * server or cluster, it's a good idea to pre-create a
+     * {@link JedisConnector} instance and share it amongst
+     * {@link BaseRedisQueue} instances created from this factory by assigning
+     * it to {@link #defaultJedisConnector} (see
+     * {@link #setDefaultJedisConnector(JedisConnector)}).
+     * </p>
+     * 
      * @return
      * @since 0.6.2.5
      */
-    protected JedisConnector getJedisConnector() {
-        return jedisConnector;
+    protected JedisConnector getDefaultJedisConnector() {
+        return defaultJedisConnector;
     }
 
     /**
+     * Setter for {@link #defaultJedisConnector}.
+     * 
+     * @param jedisConnector
+     * @param setMyOwnRedis
+     * @return
+     * @since 0.7.1
+     */
+    protected BaseRedisQueueFactory<T, ID, DATA> setDefaultJedisConnector(
+            JedisConnector jedisConnector, boolean setMyOwnRedis) {
+        if (myOwnRedis && this.defaultJedisConnector != null) {
+            this.defaultJedisConnector.destroy();
+        }
+        this.defaultJedisConnector = jedisConnector;
+        myOwnRedis = setMyOwnRedis;
+        return this;
+    }
+
+    /**
+     * Setter for {@link #defaultJedisConnector}.
+     * 
      * @param jedisConnector
      * @return
      * @since 0.6.2.5
      */
-    public BaseRedisQueueFactory<T, ID, DATA> setJedisConnector(JedisConnector jedisConnector) {
-        if (myOwnRedis && this.jedisConnector != null) {
-            this.jedisConnector.close();
-        }
-        this.jedisConnector = jedisConnector;
-        myOwnRedis = false;
-        return this;
+    public BaseRedisQueueFactory<T, ID, DATA> setDefaultJedisConnector(
+            JedisConnector jedisConnector) {
+        return setDefaultJedisConnector(jedisConnector, false);
     }
 
     /**
@@ -141,32 +168,6 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
     }
 
     /**
-     * Build a {@link JedisConnector} instance for my own use.
-     * 
-     * @return
-     * @since 0.6.2.6
-     */
-    protected abstract JedisConnector buildJedisConnector();
-
-    /**
-     * Init method.
-     * 
-     * @return
-     * @throws Exception
-     * @since 0.6.2.6
-     */
-    public BaseRedisQueueFactory<T, ID, DATA> init() {
-        if (jedisConnector == null) {
-            jedisConnector = buildJedisConnector();
-            myOwnRedis = jedisConnector != null;
-        }
-
-        super.init();
-
-        return this;
-    }
-
-    /**
      * Destroy method.
      * 
      * @since 0.6.2.6
@@ -175,13 +176,13 @@ public abstract class BaseRedisQueueFactory<T extends RedisQueue<ID, DATA>, ID, 
         try {
             super.destroy();
         } finally {
-            if (jedisConnector != null && myOwnRedis) {
+            if (defaultJedisConnector != null && myOwnRedis) {
                 try {
-                    jedisConnector.destroy();
+                    defaultJedisConnector.destroy();
                 } catch (Exception e) {
                     LOGGER.warn(e.getMessage(), e);
                 } finally {
-                    jedisConnector = null;
+                    defaultJedisConnector = null;
                 }
             }
         }

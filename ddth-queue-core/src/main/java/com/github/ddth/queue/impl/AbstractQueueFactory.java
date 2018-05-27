@@ -62,8 +62,10 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      * @param defaultEphemeralDisabled
      * @since 0.6.2
      */
-    public void setDefaultEphemeralDisabled(boolean defaultEphemeralDisabled) {
+    public AbstractQueueFactory<T, ID, DATA> setDefaultEphemeralDisabled(
+            boolean defaultEphemeralDisabled) {
         this.defaultEphemeralDisabled = defaultEphemeralDisabled;
+        return this;
     }
 
     /**
@@ -80,8 +82,9 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      * @param defaultMaxSize
      * @since 0.6.2
      */
-    public void setDefaultMaxSize(int defaultMaxSize) {
+    public AbstractQueueFactory<T, ID, DATA> setDefaultMaxSize(int defaultMaxSize) {
         this.defaultMaxSize = defaultMaxSize;
+        return this;
     }
 
     /**
@@ -98,8 +101,10 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      * @param defaultEphemeralMaxSize
      * @since 0.6.2
      */
-    public void setDefaultEphemeralMaxSize(int defaultEphemeralMaxSize) {
+    public AbstractQueueFactory<T, ID, DATA> setDefaultEphemeralMaxSize(
+            int defaultEphemeralMaxSize) {
         this.defaultEphemeralMaxSize = defaultEphemeralMaxSize;
+        return this;
     }
 
     /**
@@ -163,6 +168,7 @@ public abstract class AbstractQueueFactory<T extends AbstractQueue<ID, DATA>, ID
      */
     protected void initQueue(T queue, QueueSpec spec) throws Exception {
         queue.setObserver(defaultObserver);
+        queue.init();
     }
 
     /**

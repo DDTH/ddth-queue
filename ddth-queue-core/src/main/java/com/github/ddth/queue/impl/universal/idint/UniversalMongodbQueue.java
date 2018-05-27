@@ -1,0 +1,48 @@
+package com.github.ddth.queue.impl.universal.idint;
+
+import com.github.ddth.queue.IQueue;
+import com.github.ddth.queue.impl.MongodbQueue;
+import com.github.ddth.queue.impl.universal.BaseUniversalMongodbQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
+
+/**
+ * (Experimental) Universal MongoDB implementation of {@link IQueue}.
+ *
+ * <p>
+ * Queue and Take {@link UniversalIdIntQueueMessage}s.
+ * </p>
+ *
+ * <p>
+ * Implementation: see {@link MongodbQueue}.
+ * </p>
+ *
+ * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
+ * @since 0.7.1
+ */
+public class UniversalMongodbQueue
+        extends BaseUniversalMongodbQueue<UniversalIdIntQueueMessage, Long> {
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public UniversalMongodbQueue init() throws Exception {
+        super.init();
+
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
+        }
+
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    protected UniversalIdIntQueueMessage deserialize(byte[] msgData) {
+        return deserialize(msgData, UniversalIdIntQueueMessage.class);
+    }
+
+}

@@ -46,6 +46,10 @@ public abstract class BasePubSubMultiThreadsTest<I> extends TestCase {
         return 0;
     }
 
+    protected long randomSleepMs() {
+        return 0;
+    }
+
     private class MySubscriber implements ISubscriber<I, byte[]> {
         private List<IMessage<I, byte[]>> receivedMessages;
         private AtomicLong counter;
@@ -123,6 +127,13 @@ public abstract class BasePubSubMultiThreadsTest<I> extends TestCase {
                                 if (!status) {
                                     Thread.sleep(1);
                                 }
+                                if (randomSleepMs() != 0) {
+                                    if (randomSleepMs() > 0) {
+                                        Thread.sleep(random.nextInt((int) randomSleepMs() + 1));
+                                    } else {
+                                        Thread.sleep(random.nextInt(numThreads + 1));
+                                    }
+                                }
                             }
                             if (!sentMessages.add(msg)) {
                                 throw new IllegalStateException("Something wrong!");
@@ -159,6 +170,8 @@ public abstract class BasePubSubMultiThreadsTest<I> extends TestCase {
             hub.subscribe("demo",
                     new MySubscriber(counterReceived, counterMap, receivedMessages[i]));
         }
+        Thread.sleep(catchupSleepMs());
+
         List<IMessage<I, byte[]>> sentMessages = Collections.synchronizedList(new ArrayList<>());
 
         long t1 = System.currentTimeMillis();

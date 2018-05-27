@@ -396,17 +396,17 @@ public abstract class RocksDbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        try {
-            return putToQueue(msg, true);
-        } catch (RocksDBException e) {
-            throw new QueueException(e);
-        }
-    }
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
+//        try {
+//            return putToQueue(msg, true);
+//        } catch (RocksDBException e) {
+//            throw new QueueException(e);
+//        }
+//    }
 
     /**
      * {@inheritDoc}

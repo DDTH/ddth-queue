@@ -16,17 +16,7 @@ public class UniversalJdbcQueueFactory extends JdbcQueueFactory<UniversalJdbcQue
      */
     @Override
     protected UniversalJdbcQueue createQueueInstance(final QueueSpec spec) {
-        UniversalJdbcQueue queue = new UniversalJdbcQueue() {
-            // private boolean destroyed = false;
-            //
-            // public void destroy() {
-            // if (!destroyed) {
-            // destroyed = true;
-            // disposeQueue(spec, this);
-            // super.destroy();
-            // }
-            // }
-        };
+        UniversalJdbcQueue queue = new UniversalJdbcQueue();
         return queue;
     }
 

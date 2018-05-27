@@ -1,5 +1,7 @@
 package com.github.ddth.queue;
 
+import com.github.ddth.queue.IMessage.EmptyMessage;
+
 /**
  * Factory to create {@link IMessage}s.
  * 
@@ -30,4 +32,26 @@ public interface IMessageFactory<ID, DATA> {
      * @return
      */
     IMessage<ID, DATA> createMessage(ID id, DATA data);
+
+    /*----------------------------------------------------------------------*/
+
+    @SuppressWarnings("rawtypes")
+    static class EmptyMessageFactory implements IMessageFactory {
+        public final static EmptyMessageFactory INSTANCE = new EmptyMessageFactory();
+
+        @Override
+        public IMessage createMessage() {
+            return EmptyMessage.INSTANCE;
+        }
+
+        @Override
+        public IMessage createMessage(Object data) {
+            return EmptyMessage.INSTANCE;
+        }
+
+        @Override
+        public IMessage createMessage(Object id, Object data) {
+            return EmptyMessage.INSTANCE;
+        }
+    }
 }

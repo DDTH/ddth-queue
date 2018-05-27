@@ -118,33 +118,34 @@ public class LessLockingUniversalSingleStoragePgSQLQueue
         return this;
     }
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage() {
-        return UniversalIdStrQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(byte[] data) {
-        return UniversalIdStrQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
-        return (UniversalIdStrQueueMessage) UniversalIdStrQueueMessage.newInstance(data).setId(id);
-    }
+    // /**
+    // * {@inheritDoc}
+    // *
+    // * @since 0.6.0
+    // */
+    // @Override
+    // public UniversalIdStrQueueMessage createMessage() {
+    // return UniversalIdStrQueueMessage.newInstance();
+    // }
+    //
+    // /**
+    // * {@inheritDoc}
+    // *
+    // * @since 0.6.0
+    // */
+    // @Override
+    // public UniversalIdStrQueueMessage createMessage(byte[] data) {
+    // return UniversalIdStrQueueMessage.newInstance(data);
+    // }
+    //
+    // /**
+    // * {@inheritDoc}
+    // *
+    // * @since 0.6.0
+    // */
+    // @Override
+    // public UniversalIdStrQueueMessage createMessage(String id, byte[] data) {
+    // return (UniversalIdStrQueueMessage)
+    // UniversalIdStrQueueMessage.newInstance(data).setId(id);
+    // }
 }

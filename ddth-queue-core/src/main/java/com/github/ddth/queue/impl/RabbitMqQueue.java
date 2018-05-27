@@ -19,7 +19,7 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
 
 /**
- * (Experimental) RabbitMQ implementation of {@link IQueue}.
+ * RabbitMQ implementation of {@link IQueue}.
  *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
@@ -75,10 +75,26 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return connectionFactory;
     }
 
-    public RabbitMqQueue<ID, DATA> setConnectionFactory(ConnectionFactory connectionFactory) {
+    /**
+     * Setter for {@link #connectionFactory}.
+     * 
+     * @param connectionFactory
+     * @param setMyOwnConnectionFactory
+     * @return
+     * @since 0.7.1
+     */
+    protected RabbitMqQueue<ID, DATA> setConnectionFactory(ConnectionFactory connectionFactory,
+            boolean setMyOwnConnectionFactory) {
+        if (myOwnConnectionFactory && this.connectionFactory != null) {
+            // destroy this.connectionFactory
+        }
         this.connectionFactory = connectionFactory;
-        myOwnConnectionFactory = false;
+        myOwnConnectionFactory = setMyOwnConnectionFactory;
         return this;
+    }
+
+    public RabbitMqQueue<ID, DATA> setConnectionFactory(ConnectionFactory connectionFactory) {
+        return setConnectionFactory(connectionFactory, false);
     }
 
     protected Connection getConnection() throws IOException, TimeoutException {
@@ -164,8 +180,7 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     public RabbitMqQueue<ID, DATA> init() throws Exception {
         if (connectionFactory == null) {
-            connectionFactory = buildConnectionFactory();
-            myOwnConnectionFactory = connectionFactory != null;
+            setConnectionFactory(buildConnectionFactory(), true);
         }
 
         super.init();
@@ -268,21 +283,6 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         // EMPTY
     }
 
-    // protected static class RabbitMQMessage {
-    // public final String consumerTag;
-    // public final Envelope envelope;
-    // public final AMQP.BasicProperties properties;
-    // public final byte[] body;
-    //
-    // public RabbitMQMessage(String consumerTag, Envelope envelope,
-    // AMQP.BasicProperties properties, byte[] body) {
-    // this.consumerTag = consumerTag;
-    // this.envelope = envelope;
-    // this.properties = properties;
-    // this.body = body;
-    // }
-    // }
-
     /**
      * {@inheritDoc}
      *
@@ -297,14 +297,6 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         } catch (Exception e) {
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
-
-        // try (Channel channel = createChannel()) {
-        // GetResponse msg = channel.basicGet(queueName, true);
-        // return msg != null ? deserialize(msg.getBody()) : null;
-        // } catch (Exception e) {
-        // throw e instanceof QueueException ? (QueueException) e : new
-        // QueueException(e);
-        // }
     }
 
     /**
@@ -316,14 +308,15 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 "This queue does not support retrieving orphan messages.");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        throw new QueueException.OperationNotSupported(
-                "This queue does not support ephemeral storage.");
-    }
+    // /**
+    // * {@inheritDoc}
+    // */
+    // @Override
+    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
+    // msg) {
+    // throw new QueueException.OperationNotSupported(
+    // "This queue does not support ephemeral storage.");
+    // }
 
     /**
      * {@inheritDoc}
@@ -342,6 +335,6 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     @Override
     public int ephemeralSize() {
-        return -1;
+        return SIZE_NOT_SUPPORTED;
     }
 }

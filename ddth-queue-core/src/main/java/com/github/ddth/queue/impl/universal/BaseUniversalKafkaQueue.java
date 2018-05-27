@@ -13,29 +13,6 @@ import com.github.ddth.queue.impl.KafkaQueue;
 public abstract class BaseUniversalKafkaQueue<T extends BaseUniversalQueueMessage<ID>, ID>
         extends KafkaQueue<ID, byte[]> {
 
-    // /**
-    // * {@inheritDoc}
-    // */
-    // @Override
-    // protected byte[] serialize(IQueueMessage<ID, byte[]> _msg) throws
-    // QueueException {
-    // if (_msg == null) {
-    // return null;
-    // }
-    // if (!(_msg instanceof BaseUniversalQueueMessage)) {
-    // throw new IllegalArgumentException("This method requires an argument of
-    // type ["
-    // + BaseUniversalQueueMessage.class.getName() + "]!");
-    // }
-    //
-    // BaseUniversalQueueMessage<ID> msg = (BaseUniversalQueueMessage<ID>) _msg;
-    // try {
-    // return msg.toBytes();
-    // } catch (Exception e) {
-    // throw new QueueException.CannotSerializeQueueMessage(e);
-    // }
-    // }
-
     /**
      * {@inheritDoc}
      */

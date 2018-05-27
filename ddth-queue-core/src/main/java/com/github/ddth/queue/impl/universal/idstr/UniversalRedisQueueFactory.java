@@ -17,17 +17,7 @@ public class UniversalRedisQueueFactory
      */
     @Override
     protected UniversalRedisQueue createQueueInstance(final QueueSpec spec) {
-        UniversalRedisQueue queue = new UniversalRedisQueue() {
-            // private boolean destroyed = false;
-            //
-            // public void destroy() {
-            // if (!destroyed) {
-            // destroyed = true;
-            // disposeQueue(spec, this);
-            // super.destroy();
-            // }
-            // }
-        };
+        UniversalRedisQueue queue = new UniversalRedisQueue();
         return queue;
     }
 

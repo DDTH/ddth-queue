@@ -33,7 +33,7 @@ public class TestRedisPubSubMT extends BasePubSubMultiThreadsTest<String> {
      */
     @Override
     protected long catchupSleepMs() {
-        return 0000;
+        return 100;
     }
 
     /**

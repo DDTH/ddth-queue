@@ -48,18 +48,7 @@ public class LessLockingUniversalSingleStorageMySQLQueueFactory
     @Override
     protected LessLockingUniversalSingleStorageMySQLQueue createQueueInstance(
             final QueueSpec spec) {
-        LessLockingUniversalSingleStorageMySQLQueue queue = new LessLockingUniversalSingleStorageMySQLQueue() {
-            // private boolean destroyed = false;
-            //
-            // public void destroy() {
-            // if (!destroyed) {
-            // destroyed = true;
-            // disposeQueue(spec, this);
-            // super.destroy();
-            // }
-            // }
-        };
-
+        LessLockingUniversalSingleStorageMySQLQueue queue = new LessLockingUniversalSingleStorageMySQLQueue();
         queue.setFifo(defaultFifo);
         Boolean fifo = spec.getField(SPEC_FIELD_FIFO, Boolean.class);
         if (fifo != null) {

@@ -17,17 +17,7 @@ public class UniversalInmemQueueFactory
      */
     @Override
     protected UniversalInmemQueue createQueueInstance(final QueueSpec spec) {
-        UniversalInmemQueue queue = new UniversalInmemQueue() {
-            // private boolean destroyed = false;
-            //
-            // public void destroy() {
-            // if (!destroyed) {
-            // destroyed = true;
-            // disposeQueue(spec, this);
-            // super.destroy();
-            // }
-            // }
-        };
+        UniversalInmemQueue queue = new UniversalInmemQueue();
         return queue;
     }
 

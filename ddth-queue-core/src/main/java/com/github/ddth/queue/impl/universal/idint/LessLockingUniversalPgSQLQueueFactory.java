@@ -46,18 +46,7 @@ public class LessLockingUniversalPgSQLQueueFactory
      */
     @Override
     protected LessLockingUniversalPgSQLQueue createQueueInstance(final QueueSpec spec) {
-        LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue() {
-            // private boolean destroyed = false;
-            //
-            // public void destroy() {
-            // if (!destroyed) {
-            // destroyed = true;
-            // disposeQueue(spec, this);
-            // super.destroy();
-            // }
-            // }
-        };
-
+        LessLockingUniversalPgSQLQueue queue = new LessLockingUniversalPgSQLQueue();
         queue.setFifo(defaultFifo);
         Boolean fifo = spec.getField(SPEC_FIELD_FIFO, Boolean.class);
         if (fifo != null) {

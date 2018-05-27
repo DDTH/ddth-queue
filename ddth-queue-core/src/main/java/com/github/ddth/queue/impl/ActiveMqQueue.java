@@ -94,11 +94,27 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return connectionFactory;
     }
 
+    /**
+     * Setter for {@link #connectionFactory}.
+     * 
+     * @param connectionFactory
+     * @param setMyOwnConnectionFactory
+     * @return
+     * @since 0.7.1
+     */
+    protected ActiveMqQueue<ID, DATA> setConnectionFactory(
+            ActiveMQConnectionFactory connectionFactory, boolean setMyOwnConnectionFactory) {
+        if (myOwnConnectionFactory && this.connectionFactory != null) {
+            // destroy this.connectionFactory
+        }
+        this.connectionFactory = connectionFactory;
+        myOwnConnectionFactory = setMyOwnConnectionFactory;
+        return this;
+    }
+
     public ActiveMqQueue<ID, DATA> setConnectionFactory(
             ActiveMQConnectionFactory connectionFactory) {
-        this.connectionFactory = connectionFactory;
-        myOwnConnectionFactory = false;
-        return this;
+        return setConnectionFactory(connectionFactory, false);
     }
 
     protected Connection getConnection() throws JMSException {
@@ -165,7 +181,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         if (consumerSession == null) {
             synchronized (this) {
                 if (consumerSession == null) {
-
                     consumerSession = createSession(Session.AUTO_ACKNOWLEDGE);
                 }
             }
@@ -210,8 +225,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     public ActiveMqQueue<ID, DATA> init() throws Exception {
         if (connectionFactory == null) {
-            connectionFactory = buildConnectionFactory();
-            myOwnConnectionFactory = connectionFactory != null;
+            setConnectionFactory(buildConnectionFactory(), true);
         }
 
         super.init();
@@ -282,8 +296,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Puts a message to Kafka queue, partitioning message by
-     * {@link IQueueMessage#qId()}
+     * Puts a message to ActiveMQ queue.
      *
      * @param msg
      * @return
@@ -374,21 +387,21 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 "This queue does not support retrieving orphan messages.");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-        throw new QueueException.OperationNotSupported(
-                "This queue does not support ephemeral storage.");
-    }
+//    /**
+//     * {@inheritDoc}
+//     */
+//    @Override
+//    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
+//        throw new QueueException.OperationNotSupported(
+//                "This queue does not support ephemeral storage.");
+//    }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public int queueSize() {
-        return -1;
+        return SIZE_NOT_SUPPORTED;
     }
 
     /**
@@ -396,6 +409,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     @Override
     public int ephemeralSize() {
-        return -1;
+        return SIZE_NOT_SUPPORTED;
     }
 }

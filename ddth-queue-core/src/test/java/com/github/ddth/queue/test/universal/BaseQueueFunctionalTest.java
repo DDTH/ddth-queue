@@ -48,6 +48,17 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
         }
     }
 
+    /**
+     * Empty queue:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * - Orphan Message list must be empty
+     * </pre>
+     * 
+     * @throws Exception
+     */
     @org.junit.Test
     public void testEmptyQueue() throws Exception {
         if (queue == null) {
@@ -56,18 +67,29 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         assertNull(queue.take());
         int queueSize = queue.queueSize();
-        assertTrue(queueSize == 0 || queueSize < 0);
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
 
         int ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(0);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
     }
 
+    /**
+     * Queue one message:
+     * 
+     * <pre>
+     * - Queue size = 1 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * - Orphan message list must be empty
+     * </pre>
+     * 
+     * @throws Exception
+     */
     @org.junit.Test
     public void testQueueOne() throws Exception {
         if (queue == null) {
@@ -79,17 +101,37 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         assertTrue(queue.queue(msg));
         int queueSize = queue.queueSize();
-        assertTrue(queueSize == 1 || queueSize < 0);
+        assertTrue(queueSize == 1 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
         int ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
 
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(0);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
     }
 
+    /**
+     * 1. Queue one message:
+     * 
+     * <pre>
+     * - Queue size = 1 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * - Orphan message list must be empty
+     * </pre>
+     * 
+     * 2. Take one message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 1 (or not supported)
+     * - Orphan message list (long period) must be empty
+     * - Orphan message list (short period) must contain 1 item
+     * </pre>
+     * 
+     * @throws Exception
+     */
     @org.junit.Test
     public void testQueueAndTake() throws Exception {
         if (queue == null) {
@@ -103,20 +145,27 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         assertTrue(queue.queue(msg1));
         queueSize = queue.queueSize();
-        assertTrue(queueSize == 1 || queueSize < 0);
+        assertTrue(queueSize == 1 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
         ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
+        if (ephemeralSize >= 0) {
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(0);
+            assertNotNull(orphanMessages);
+            assertEquals(0, orphanMessages.size());
+        }
 
+        long t = System.currentTimeMillis();
         IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
+        assertEquals(msg1.getId(), msg2.getId());
         assertEquals(content, new String((byte[]) msg2.getData(), QueueUtils.UTF8));
         queueSize = queue.queueSize();
-        assertTrue(queueSize == 0 || queueSize < 0);
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
         ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 1 || ephemeralSize < 0);
-
+        assertTrue(ephemeralSize == 1 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(10000);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue
+                    .getOrphanMessages(System.currentTimeMillis() - t + 10000);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
 
@@ -124,9 +173,38 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
             orphanMessages = queue.getOrphanMessages(1000);
             assertNotNull(orphanMessages);
             assertEquals(1, orphanMessages.size());
+            assertEquals(msg1.getId(), orphanMessages.iterator().next().getId());
+            assertEquals(msg2.getId(), orphanMessages.iterator().next().getId());
         }
     }
 
+    /**
+     * 1. Queue one message:
+     * 
+     * <pre>
+     * - Queue size = 1 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * - Orphan message list must be empty
+     * </pre>
+     * 
+     * 2. Take one message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 1 (or not supported)
+     * - Orphan message list must be empty
+     * </pre>
+     * 
+     * 3. Finish message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * - Orphan message list must be empty
+     * </pre>
+     * 
+     * @throws Exception
+     */
     @org.junit.Test
     public void testQueueTakeTakeAndFinish() throws Exception {
         if (queue == null) {
@@ -140,45 +218,69 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         assertTrue(queue.queue(msg1));
         queueSize = queue.queueSize();
-        assertTrue(queueSize == 1 || queueSize < 0);
+        assertTrue(queueSize == 1 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
         ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
-
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1000);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(0);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
 
         IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, new String(msg2.getData(), QueueUtils.UTF8));
+        assertEquals(msg1.getId(), msg2.getId());
+        assertEquals(content, new String((byte[]) msg2.getData(), QueueUtils.UTF8));
         queueSize = queue.queueSize();
-        assertTrue(queueSize == 0 || queueSize < 0);
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
         ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 1 || ephemeralSize < 0);
-
+        assertTrue(ephemeralSize == 1 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
         if (ephemeralSize >= 0) {
             Thread.sleep(2000);
             Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1000);
             assertNotNull(orphanMessages);
             assertEquals(1, orphanMessages.size());
+            assertEquals(msg1.getId(), orphanMessages.iterator().next().getId());
+            assertEquals(msg2.getId(), orphanMessages.iterator().next().getId());
         }
 
         queue.finish(msg2);
         assertNull(queue.take());
         queueSize = queue.queueSize();
-        assertTrue(queueSize == 0 || queueSize < 0);
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
         ephemeralSize = queue.ephemeralSize();
-        assertTrue(ephemeralSize == 0 || ephemeralSize < 0);
-
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
         if (ephemeralSize >= 0) {
-            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(1);
+            Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(0);
             assertNotNull(orphanMessages);
             assertEquals(0, orphanMessages.size());
         }
     }
 
+    /**
+     * 1. Queue one message:
+     * 
+     * <pre>
+     * - Queue size = 1 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * </pre>
+     * 
+     * 2. Take one message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * </pre>
+     * 
+     * 3. Finish message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * </pre>
+     * 
+     * @throws Exception
+     */
     @org.junit.Test
     public void testEphemeralDisabled() throws Exception {
         if (queue == null) {
@@ -189,25 +291,79 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
         }
         ((AbstractEphemeralSupportQueue<I, byte[]>) queue).setEphemeralDisabled(true);
 
+        int queueSize, ephemeralSize;
+
         String content = idGen.generateId128Ascii();
         IQueueMessage<I, byte[]> msg1 = queue.createMessage(content.getBytes(QueueUtils.UTF8));
 
         assertTrue(queue.queue(msg1));
-        assertEquals(1, queue.queueSize());
-        assertEquals(0, queue.ephemeralSize());
+        queueSize = queue.queueSize();
+        assertTrue(queueSize == 1 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
+        ephemeralSize = queue.ephemeralSize();
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
 
         IQueueMessage<I, byte[]> msg2 = queue.take();
         assertNotNull(msg2);
-        assertEquals(content, new String(msg2.getData(), QueueUtils.UTF8));
-        assertEquals(0, queue.queueSize());
-        assertEquals(0, queue.ephemeralSize());
+        assertEquals(msg1.getId(), msg2.getId());
+        assertEquals(content, new String((byte[]) msg2.getData(), QueueUtils.UTF8));
+        queueSize = queue.queueSize();
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
+        ephemeralSize = queue.ephemeralSize();
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
 
         queue.finish(msg2);
         assertNull(queue.take());
-        assertEquals(0, queue.queueSize());
-        assertEquals(0, queue.ephemeralSize());
+        queueSize = queue.queueSize();
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
+        ephemeralSize = queue.ephemeralSize();
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
     }
 
+    /**
+     * 1. Queue <ephemeral-max-size>+1 messages
+     * 
+     * <pre>
+     * - Queue size = i (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * - Orphan message list must be empty
+     * </pre>
+     * 
+     * 2. Take <ephemeral-max-size> messages
+     * 
+     * <pre>
+     * - Queue size = n-i (or not supported)
+     * - Ephemeral size = i (or not supported)
+     * </pre>
+     * 
+     * 3. Take one more message
+     * 
+     * <pre>
+     * - Exception {@link QueueException.EphemeralIsFull} must be thrown.
+     * </pre>
+     * 
+     * 4. Finish taken messages:
+     * 
+     * <pre>
+     * - Queue size = 1 (or not supported)
+     * - Ephemeral size = n-i (or not supported)
+     * </pre>
+     * 
+     * 5. Take one message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 1 (or not supported)
+     * </pre>
+     * 
+     * 6. Finish message:
+     * 
+     * <pre>
+     * - Queue size = 0 (or not supported)
+     * - Ephemeral size = 0 (or not supported)
+     * </pre>
+     * 
+     * @throws Exception
+     */
     @org.junit.Test
     public void testEphemeralMaxSize() throws Exception {
         if (queue == null) {
@@ -216,13 +372,23 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
         if (!(queue instanceof AbstractEphemeralSupportQueue)) {
             return;
         }
+        ((AbstractEphemeralSupportQueue<I, byte[]>) queue).setEphemeralDisabled(false)
+                .setEphemeralMaxSize(EPHEMERAL_MAX_SIZE);
+        int queueSize, ephemeralSize;
 
         for (int i = 0, n = EPHEMERAL_MAX_SIZE + 1; i < n; i++) {
             String content = idGen.generateId128Ascii();
             IQueueMessage<I, byte[]> msg = queue.createMessage(content.getBytes(QueueUtils.UTF8));
             assertTrue(queue.queue(msg));
-            assertEquals(i + 1, queue.queueSize());
-            assertEquals(0, queue.ephemeralSize());
+            queueSize = queue.queueSize();
+            assertTrue(queueSize == i + 1 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
+            ephemeralSize = queue.ephemeralSize();
+            assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
+            if (ephemeralSize >= 0) {
+                Collection<IQueueMessage<I, byte[]>> orphanMessages = queue.getOrphanMessages(0);
+                assertNotNull(orphanMessages);
+                assertEquals(0, orphanMessages.size());
+            }
         }
 
         @SuppressWarnings("unchecked")
@@ -251,11 +417,15 @@ public abstract class BaseQueueFunctionalTest<I> extends TestCase {
 
         IQueueMessage<I, byte[]> msg = queue.take();
         assertNotNull(msg);
-        assertEquals(0, queue.queueSize());
-        assertEquals(1, queue.ephemeralSize());
+        queueSize = queue.queueSize();
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
+        ephemeralSize = queue.ephemeralSize();
+        assertTrue(ephemeralSize == 1 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
 
         queue.finish(msg);
-        assertEquals(0, queue.queueSize());
-        assertEquals(0, queue.ephemeralSize());
+        queueSize = queue.queueSize();
+        assertTrue(queueSize == 0 || queueSize == IQueue.SIZE_NOT_SUPPORTED);
+        ephemeralSize = queue.ephemeralSize();
+        assertTrue(ephemeralSize == 0 || ephemeralSize == IQueue.SIZE_NOT_SUPPORTED);
     }
 }

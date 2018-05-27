@@ -34,35 +34,35 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 public class LessLockingUniversalSingleStorageMySQLQueue
         extends AbstractLessLockingUniversalSingleStorageJdbcQueue {
 
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage() {
-        return UniversalIdIntQueueMessage.newInstance();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(byte[] data) {
-        return UniversalIdIntQueueMessage.newInstance(data);
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @since 0.6.0
-     */
-    @Override
-    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
-    }
+//    /**
+//     * {@inheritDoc}
+//     * 
+//     * @since 0.6.0
+//     */
+//    @Override
+//    public UniversalIdIntQueueMessage createMessage() {
+//        return UniversalIdIntQueueMessage.newInstance();
+//    }
+//
+//    /**
+//     * {@inheritDoc}
+//     * 
+//     * @since 0.6.0
+//     */
+//    @Override
+//    public UniversalIdIntQueueMessage createMessage(byte[] data) {
+//        return UniversalIdIntQueueMessage.newInstance(data);
+//    }
+//
+//    /**
+//     * {@inheritDoc}
+//     * 
+//     * @since 0.6.0
+//     */
+//    @Override
+//    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
+//        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
+//    }
 
     public LessLockingUniversalSingleStorageMySQLQueue init() throws Exception {
         super.init();

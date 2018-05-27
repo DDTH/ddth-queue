@@ -71,18 +71,31 @@ public abstract class BaseRedisQueue<ID, DATA> extends AbstractEphemeralSupportQ
     }
 
     /**
+     * Setter for {@link #jedisConnector}.
+     * 
+     * @param jedisConnector
+     * @param setMyOwnRedis
+     * @return
+     * @since 0.7.1
+     */
+    protected BaseRedisQueue<ID, DATA> setJedisConnector(JedisConnector jedisConnector,
+            boolean setMyOwnRedis) {
+        if (myOwnRedis && this.jedisConnector != null) {
+            this.jedisConnector.destroy();
+        }
+        this.jedisConnector = jedisConnector;
+        myOwnRedis = setMyOwnRedis;
+        return this;
+    }
+
+    /**
      * Set the external {@link JedisConnector} to be used by this queue.
      * 
      * @param jedisConnector
      * @return
      */
     public BaseRedisQueue<ID, DATA> setJedisConnector(JedisConnector jedisConnector) {
-        if (myOwnRedis && this.jedisConnector != null) {
-            this.jedisConnector.destroy();
-        }
-        this.jedisConnector = jedisConnector;
-        myOwnRedis = false;
-        return this;
+        return setJedisConnector(jedisConnector, false);
     }
 
     /**
@@ -272,8 +285,7 @@ public abstract class BaseRedisQueue<ID, DATA> extends AbstractEphemeralSupportQ
      */
     public BaseRedisQueue<ID, DATA> init() throws Exception {
         if (jedisConnector == null) {
-            jedisConnector = buildJedisConnector();
-            myOwnRedis = jedisConnector != null;
+            setJedisConnector(buildJedisConnector(), true);
         }
 
         if (isEphemeralDisabled()) {

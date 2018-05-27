@@ -67,13 +67,14 @@ Provided via `IQueue` interface:
 | In-memory      | Optional     | No         | Yes               | No            |
 | JDBC           | No           | Yes        | Yes               | Yes           |
 | Kafka          | No           | Yes        | No                | Yes           |
+| MongoDB        | No           | Yes        | Yes               | Yes           |
 | RabbitMQ       | No           | Yes (*)    | No                | Yes           |
 | Redis          | No           | Yes (*)    | Yes               | Yes           |
 | RocksDB        | No           | Yes        | Yes               | No            |
 
 - *Bounded Size*: queue's size is bounded.
   - Currently only in-memory queue(s), including Disruptor implementation, support bounded queue size.
-  - Databases (JDBC), ActiveMQ, RabbitMQ, Kafka, Redis and RocksDB queues are virtually limited only by hardware's capacity.
+  - Databases (JDBC), ActiveMQ, RabbitMQ, Kafka, Redis, MongoDB and RocksDB queues are virtually limited only by hardware's capacity.
 - *Persistent*: queue's items are persistent between JVM restarts.
   - ActiveMQ, RabbitMQ, Redis: persistency is configured at the corresponding backend service.
 - *Ephemeral Storage*: supports retrieval of orphan messages.
@@ -119,6 +120,14 @@ _Ephemeral storage is currently not supported!_
 Queue messages are persistent.
 
 See [KafkaQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/KafkaQueue.java).
+
+### MongoDB Queue
+
+Queue messages are stored in MongoDB collection.
+
+Queue messages are persistent.
+
+See [MongodbQueue.java](ddth-queue-core/src/main/java/com/github/ddth/queue/impl/MongodbQueue.java).
 
 ### RabbitMQ Queue
 
@@ -268,6 +277,26 @@ Universal queue implementation that uses [Apache Kafka](http://kafka.apache.org)
 
 - Ephemeral storage is currently _not_ supported.
 - `com.github.ddth.queue.impl.universal.idint.UniversalKafkaQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalKafkaQueue` to work with `UniversalIdStrQueueMessage`.
+
+### UniversalMongodbQueue
+
+Universal MongoDB queue implementation:
+
+- A single collection to store messages (used as both queue and ephemeral storage)
+- `com.github.ddth.queue.impl.universal.idint.UniversalMongodbQueue` to work with `UniversalIdIntQueueMessage`, and `com.github.ddth.queue.impl.universal.idstr.UniversalMongodbQueue` to work with `UniversalIdStrQueueMessage`
+- Property `ephemeralDisabled` (default `false`): when set to `true` ephemeral storage is disabled
+
+Collection schema:
+
+```
+{
+  "id"        : "(long or String) message's id",
+  "time"      : "(ISODate) message's creation timestamp",
+  "queue_time": "(ISODate) message's last-queued timestamp",
+  "data"      : "(BinData) message's content",
+  "ekey"      : "(String) ephemeral token key"
+}
+```
 
 ### UniversalRabbitMqQueue
 
