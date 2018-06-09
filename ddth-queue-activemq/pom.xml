@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.github.ddth</groupId>
 		<artifactId>ddth-queue</artifactId>
-		<version>0.7.2-SNAPSHOT</version>
+		<version>0.7.1.1</version>
 	</parent>
 
 	<artifactId>ddth-queue-activemq</artifactId>
@@ -30,7 +30,7 @@
 		<dependency>
 			<groupId>com.github.ddth</groupId>
 			<artifactId>ddth-queue-core</artifactId>
-			<version>0.7.2-SNAPSHOT</version>
+			<version>0.7.1.1</version>
 		</dependency>
 
 		<!-- for ActiveMQ-based queue -->
