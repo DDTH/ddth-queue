@@ -32,39 +32,10 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
  */
 public class LessLockingUniversalMySQLQueue extends AbstractLessLockingUniversalJdbcQueue {
 
-//    /**
-//     * {@inheritDoc}
-//     * 
-//     * @since 0.6.0
-//     */
-//    @Override
-//    public UniversalIdIntQueueMessage createMessage() {
-//        return UniversalIdIntQueueMessage.newInstance();
-//    }
-//
-//    /**
-//     * {@inheritDoc}
-//     * 
-//     * @since 0.6.0
-//     */
-//    @Override
-//    public UniversalIdIntQueueMessage createMessage(byte[] data) {
-//        return UniversalIdIntQueueMessage.newInstance(data);
-//    }
-//
-//    /**
-//     * {@inheritDoc}
-//     * 
-//     * @since 0.6.0
-//     */
-//    @Override
-//    public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
-//        return (UniversalIdIntQueueMessage) UniversalIdIntQueueMessage.newInstance(data).setId(id);
-//    }
-
     /**
      * {@inheritDoc}
-     * @throws Exception 
+     * 
+     * @throws Exception
      */
     @Override
     public LessLockingUniversalMySQLQueue init() throws Exception {

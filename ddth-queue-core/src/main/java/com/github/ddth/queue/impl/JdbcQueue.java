@@ -23,6 +23,7 @@ import com.github.ddth.dao.utils.DuplicatedValueException;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
+import com.google.common.util.concurrent.AtomicLongMap;
 
 /**
  * Abstract JDBC implementation of {@link IQueue}.
@@ -56,6 +57,41 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     private int maxRetries = DEFAULT_MAX_RETRIES;
     private int transactionIsolationLevel = DEFAULT_TRANX_ISOLATION_LEVEL;
 
+    private AtomicLongMap<String> retryCounter = AtomicLongMap.create();
+
+    /*----------------------------------------------------------------------*/
+    /**
+     * Reset retry counter.
+     * 
+     * @return old retry counter.
+     * @since 0.7.1.1
+     */
+    public Map<String, Long> resetRetryCounter() {
+        Map<String, Long> result = retryCounter.asMap();
+        retryCounter.clear();
+        return result;
+    }
+
+    /**
+     * Get retry counter.
+     * 
+     * @return
+     * @since 0.7.1.1
+     */
+    public Map<String, Long> getRetryCounter() {
+        return retryCounter.asMap();
+    }
+
+    /**
+     * Increase retry count by 1.
+     * 
+     * @param key
+     * @since 0.7.1.1
+     */
+    protected void incRetryCounter(String key) {
+        retryCounter.incrementAndGet(key);
+    }
+
     /*----------------------------------------------------------------------*/
     public JdbcQueue<ID, DATA> setTableName(String tableName) {
         this.tableName = tableName;
@@ -85,6 +121,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
+     * Getter for {@link #jdbcHelper}.
      * 
      * @return
      * @since 0.5.0
@@ -113,6 +150,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
+     * Setter for {@link #jdbcHelper}.
      * 
      * @param jdbcHelper
      * @return
@@ -123,6 +161,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
+     * Getter for {@link #dataSource}.
      * 
      * @return
      * @since 0.6.2.5
@@ -132,6 +171,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
     }
 
     /**
+     * Setter for {@link #dataSource}.
      * 
      * @param dataSource
      * @return
@@ -319,6 +359,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_queueWithRetries");
                     return _queueWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -405,6 +446,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                      * because we do not want message's num-requeues is
                      * increased with every retry
                      */
+                    incRetryCounter("_requeueWithRetries");
                     return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -485,6 +527,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_requeueSilentWithRetries");
                     return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -549,6 +592,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_finishWithRetries");
                     _finishWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -634,6 +678,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_takeWithRetries");
                     return _takeWithRetries(conn, numRetries + 1, maxRetries);
                 }
             }
@@ -707,6 +752,7 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_getOrphanMessagesWithRetries");
                     return _getOrphanMessagesWithRetries(thresholdTimestampMs, conn, numRetries + 1,
                             maxRetries);
                 }
@@ -736,83 +782,6 @@ public abstract class JdbcQueue<ID, DATA> extends AbstractEphemeralSupportQueue<
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
-
-    // /**
-    // * Move a message from ephemeral back to queue storage, retry if deadlock.
-    // *
-    // * <p>
-    // * Note: http://dev.mysql.com/doc/refman/5.0/en/innodb-deadlocks.html
-    // * </p>
-    // * <p>
-    // * InnoDB uses automatic row-level locking. You can get deadlocks even in
-    // * the case of transactions that just insert or delete a single row. That
-    // is
-    // * because these operations are not really "atomic"; they automatically
-    // set
-    // * locks on the (possibly several) index records of the row inserted or
-    // * deleted.
-    // * </p>
-    // *
-    // * @param msg
-    // * @param conn
-    // * @param numRetries
-    // * @param maxRetries
-    // * @return
-    // */
-    // protected boolean
-    // _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<ID, DATA> msg,
-    // Connection conn, int numRetries, int maxRetries) {
-    // try {
-    // jdbcHelper.startTransaction(conn);
-    // conn.setTransactionIsolation(transactionIsolationLevel);
-    // IQueueMessage<ID, DATA> orphanMsg = readFromEphemeralStorage(conn, msg);
-    // if (orphanMsg != null) {
-    // removeFromEphemeralStorage(conn, msg);
-    // boolean result = putToQueueStorage(conn, msg);
-    // jdbcHelper.commitTransaction(conn);
-    // return result;
-    // }
-    // jdbcHelper.rollbackTransaction(conn);
-    // return false;
-    // } catch (DaoException de) {
-    // if (de.getCause() instanceof ConcurrencyFailureException) {
-    // jdbcHelper.rollbackTransaction(conn);
-    // if (numRetries > maxRetries) {
-    // throw new QueueException(de);
-    // } else {
-    // return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries
-    // + 1,
-    // maxRetries);
-    // }
-    // }
-    // throw de;
-    // } catch (Exception e) {
-    // jdbcHelper.rollbackTransaction(conn);
-    // throw e instanceof QueueException ? (QueueException) e : new
-    // QueueException(e);
-    // }
-    // }
-
-    // /**
-    // * {@inheritDoc}
-    // */
-    // @Override
-    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
-    // msg) {
-    // if (isEphemeralDisabled()) {
-    // return true;
-    // }
-    // try (Connection conn = jdbcHelper.getConnection()) {
-    // return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, 0,
-    // this.maxRetries);
-    // } catch (Exception e) {
-    // final String logMsg = "(moveFromEphemeralToQueueStorage) Exception ["
-    // + e.getClass().getName() + "]: " + e.getMessage();
-    // LOGGER.error(logMsg, e);
-    // throw e instanceof QueueException ? (QueueException) e : new
-    // QueueException(e);
-    // }
-    // }
 
     /**
      * Get number of items currently in queue storage.

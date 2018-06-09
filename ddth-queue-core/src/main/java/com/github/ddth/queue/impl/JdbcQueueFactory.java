@@ -151,7 +151,7 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
      * @since 0.5.1.1
      */
     public JdbcQueueFactory<T, ID, DATA> setDefaultJdbcHelper(IJdbcHelper jdbcHelper) {
-        return setDefaultJdbcHelper(defaultJdbcHelper, false);
+        return setDefaultJdbcHelper(jdbcHelper, false);
     }
 
     /**

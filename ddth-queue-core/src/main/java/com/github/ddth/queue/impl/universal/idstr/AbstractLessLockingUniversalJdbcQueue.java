@@ -264,6 +264,7 @@ public class AbstractLessLockingUniversalJdbcQueue
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_queueWithRetries");
                     return _queueWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -298,6 +299,7 @@ public class AbstractLessLockingUniversalJdbcQueue
                      * because we do not want message's num-requeues is
                      * increased with every retry
                      */
+                    incRetryCounter("_requeueWithRetries");
                     return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -327,6 +329,7 @@ public class AbstractLessLockingUniversalJdbcQueue
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_requeueSilentWithRetries");
                     return _requeueSilentWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -349,6 +352,7 @@ public class AbstractLessLockingUniversalJdbcQueue
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_finishWithRetries");
                     _finishWithRetries(conn, msg, numRetries + 1, maxRetries);
                 }
             }
@@ -380,6 +384,7 @@ public class AbstractLessLockingUniversalJdbcQueue
                 if (numRetries > maxRetries) {
                     throw new QueueException(de);
                 } else {
+                    incRetryCounter("_takeWithRetries");
                     return _takeWithRetries(conn, numRetries + 1, maxRetries);
                 }
             }
@@ -388,29 +393,5 @@ public class AbstractLessLockingUniversalJdbcQueue
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
         }
     }
-
-//    /**
-//     * {@inheritDoc}
-//     */
-//    @Override
-//    protected boolean _moveFromEphemeralToQueueStorageWithRetries(IQueueMessage<String, byte[]> msg,
-//            Connection conn, int numRetries, int maxRetries) {
-//        try {
-//            int numRows = getJdbcHelper().execute(conn, SQL_CLEAR_EPHEMERAL_ID, msg.getId());
-//            return numRows > 0;
-//        } catch (DaoException de) {
-//            if (de.getCause() instanceof ConcurrencyFailureException) {
-//                if (numRetries > maxRetries) {
-//                    throw new QueueException(de);
-//                } else {
-//                    return _moveFromEphemeralToQueueStorageWithRetries(msg, conn, numRetries + 1,
-//                            maxRetries);
-//                }
-//            }
-//            throw de;
-//        } catch (Exception e) {
-//            throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
-//        }
-//    }
 
 }
