@@ -15,12 +15,12 @@ also extra functionalities such as commit queue messages when done or re-queue m
 or find orphan ones (messages that have not been committed for a long period).
 Hence this library is born to fulfill my need.
 
-**Since v0.7.1.1** `ddth-queue` added pub/sub functionality.
+**Since v0.7.0** `ddth-queue` added pub/sub functionality.
 
 
 ## Installation
 
-Latest release version: `0.7.1.1`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
+Latest release version: `0.7.1.2`. See [RELEASE-NOTES.md](RELEASE-NOTES.md).
 
 Maven dependency: if only a sub-set of `ddth-queue` functionality is used, choose the
 corresponding dependency artifact(s) to reduce the number of unused jar files.
@@ -31,7 +31,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
 	<groupId>com.github.ddth</groupId>
 	<artifactId>ddth-queue-core</artifactId>
-	<version>0.7.1.1</version>
+	<version>0.7.1.2</version>
 </dependency>
 ```
 
@@ -41,7 +41,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-activemq</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -52,7 +52,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-disruptor</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -63,7 +63,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jdbc</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -74,7 +74,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-kafka</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -85,7 +85,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-rabbitmq</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -96,7 +96,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-jedis</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```
@@ -107,7 +107,7 @@ corresponding dependency artifact(s) to reduce the number of unused jar files.
 <dependency>
     <groupId>com.github.ddth</groupId>
     <artifactId>ddth-queue-rocskdb</artifactId>
-    <version>0.7.1.1</version>
+    <version>0.7.1.2</version>
     <type>pom</type>
 </dependency>
 ```

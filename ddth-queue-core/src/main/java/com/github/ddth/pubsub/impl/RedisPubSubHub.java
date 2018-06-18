@@ -35,7 +35,7 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
     public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":"
             + Protocol.DEFAULT_PORT;
 
-    private String redisHostAndPort = DEFAULT_HOST_AND_PORT, redisPassword = DEFAULT_PASSWORD;
+    private String redisHostAndPort = DEFAULT_HOST_AND_PORT;
 
     /**
      * Redis' host and port scheme (format {@code host:port}).
@@ -156,7 +156,8 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
     protected JedisConnector buildJedisConnector() {
         JedisConnector jedisConnector = new JedisConnector();
         jedisConnector.setJedisPoolConfig(JedisUtils.defaultJedisPoolConfig())
-                .setRedisHostsAndPorts(redisHostAndPort).setRedisPassword(redisPassword).init();
+                .setRedisHostsAndPorts(getRedisHostAndPort()).setRedisPassword(getRedisPassword())
+                .init();
         return jedisConnector;
     }
 

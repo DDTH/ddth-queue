@@ -1,5 +1,10 @@
 # ddth-queue release notes
 
+## 0.7.1.2 - 2018-06-18
+
+- Bug fixes: `RedisPubSubHub` and `RedisQueue` incorrectly set `redisPassword` field.
+
+
 ## 0.7.1.1 - 2018-06-09
 
 - Bug fixes: typo in `JdbcQueueFactory.setDefaultJdbcHelper(IJdbcHelper)` method cause `JdbcQueueFactory`'s `jdbcHelper` to be `null`.
