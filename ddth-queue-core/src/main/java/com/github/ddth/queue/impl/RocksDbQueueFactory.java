@@ -86,7 +86,7 @@ public abstract class RocksDbQueueFactory<T extends RocksDbQueue<ID, DATA>, ID, 
         }
 
         queue.setCfNameEphemeral(defaultCfNameEphemeral).setCfNameMetadata(defaultCfNameMetaData)
-                .setCfNameQueue(defaultCfNameEphemeral);
+                .setCfNameQueue(defaultCfNameQueue);
         String cfNameEphemeral = spec.getField(SPEC_FIELD_CF_EPHEMERAL);
         if (!StringUtils.isBlank(cfNameEphemeral)) {
             queue.setCfNameEphemeral(cfNameEphemeral);
