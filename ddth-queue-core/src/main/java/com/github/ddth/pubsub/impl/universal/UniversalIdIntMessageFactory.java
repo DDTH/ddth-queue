@@ -4,12 +4,11 @@ import com.github.ddth.queue.IMessageFactory;
 
 /**
  * Factory that creates {@link UniversalIdIntMessage}s.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public class UniversalIdIntMessageFactory implements IMessageFactory<Long, byte[]> {
-
     public final static UniversalIdIntMessageFactory INSTANCE = new UniversalIdIntMessageFactory();
 
     /**
@@ -35,5 +34,4 @@ public class UniversalIdIntMessageFactory implements IMessageFactory<Long, byte[
     public UniversalIdIntMessage createMessage(Long id, byte[] data) {
         return UniversalIdIntMessage.newInstance(id, data);
     }
-
 }

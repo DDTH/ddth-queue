@@ -1,37 +1,36 @@
 package com.github.ddth.queue.impl.universal;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Map;
 
-import com.github.ddth.queue.utils.QueueUtils;
+import com.github.ddth.queue.internal.utils.QueueUtils;
 
 /**
  * Extended from {@link BaseUniversalQueueMessage} where queue message's id is a
- * {@code long}.
- * 
+ * {@link Long}.
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.2.2
  */
 public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> {
-
     /**
      * Create a new {@link UniversalIdIntQueueMessage} object.
-     * 
+     *
      * @return
      */
     @SuppressWarnings("unchecked")
     public static UniversalIdIntQueueMessage newInstance() {
         Date now = new Date();
         UniversalIdIntQueueMessage msg = new UniversalIdIntQueueMessage();
-        msg.setQueueTimestamp(now).setNumRequeues(0).setId(QueueUtils.IDGEN.generateId64())
-                .setTimestamp(now);
+        msg.setQueueTimestamp(now).setNumRequeues(0).setId(QueueUtils.IDGEN.generateId64()).setTimestamp(now);
         return msg;
     }
 
     /**
      * Create a new {@link UniversalIdIntQueueMessage} object with specified
      * content.
-     * 
+     *
      * @param content
      * @return
      * @since 0.6.0
@@ -45,7 +44,7 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
     /**
      * Create a new {@link UniversalIdIntQueueMessage} object with specified id
      * and content.
-     * 
+     *
      * @param id
      * @param content
      * @return
@@ -60,7 +59,7 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
     /**
      * Create a new {@link UniversalIdIntQueueMessage} object with specified
      * content.
-     * 
+     *
      * @param content
      * @return
      * @since 0.6.0
@@ -74,7 +73,7 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
     /**
      * Create a new {@link UniversalIdIntQueueMessage} object with specified id
      * and content.
-     * 
+     *
      * @param id
      * @param content
      * @return
@@ -88,7 +87,7 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
 
     /**
      * Create a new {@link UniversalIdIntQueueMessage}.
-     * 
+     *
      * @param data
      * @return
      * @since 0.6.2.3
@@ -110,17 +109,17 @@ public class UniversalIdIntQueueMessage extends BaseUniversalQueueMessage<Long> 
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.0
      */
     @Override
     public UniversalIdIntQueueMessage fromBytes(byte[] data) {
         try {
-            UniversalIdIntQueueMessage other = BaseUniversalQueueMessage.fromBytes(data,
-                    UniversalIdIntQueueMessage.class);
+            UniversalIdIntQueueMessage other = BaseUniversalQueueMessage
+                    .fromBytes(data, UniversalIdIntQueueMessage.class);
             fromMap(other.toMap());
             return this;
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

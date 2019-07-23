@@ -1,17 +1,12 @@
 package com.github.ddth.queue.test.universal.idstr.mysql;
 
-import java.sql.SQLException;
-
-import org.apache.commons.dbcp2.BasicDataSource;
-
-import com.github.ddth.dao.jdbc.IJdbcHelper;
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.NoopQueueObserver;
-import com.github.ddth.queue.impl.universal.idstr.UniversalJdbcQueue;
 import com.github.ddth.queue.test.universal.BaseQueueFunctionalTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import org.apache.commons.dbcp2.BasicDataSource;
+
+import java.sql.SQLException;
 
 /*
  * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idstr.mysql.TestMySQLQueue -DenableTestsMySql=true
@@ -19,7 +14,7 @@ import junit.framework.TestSuite;
 
 /**
  * Test queue functionality.
- * 
+ *
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.5.0
  */
@@ -32,17 +27,8 @@ public class TestMySQLQueue extends BaseQueueFunctionalTest<String> {
         return new TestSuite(TestMySQLQueue.class);
     }
 
-    private static class MyJdbcQueue extends UniversalJdbcQueue {
-        public void flush() throws SQLException {
-            IJdbcHelper jdbcHelper = getJdbcHelper();
-            jdbcHelper.execute("DELETE FROM " + getTableName());
-            jdbcHelper.execute("DELETE FROM " + getTableNameEphemeral());
-        }
-    }
-
     protected IQueue<String, byte[]> initQueueInstance(int ephemeralMaxSize) throws Exception {
-        if (System.getProperty("enableTestsMySql") == null
-                && System.getProperty("enableTestsMySQL") == null) {
+        if (System.getProperty("enableTestsMySql") == null && System.getProperty("enableTestsMySQL") == null) {
             return null;
         }
         String mysqlHost = System.getProperty("db.host", "localhost");
@@ -60,22 +46,23 @@ public class TestMySQLQueue extends BaseQueueFunctionalTest<String> {
         dataSource.setUsername(mysqlUser);
         dataSource.setPassword(mysqlPassword);
 
-        MyJdbcQueue queue = new MyJdbcQueue();
-        queue.setObserver(new NoopQueueObserver<String, byte[]>() {
-            public void postDestroy(IQueue<String, byte[]> queue) {
+        MyQueue queue = new MyQueue() {
+            public void destroy() {
                 try {
-                    dataSource.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                    super.destroy();
+                } finally {
+                    try {
+                        dataSource.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        });
-        queue.setDataSource(dataSource).setTableName(tableQueue)
-                .setTableNameEphemeral(tableEphemeral).setEphemeralDisabled(false)
-                .setEphemeralMaxSize(ephemeralMaxSize).init();
+        };
+        queue.setDataSource(dataSource).setTableName(tableQueue).setTableNameEphemeral(tableEphemeral)
+                .setEphemeralDisabled(false).setEphemeralMaxSize(ephemeralMaxSize).init();
         queue.flush();
 
         return queue;
     }
-
 }

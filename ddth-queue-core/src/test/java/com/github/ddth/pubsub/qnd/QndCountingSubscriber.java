@@ -6,7 +6,6 @@ import com.github.ddth.pubsub.impl.CountingSubscriber;
 import com.github.ddth.queue.IMessage;
 
 public class QndCountingSubscriber {
-
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         Random RAND = new Random(System.currentTimeMillis());
@@ -18,8 +17,8 @@ public class QndCountingSubscriber {
                         IMessage.EmptyMessage.INSTANCE);
             }
         }
-        System.out.println(counter.getTotalMessages());
-        System.out.println(counter.getAllCounters());
+        System.out.println("Total num msgs  : " + counter.getTotalMessages());
+        System.out.println("Detailed couters: " + counter.getAllCounters());
 
         counter.resetCounter();
 
@@ -29,8 +28,7 @@ public class QndCountingSubscriber {
                         IMessage.EmptyMessage.INSTANCE);
             }
         }
-        System.out.println(counter.getTotalMessages());
-        System.out.println(counter.getAllCounters());
+        System.out.println("Total num msgs  : " + counter.getTotalMessages());
+        System.out.println("Detailed couters: " + counter.getAllCounters());
     }
-
 }

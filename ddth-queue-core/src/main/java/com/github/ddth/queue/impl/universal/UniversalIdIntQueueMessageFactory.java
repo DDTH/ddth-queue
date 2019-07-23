@@ -4,12 +4,11 @@ import com.github.ddth.queue.IQueueMessageFactory;
 
 /**
  * Factory that creates {@link UniversalIdIntQueueMessage}s.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public class UniversalIdIntQueueMessageFactory implements IQueueMessageFactory<Long, byte[]> {
-
     public final static UniversalIdIntQueueMessageFactory INSTANCE = new UniversalIdIntQueueMessageFactory();
 
     /**
@@ -35,5 +34,4 @@ public class UniversalIdIntQueueMessageFactory implements IQueueMessageFactory<L
     public UniversalIdIntQueueMessage createMessage(Long id, byte[] data) {
         return UniversalIdIntQueueMessage.newInstance(id, data);
     }
-
 }

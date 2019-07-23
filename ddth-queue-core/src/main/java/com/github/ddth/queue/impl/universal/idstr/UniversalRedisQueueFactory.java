@@ -5,13 +5,11 @@ import com.github.ddth.queue.impl.RedisQueueFactory;
 
 /**
  * Factory to create {@link UniversalRedisQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public class UniversalRedisQueueFactory
-        extends RedisQueueFactory<UniversalRedisQueue, String, byte[]> {
-
+public class UniversalRedisQueueFactory extends RedisQueueFactory<UniversalRedisQueue, String, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalRedisQueueFactory
         UniversalRedisQueue queue = new UniversalRedisQueue();
         return queue;
     }
-
 }

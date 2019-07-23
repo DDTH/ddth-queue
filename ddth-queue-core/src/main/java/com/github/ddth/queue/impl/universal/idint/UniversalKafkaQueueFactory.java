@@ -5,13 +5,11 @@ import com.github.ddth.queue.impl.KafkaQueueFactory;
 
 /**
  * Factory to create {@link UniversalKafkaQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public class UniversalKafkaQueueFactory
-        extends KafkaQueueFactory<UniversalKafkaQueue, Long, byte[]> {
-
+public class UniversalKafkaQueueFactory extends KafkaQueueFactory<UniversalKafkaQueue, Long, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalKafkaQueueFactory
         UniversalKafkaQueue queue = new UniversalKafkaQueue();
         return queue;
     }
-
 }

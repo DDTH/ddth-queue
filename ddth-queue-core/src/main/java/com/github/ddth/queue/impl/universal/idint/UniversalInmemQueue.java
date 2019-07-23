@@ -7,11 +7,11 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
 
 /**
  * Universal in-memory implementation of {@link IQueue}.
- * 
+ *
  * <p>
  * Queue and Take {@link UniversalIdIntQueueMessage}s.
  * </p>
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.0
  */
@@ -25,18 +25,15 @@ public class UniversalInmemQueue extends BaseUniversalInmemQueue<UniversalIdIntQ
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.0
      */
     @Override
     public UniversalInmemQueue init() throws Exception {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
-
 }

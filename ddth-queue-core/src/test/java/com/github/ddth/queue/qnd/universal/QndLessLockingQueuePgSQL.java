@@ -10,7 +10,6 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.LessLockingUniversalPgSQLQueue;
 
 public class QndLessLockingQueuePgSQL {
-
     public static void main(String[] args) throws Exception {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.postgresql.Driver");
@@ -26,7 +25,7 @@ public class QndLessLockingQueuePgSQL {
                 queue.setTableName("queuell").setJdbcHelper(jdbcHelper).init();
 
                 UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-                msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
+                msg.setContent("Content: [" + System.currentTimeMillis() + "] " + new Date());
                 System.out.println("Queue: " + queue.queue(msg));
 
                 msg = queue.take();

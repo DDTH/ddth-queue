@@ -28,5 +28,4 @@ public class TestDisruptorQueue extends BaseQueueFunctionalTest<Long> {
         queue.setEphemeralDisabled(false).setEphemeralMaxSize(ephemeralMaxSize).init();
         return queue;
     }
-
 }

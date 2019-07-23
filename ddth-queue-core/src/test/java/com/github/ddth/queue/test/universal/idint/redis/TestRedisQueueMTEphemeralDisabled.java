@@ -1,12 +1,9 @@
 package com.github.ddth.queue.test.universal.idint.redis;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.universal.idint.UniversalRedisQueue;
 import com.github.ddth.queue.test.universal.BaseQueueMultiThreadsTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import redis.clients.jedis.Jedis;
 
 /*
  * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idint.redis.TestRedisQueueMTEphemeralDisabled -DenableTestsRedis=true
@@ -21,14 +18,6 @@ public class TestRedisQueueMTEphemeralDisabled extends BaseQueueMultiThreadsTest
         return new TestSuite(TestRedisQueueMTEphemeralDisabled.class);
     }
 
-    private static class MyRedisQueue extends UniversalRedisQueue {
-        public void flush() {
-            try (Jedis jedis = getJedisConnector().getJedis()) {
-                jedis.flushAll();
-            }
-        }
-    }
-
     @Override
     protected IQueue<Long, byte[]> initQueueInstance() throws Exception {
         if (System.getProperty("enableTestsRedis") == null) {
@@ -37,13 +26,13 @@ public class TestRedisQueueMTEphemeralDisabled extends BaseQueueMultiThreadsTest
         String redisHost = System.getProperty("redis.host", "localhost");
         String redisPort = System.getProperty("redis.port", "6379");
 
-        MyRedisQueue queue = new MyRedisQueue();
+        MyQueue queue = new MyQueue();
         queue.setRedisHostAndPort(redisHost + ":" + redisPort).setEphemeralDisabled(true).init();
         queue.flush();
         return queue;
     }
 
     protected int numTestMessages() {
-        return 128 * 1024;
+        return 16 * 1024;
     }
 }

@@ -1,12 +1,9 @@
 package com.github.ddth.queue.test.universal.idint.redis;
 
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.impl.universal.idint.UniversalRedisQueue;
 import com.github.ddth.queue.test.universal.BaseQueueFunctionalTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import redis.clients.jedis.Jedis;
 
 /*
  * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idint.redis.TestRedisQueue -DenableTestsRedis=true
@@ -21,14 +18,6 @@ public class TestRedisQueue extends BaseQueueFunctionalTest<Long> {
         return new TestSuite(TestRedisQueue.class);
     }
 
-    private static class MyRedisQueue extends UniversalRedisQueue {
-        public void flush() {
-            try (Jedis jedis = getJedisConnector().getJedis()) {
-                jedis.flushAll();
-            }
-        }
-    }
-
     protected IQueue<Long, byte[]> initQueueInstance(int ephemeralMaxSize) throws Exception {
         if (System.getProperty("enableTestsRedis") == null) {
             return null;
@@ -36,11 +25,10 @@ public class TestRedisQueue extends BaseQueueFunctionalTest<Long> {
         String redisHost = System.getProperty("redis.host", "localhost");
         String redisPort = System.getProperty("redis.port", "6379");
 
-        MyRedisQueue queue = new MyRedisQueue();
+        MyQueue queue = new MyQueue();
         queue.setRedisHostAndPort(redisHost + ":" + redisPort).setEphemeralDisabled(false)
                 .setEphemeralMaxSize(ephemeralMaxSize).init();
         queue.flush();
         return queue;
     }
-
 }

@@ -14,13 +14,12 @@ import org.slf4j.LoggerFactory;
 
 import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.ISubscriber;
+import com.github.ddth.pubsub.internal.utils.MongoUtils;
 import com.github.ddth.queue.IMessage;
-import com.github.ddth.queue.utils.MongoUtils;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.RemovalListener;
-import com.google.common.cache.RemovalNotification;
 import com.mongodb.CursorType;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
@@ -32,13 +31,11 @@ import com.mongodb.client.model.Sorts;
 
 /**
  * (Experimental) MongoDB implementation of {@link IPubSubHub}.
- * 
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.1
  */
 public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
-
     private final Logger LOGGER = LoggerFactory.getLogger(MongodbPubSubHub.class);
 
     public final static String DEFAULT_CONN_STR = "mongodb://localhost:27017/local";
@@ -55,12 +52,12 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
 
     /**
      * Max number of document per pub/sub collection.
-     * 
+     *
      * <p>
      * To allow pub/sub, the collection must be capped with a max number of
      * documents.
      * </p>
-     * 
+     *
      * @return
      * @see #DEFAULT_MAX_DOCUMENTS
      */
@@ -70,12 +67,12 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
 
     /**
      * Max number of document per pub/sub collection.
-     * 
+     *
      * <p>
      * To allow pub/sub, the collection must be capped with a max number of
      * documents.
      * </p>
-     * 
+     *
      * @param maxDocuments
      * @return
      * @see #DEFAULT_MAX_DOCUMENTS
@@ -87,11 +84,11 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
 
     /**
      * Max collection's size in bytes.
-     * 
+     *
      * <p>
      * To allow pub/sub, the collection must be capped with a max size.
      * </p>
-     * 
+     *
      * @return
      * @see #DEFAULT_MAX_COLLECTION_SIZE
      */
@@ -101,11 +98,11 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
 
     /**
      * Max number of document per pub/sub collection.
-     * 
+     *
      * <p>
      * To allow pub/sub, the collection must be capped with a max size.
      * </p>
-     * 
+     *
      * @param maxCollectionSize
      * @return
      * @see #DEFAULT_MAX_COLLECTION_SIZE
@@ -183,8 +180,7 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
      * @param setMyOwnMongoClient
      * @return
      */
-    protected MongodbPubSubHub<ID, DATA> setMongoClient(MongoClient mongoClient,
-            boolean setMyOwnMongoClient) {
+    protected MongodbPubSubHub<ID, DATA> setMongoClient(MongoClient mongoClient, boolean setMyOwnMongoClient) {
         if (myOwnMongoClient && this.mongoClient != null) {
             this.mongoClient.close();
         }
@@ -207,16 +203,11 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
     }
 
     /*----------------------------------------------------------------------*/
-    private LoadingCache<String, MongoPubSubGateway> cursors = CacheBuilder.newBuilder()
-            .removalListener(new RemovalListener<String, MongoPubSubGateway>() {
+    private LoadingCache<String, MongoPubSubGateway> cursors = CacheBuilder.newBuilder().removalListener(
+            (RemovalListener<String, MongoPubSubGateway>) notification -> notification.getValue().destroy())
+            .build(new CacheLoader<String, MongoPubSubGateway>() {
                 @Override
-                public void onRemoval(
-                        RemovalNotification<String, MongoPubSubGateway> notification) {
-                    notification.getValue().destroy();
-                }
-            }).build(new CacheLoader<String, MongoPubSubGateway>() {
-                @Override
-                public MongoPubSubGateway load(String key) throws Exception {
+                public MongoPubSubGateway load(String key) {
                     MongoPubSubGateway gateway = new MongoPubSubGateway(key);
                     gateway.run();
                     return gateway;
@@ -228,14 +219,12 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
     public final static String COLLECTION_FIELD_DATA = "data";
 
     protected Document toDocument(IMessage<ID, DATA> msg) {
-        return new Document(COLLECTION_FIELD_ID, msg.getId())
-                .append(COLLECTION_FIELD_TIME, msg.getTimestamp())
+        return new Document(COLLECTION_FIELD_ID, msg.getId()).append(COLLECTION_FIELD_TIME, msg.getTimestamp())
                 .append(COLLECTION_FIELD_DATA, serialize(msg));
     }
 
     protected IMessage<ID, DATA> fromDocument(Document doc) {
-        return doc != null ? deserialize(doc.get(COLLECTION_FIELD_DATA, Binary.class).getData())
-                : null;
+        return doc != null ? deserialize(doc.get(COLLECTION_FIELD_DATA, Binary.class).getData()) : null;
     }
 
     private class MongoPubSubGateway {
@@ -279,40 +268,37 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
             } else {
                 this.collection = getDatabase().getCollection(channel);
             }
-            this.cursor = collection.find().cursorType(CursorType.TailableAwait)
-                    .sort(Sorts.ascending("$natural")).iterator();
+            this.cursor = collection.find().cursorType(CursorType.TailableAwait).sort(Sorts.ascending("$natural"))
+                    .iterator();
 
-            new Thread() {
-                public void run() {
-                    while (!stopped) {
+            new Thread(() -> {
+                while (!stopped) {
+                    try {
+                        Document doc = null;
                         try {
-                            Document doc = null;
-                            try {
-                                doc = cursor.next();
-                            } catch (IllegalStateException e) {
-                                LOGGER.warn(e.getMessage(), e);
-                            }
-                            IMessage<ID, DATA> message = fromDocument(doc);
-                            if (message == null
-                                    || (message.getId() == null && message.getData() == null)) {
-                                // ignore dummy message
-                                continue;
-                            }
-                            Collection<ISubscriber<ID, DATA>> subs;
-                            synchronized (subscriptions) {
-                                subs = new LinkedList<>(subscriptions);
-                            }
-                            try {
-                                subs.forEach((sub) -> sub.onMessage(channel, message));
-                            } catch (Exception e) {
-                                LOGGER.warn(e.getMessage(), e);
-                            }
-                        } catch (Exception e) {
-                            LOGGER.error(e.getMessage(), e);
+                            doc = cursor.next();
+                        } catch (IllegalStateException e) {
+                            LOGGER.warn(e.getMessage(), e);
                         }
+                        IMessage<ID, DATA> message = fromDocument(doc);
+                        if (message == null || (message.getId() == null && message.getData() == null)) {
+                            // ignore dummy message
+                            continue;
+                        }
+                        Collection<ISubscriber<ID, DATA>> subs;
+                        synchronized (subscriptions) {
+                            subs = new LinkedList<>(subscriptions);
+                        }
+                        try {
+                            subs.forEach((sub) -> sub.onMessage(channel, message));
+                        } catch (Exception e) {
+                            LOGGER.warn(e.getMessage(), e);
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error(e.getMessage(), e);
                     }
                 }
-            }.start();
+            }).start();
         }
 
         public void destroy() {
@@ -419,5 +405,4 @@ public class MongodbPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
             LOGGER.error(e.getMessage(), e);
         }
     }
-
 }

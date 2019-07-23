@@ -1,27 +1,42 @@
 package com.github.ddth.queue.impl;
 
-import com.github.ddth.commons.utils.SerializationUtils;
+import com.github.ddth.commons.serialization.FstSerDeser;
+import com.github.ddth.commons.serialization.ISerDeser;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.IQueueMessageFactory;
-import com.github.ddth.queue.IQueueObserver;
 import com.github.ddth.queue.utils.QueueException;
+
+import java.util.Date;
 
 /**
  * Abstract queue implementation.
- * 
+ *
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.5.0
  */
 public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoCloseable {
+    protected enum PutToQueueCase {
+        NEW(0), REQUEUE(1), REQUEUE_SILENT(2);
+
+        private final int value;
+
+        PutToQueueCase(int value) {
+            this.value = value;
+        }
+
+        public int value() {
+            return value;
+        }
+    }
 
     private String queueName;
-    private IQueueObserver<ID, DATA> observer;
     private IQueueMessageFactory<ID, DATA> messageFactory;
+    private ISerDeser serDeser;
 
     /**
-     * Get queue's name.
-     * 
+     * Queue's name.
+     *
      * @return
      * @since 0.6.0
      */
@@ -30,8 +45,8 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
     }
 
     /**
-     * Set queue's name.
-     * 
+     * Queue's name.
+     *
      * @param queueName
      * @return
      * @since 0.6.0
@@ -42,26 +57,8 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
     }
 
     /**
-     * Get queue's event observers
-     * 
-     * @return
-     */
-    public IQueueObserver<ID, DATA> getObserver() {
-        return observer;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public AbstractQueue<ID, DATA> setObserver(IQueueObserver<ID, DATA> observer) {
-        this.observer = observer;
-        return this;
-    }
-
-    /**
-     * Getter for {@link #messageFactory}.
-     * 
+     * Factory to create queue messages.
+     *
      * @return
      * @since 0.7.0
      */
@@ -70,47 +67,57 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
     }
 
     /**
-     * Setter for {@link #messageFactory}.
-     * 
+     * Factory to create queue messages.
+     *
      * @param messageFactory
      * @return
      * @since 0.7.0
      */
-    public AbstractQueue<ID, DATA> setMessageFactory(
-            IQueueMessageFactory<ID, DATA> messageFactory) {
+    public AbstractQueue<ID, DATA> setMessageFactory(IQueueMessageFactory<ID, DATA> messageFactory) {
         this.messageFactory = messageFactory;
         return this;
     }
 
     /**
+     * Message serializer/deserializer.
+     *
+     * @return
+     * @since 1.0.0
+     */
+    public ISerDeser getSerDeser() {
+        return serDeser;
+    }
+
+    /**
+     * Message serializer/deserializer.
+     *
+     * @param serDeser
+     * @return
+     * @since 1.0.0
+     */
+    public AbstractQueue<ID, DATA> setSerDeser(ISerDeser serDeser) {
+        this.serDeser = serDeser;
+        return this;
+    }
+
+    /**
      * Initializing method.
-     * 
+     *
      * @return
      * @throws Exception
      */
     public AbstractQueue<ID, DATA> init() throws Exception {
-        if (observer != null) {
-            observer.preInit(this);
+        if (serDeser == null) {
+            serDeser = new FstSerDeser();
         }
-        try {
-            return this;
-        } finally {
-            if (observer != null) {
-                observer.postInit(this);
-            }
-        }
+        return this;
     }
 
     /**
      * Destroy method.
      */
     public void destroy() {
-        if (observer != null) {
-            observer.preDestroy(this);
-        }
-        if (observer != null) {
-            observer.postDestroy(this);
-        }
+        //EMPTY
     }
 
     /**
@@ -123,7 +130,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.6.0
      */
     @Override
@@ -133,7 +140,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.6.0
      */
     @Override
@@ -143,7 +150,7 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.6.0
      */
     @Override
@@ -153,19 +160,19 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
 
     /**
      * Serialize a queue message to bytes.
-     * 
+     *
      * @param queueMsg
      * @return
      * @since 0.7.0
      */
     protected byte[] serialize(IQueueMessage<ID, DATA> queueMsg) {
-        return queueMsg != null ? SerializationUtils.toByteArray(queueMsg) : null;
+        return queueMsg != null ? serDeser.toBytes(queueMsg) : null;
     }
 
     /**
      * Deserialize a queue message from bytes (was generated by
      * {@link #serialize(IQueueMessage)}.
-     * 
+     *
      * @param data
      * @return
      * @since 0.7.0
@@ -178,25 +185,56 @@ public abstract class AbstractQueue<ID, DATA> implements IQueue<ID, DATA>, AutoC
     /**
      * Deserialize a queue message from bytes (was generated by
      * {@link #serialize(IQueueMessage)}.
-     * 
+     *
      * @param data
      * @param clazz
      * @return
      * @since 0.7.0
      */
     protected <T extends IQueueMessage<ID, DATA>> T deserialize(byte[] data, Class<T> clazz) {
-        return data != null ? SerializationUtils.fromByteArray(data, clazz) : null;
+        return data != null ? serDeser.fromBytes(data, clazz) : null;
+    }
+
+    /**
+     * Put a message to the queue storage.
+     *
+     * <p>Sub-class implements this method.</p>
+     *
+     * @param msg
+     * @param queueCase
+     * @return
+     * @throws QueueException.QueueIsFull
+     * @since 1.0.0
+     */
+    protected abstract boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase)
+            throws QueueException.QueueIsFull;
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean queue(IQueueMessage<ID, DATA> _msg) {
+        Date now = new Date();
+        IQueueMessage<ID, DATA> msg = _msg.clone().setNumRequeues(0).setQueueTimestamp(now);
+        msg.setTimestamp(now);
+        return doPutToQueue(msg, PutToQueueCase.NEW);
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * @since 0.7.1
      */
-    @Deprecated
-    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg)
-            throws QueueException.OperationNotSupported {
-        throw new QueueException.OperationNotSupported(
-                "This method is deprecated, use requeue() or requeueSilent() instead!");
+    @Override
+    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone().incNumRequeues().setQueueTimestamp(new Date());
+        return doPutToQueue(msg, PutToQueueCase.REQUEUE);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) {
+        IQueueMessage<ID, DATA> msg = _msg.clone();
+        return doPutToQueue(msg, PutToQueueCase.REQUEUE_SILENT);
     }
 }

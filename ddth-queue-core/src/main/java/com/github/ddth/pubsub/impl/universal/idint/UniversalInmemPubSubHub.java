@@ -25,12 +25,10 @@ public class UniversalInmemPubSubHub extends InmemPubSubHub<Long, byte[]> {
      */
     @Override
     public UniversalInmemPubSubHub init() {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdIntMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 }

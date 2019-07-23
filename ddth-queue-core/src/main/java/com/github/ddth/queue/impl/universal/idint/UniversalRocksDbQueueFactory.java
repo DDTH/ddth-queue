@@ -5,13 +5,11 @@ import com.github.ddth.queue.impl.RocksDbQueueFactory;
 
 /**
  * Factory to create {@link UniversalRocksDbQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public class UniversalRocksDbQueueFactory
-        extends RocksDbQueueFactory<UniversalRocksDbQueue, Long, byte[]> {
-
+public class UniversalRocksDbQueueFactory extends RocksDbQueueFactory<UniversalRocksDbQueue, Long, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalRocksDbQueueFactory
         UniversalRocksDbQueue queue = new UniversalRocksDbQueue();
         return queue;
     }
-
 }

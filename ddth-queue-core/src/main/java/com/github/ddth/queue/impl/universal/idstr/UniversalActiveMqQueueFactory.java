@@ -9,9 +9,7 @@ import com.github.ddth.queue.impl.ActiveMqQueueFactory;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
  */
-public class UniversalActiveMqQueueFactory
-        extends ActiveMqQueueFactory<UniversalActiveMqQueue, String, byte[]> {
-
+public class UniversalActiveMqQueueFactory extends ActiveMqQueueFactory<UniversalActiveMqQueue, String, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalActiveMqQueueFactory
         UniversalActiveMqQueue queue = new UniversalActiveMqQueue();
         return queue;
     }
-
 }

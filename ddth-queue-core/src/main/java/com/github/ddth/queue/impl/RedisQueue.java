@@ -5,18 +5,14 @@ import com.github.ddth.commons.redis.JedisUtils;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
-import com.github.ddth.queue.utils.QueueUtils;
+import redis.clients.jedis.*;
 
-import redis.clients.jedis.BinaryJedisCommands;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisCommands;
-import redis.clients.jedis.Protocol;
-import redis.clients.jedis.Response;
-import redis.clients.jedis.Transaction;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Redis implementation of {@link IQueue}.
- * 
+ *
  * <p>
  * Implementation:
  * <ul>
@@ -28,19 +24,23 @@ import redis.clients.jedis.Transaction;
  * message's timestamp. See {@link #setRedisSortedSetName(String)}.</li>
  * </ul>
  * </p>
- * 
+ *
+ * <p>Features:</p>
+ * <ul>
+ * <li>Queue-size support: yes</li>
+ * <li>Ephemeral storage support: yes</li>
+ * <li>Ephemeral-size support: yes</li>
+ * </ul>
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.1
  */
 public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
-
-    public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":"
-            + Protocol.DEFAULT_PORT;
-
+    public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":" + Protocol.DEFAULT_PORT;
     private String redisHostAndPort = DEFAULT_HOST_AND_PORT;
 
     /**
-     * Redis' host and port scheme (format {@code host:port}).
+     * Redis host and port scheme (format {@code host:port}).
      *
      * @return
      */
@@ -49,7 +49,7 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
     }
 
     /**
-     * Set Redis' host and port scheme (format {@code host:port}).
+     * Redis host and port scheme (format {@code host:port}).
      *
      * @param redisHostAndPort
      * @return
@@ -60,6 +60,7 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
     }
 
     /*----------------------------------------------------------------------*/
+
     /**
      * {@inheritDoc}
      */
@@ -67,19 +68,11 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
     protected JedisConnector buildJedisConnector() {
         JedisConnector jedisConnector = new JedisConnector();
         jedisConnector.setJedisPoolConfig(JedisUtils.defaultJedisPoolConfig())
-                .setRedisHostsAndPorts(getRedisHostAndPort()).setRedisPassword(getRedisPassword())
-                .init();
+                .setRedisHostsAndPorts(getRedisHostAndPort()).setRedisPassword(getRedisPassword()).init();
         return jedisConnector;
     }
 
     /*----------------------------------------------------------------------*/
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected JedisCommands getJedisCommands() {
-        return getJedisConnector().getJedis();
-    }
 
     /**
      * {@inheritDoc}
@@ -93,22 +86,27 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
      * {@inheritDoc}
      */
     @Override
-    protected void closeJedisCommands(JedisCommands jedisCommands) {
+    protected void closeJedisCommands(BinaryJedisCommands jedisCommands) {
         if (jedisCommands instanceof Jedis) {
             ((Jedis) jedisCommands).close();
         } else
             throw new IllegalArgumentException("Argument is not of type [" + Jedis.class + "]!");
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    protected void closeJedisCommands(BinaryJedisCommands jedisCommands) {
-        if (jedisCommands instanceof Jedis) {
-            ((Jedis) jedisCommands).close();
-        } else
-            throw new IllegalArgumentException("Argument is not of type [" + Jedis.class + "]!");
+    private boolean doExecTx(Transaction jt, Response<?>... responses) {
+        jt.exec();
+        if (responses != null) {
+            for (Response<?> response : responses) {
+                if (response == null) {
+                    continue;
+                }
+                Object value = response.get();
+                if (value == null || (value instanceof Number && ((Number) value).longValue() < 1)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
@@ -120,15 +118,14 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
             return true;
         }
         try (Jedis jedis = getJedisConnector().getJedis()) {
-            Transaction jt = jedis.multi();
-
-            byte[] field = msg.getId().toString().getBytes(QueueUtils.UTF8);
-            Response<Long> response = jt.hdel(getRedisHashNameAsBytes(), field);
-            jt.zrem(getRedisSortedSetNameAsBytes(), field);
-
-            jt.exec();
-            Long value = response.get();
-            return value != null && value.longValue() > 1;
+            try (Transaction jt = jedis.multi()) {
+                byte[] field = msg.getId().toString().getBytes(StandardCharsets.UTF_8);
+                Response<?>[] importantResponses = new Response[] { jt.hdel(getRedisHashNameAsBytes(), field),
+                        isEphemeralDisabled() ? null : jt.zrem(getRedisSortedSetNameAsBytes(), field) };
+                return doExecTx(jt, importantResponses);
+            } catch (IOException e) {
+                throw new QueueException(e);
+            }
         }
     }
 
@@ -138,15 +135,16 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
     @Override
     protected boolean storeNew(IQueueMessage<ID, DATA> msg) {
         try (Jedis jedis = getJedisConnector().getJedis()) {
-            Transaction jt = jedis.multi();
-
-            byte[] field = msg.getId().toString().getBytes(QueueUtils.UTF8);
-            byte[] data = serialize(msg);
-            jt.hset(getRedisHashNameAsBytes(), field, data);
-            jt.rpush(getRedisListNameAsBytes(), field);
-
-            jt.exec();
-            return true;
+            try (Transaction jt = jedis.multi()) {
+                byte[] field = msg.getId().toString().getBytes(StandardCharsets.UTF_8);
+                byte[] data = serialize(msg);
+                /* hset may return 0 if hash already existed. So we only care about the response of rpush */
+                jt.hset(getRedisHashNameAsBytes(), field, data);
+                Response<?>[] importantResponses = new Response[] { jt.rpush(getRedisListNameAsBytes(), field) };
+                return doExecTx(jt, importantResponses);
+            } catch (IOException e) {
+                throw new QueueException(e);
+            }
         }
     }
 
@@ -156,24 +154,26 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
     @Override
     protected boolean storeOld(IQueueMessage<ID, DATA> msg) {
         try (Jedis jedis = getJedisConnector().getJedis()) {
-            Transaction jt = jedis.multi();
-
-            byte[] field = msg.getId().toString().getBytes(QueueUtils.UTF8);
-            byte[] data = serialize(msg);
-            jt.hset(getRedisHashNameAsBytes(), field, data);
-            jt.rpush(getRedisListNameAsBytes(), field);
-            jt.zrem(getRedisSortedSetNameAsBytes(), field);
-
-            jt.exec();
-            return true;
+            try (Transaction jt = jedis.multi()) {
+                byte[] field = msg.getId().toString().getBytes(StandardCharsets.UTF_8);
+                byte[] data = serialize(msg);
+                /* zrem and hset may return 0. So we only care about the response of rpush */
+                if (!isEphemeralDisabled()) {
+                    jt.zrem(getRedisSortedSetNameAsBytes(), field);
+                }
+                jt.hset(getRedisHashNameAsBytes(), field, data);
+                Response<?>[] importantResponses = new Response[] { jt.rpush(getRedisListNameAsBytes(), field) };
+                return doExecTx(jt, importantResponses);
+            } catch (IOException e) {
+                throw new QueueException(e);
+            }
         }
     }
 
     /**
      * {@inheritDoc}
-     * 
-     * @throws QueueException.EphemeralIsFull
-     *             if the ephemeral storage is full
+     *
+     * @throws QueueException.EphemeralIsFull if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
@@ -185,28 +185,12 @@ public abstract class RedisQueue<ID, DATA> extends BaseRedisQueue<ID, DATA> {
         }
         try (Jedis jedis = getJedisConnector().getJedis()) {
             long now = System.currentTimeMillis();
-            Object response = jedis.eval(getScriptTake(), 0, String.valueOf(now));
-            if (response == null) {
-                return null;
-            }
-            return deserialize(response instanceof byte[] ? (byte[]) response
-                    : response.toString().getBytes(QueueUtils.UTF8));
+            Object response = jedis.eval(getScriptTakeAsBytes(), 0, String.valueOf(now).getBytes(StandardCharsets.UTF_8));
+            return response == null ?
+                    null :
+                    deserialize(response instanceof byte[] ?
+                            (byte[]) response :
+                            response.toString().getBytes(StandardCharsets.UTF_8));
         }
     }
-
-    // /**
-    // * {@inheritDoc}
-    // */
-    // @Override
-    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
-    // msg) {
-    // if (isEphemeralDisabled()) {
-    // return true;
-    // }
-    // try (Jedis jedis = getJedisConnector().getJedis()) {
-    // Object response = jedis.eval(getScriptMove(), 0, msg.getId().toString());
-    // return response != null && "1".equals(response.toString());
-    // }
-    // }
-
 }

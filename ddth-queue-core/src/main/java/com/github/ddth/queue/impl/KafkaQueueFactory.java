@@ -1,18 +1,17 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Properties;
-
+import com.github.ddth.kafka.KafkaClient;
+import com.github.ddth.kafka.KafkaClient.ProducerType;
+import com.github.ddth.queue.QueueSpec;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.ddth.kafka.KafkaClient;
-import com.github.ddth.kafka.KafkaClient.ProducerType;
-import com.github.ddth.queue.QueueSpec;
+import java.util.Properties;
 
 /**
  * Factory to create {@link KafkaQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
@@ -39,7 +38,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     private boolean defaultSendAsync = KafkaQueue.DEFAULT_SEND_ASYNC;
 
     /**
-     * 
+     * Default Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}), passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -48,7 +48,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
+     * Default Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}), passed to all queues created by this factory.
+     *
      * @param defaultBootstrapServers
      * @since 0.6.2
      */
@@ -57,7 +58,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
+     * Default name of Kafka topic to store queue messages, passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -66,7 +68,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
+     * Default name of Kafka topic to store queue messages, passed to all queues created by this factory.
+     *
      * @param defaultTopicName
      * @since 0.6.2
      */
@@ -75,7 +78,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
+     * Default Kafka group-id to consume messages, passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -84,7 +88,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
+     * Default Kafka group-id to consume messages, passed to all queues created by this factory.
+     *
      * @param defaultConsumerGroupId
      * @since 0.6.2
      */
@@ -92,32 +97,63 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
         this.defaultConsumerGroupId = defaultConsumerGroupId;
     }
 
+    /**
+     * Default Kafka's producer type, used to send messages (default {@link ProducerType#LEADER_ACK}), passed to all queues created by this factory.
+     *
+     * @return
+     */
     public ProducerType getDefaultProducerType() {
         return defaultProducerType;
     }
 
+    /**
+     * Default Kafka's producer type, used to send messages (default {@link ProducerType#LEADER_ACK}), passed to all queues created by this factory.
+     *
+     * @param defaultProducerType
+     */
     public void setDefaultProducerType(ProducerType defaultProducerType) {
         this.defaultProducerType = defaultProducerType;
     }
 
+    /**
+     * Default custom configuration properties for Kafka producer, passed to all queues created by this factory.
+     *
+     * @return
+     */
     public Properties getDefaultProducerProps() {
         return defaultProducerProps;
     }
 
+    /**
+     * Default custom configuration properties for Kafka producer, passed to all queues created by this factory.
+     *
+     * @param defaultProducerProps
+     */
     public void setDefaultProducerProps(Properties defaultProducerProps) {
         this.defaultProducerProps = defaultProducerProps;
     }
 
+    /**
+     * Default custom configuration properties for Kafka consumer, passed to all queues created by this factory.
+     *
+     * @return
+     */
     public Properties getDefaultConsumerProps() {
         return defaultConsumerProps;
     }
 
+    /**
+     * Default custom configuration properties for Kafka consumer, passed to all queues created by this factory.
+     *
+     * @param defaultConsumerProps
+     */
     public void setDefaultConsumerProps(Properties defaultConsumerProps) {
         this.defaultConsumerProps = defaultConsumerProps;
     }
 
     /**
-     * 
+     * Should messages sent to Kafka asynchronously (default {@code true})?
+     *
      * @return
      * @since 0.6.2
      */
@@ -126,8 +162,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
-     * @return
+     * Should messages sent to Kafka asynchronously (default {@code true})?
+     *
      * @since 0.6.2
      */
     public boolean getDefaultSendAsync() {
@@ -135,7 +171,8 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * 
+     * Should messages sent to Kafka asynchronously (default {@code true})?
+     *
      * @param defaultSendAsync
      * @since 0.6.2
      */
@@ -144,16 +181,12 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * Getter for {@link #defaultKafkaClient}.
-     * 
-     * <p>
      * If all {@link KafkaQueue} instances are connecting to one Kafka broker,
      * it's a good idea to pre-create a {@link KafkaClient} instance and share
      * it amongst {@link KafkaQueue} instances created from this factory by
      * assigning it to {@link #defaultKafkaClient} (see
      * {@link #setDefaultKafkaClient(KafkaClient)}).
-     * </p>
-     * 
+     *
      * @return
      * @since 0.7.1
      */
@@ -162,8 +195,12 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * Setter for {@link #defaultKafkaClient}.
-     * 
+     * If all {@link KafkaQueue} instances are connecting to one Kafka broker,
+     * it's a good idea to pre-create a {@link KafkaClient} instance and share
+     * it amongst {@link KafkaQueue} instances created from this factory by
+     * assigning it to {@link #defaultKafkaClient} (see
+     * {@link #setDefaultKafkaClient(KafkaClient)}).
+     *
      * @param kafkaClient
      * @param setMyOwnKafkaClient
      * @return
@@ -180,8 +217,12 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
     }
 
     /**
-     * Setter for {@link #defaultKafkaClient}.
-     * 
+     * If all {@link KafkaQueue} instances are connecting to one Kafka broker,
+     * it's a good idea to pre-create a {@link KafkaClient} instance and share
+     * it amongst {@link KafkaQueue} instances created from this factory by
+     * assigning it to {@link #defaultKafkaClient} (see
+     * {@link #setDefaultKafkaClient(KafkaClient)}).
+     *
      * @param kafkaClient
      * @return
      * @since 0.7.1
@@ -192,7 +233,7 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.1
      */
     @Override
@@ -214,19 +255,17 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @throws Exception
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) throws Exception {
         queue.setKafkaClient(defaultKafkaClient).setProducerType(defaultProducerType)
-                .setKafkaProducerProperties(defaultProducerProps)
-                .setKafkaConsumerProperties(defaultConsumerProps);
+                .setKafkaProducerProperties(defaultProducerProps).setKafkaConsumerProperties(defaultConsumerProps);
         queue.setSendAsync(defaultSendAsync);
 
         String bootstrapServers = spec.getField(SPEC_FIELD_BOOTSTRAP_SERVERS);
-        bootstrapServers = StringUtils.isBlank(bootstrapServers) ? defaultBootstrapServers
-                : bootstrapServers;
+        bootstrapServers = StringUtils.isBlank(bootstrapServers) ? defaultBootstrapServers : bootstrapServers;
         if (StringUtils.isBlank(bootstrapServers)) {
             throw new IllegalArgumentException(
                     "Empty or Invalid value for param [" + SPEC_FIELD_BOOTSTRAP_SERVERS + "]!");
@@ -234,8 +273,7 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
         queue.setKafkaBootstrapServers(bootstrapServers);
 
         String consumerGroupId = spec.getField(SPEC_FIELD_CONSUMER_GROUP_ID);
-        consumerGroupId = StringUtils.isBlank(consumerGroupId) ? defaultConsumerGroupId
-                : consumerGroupId;
+        consumerGroupId = StringUtils.isBlank(consumerGroupId) ? defaultConsumerGroupId : consumerGroupId;
         if (!StringUtils.isBlank(consumerGroupId)) {
             queue.setConsumerGroupId(consumerGroupId);
         }
@@ -243,8 +281,7 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
         String topicName = spec.getField(SPEC_FIELD_TOPIC);
         topicName = StringUtils.isBlank(topicName) ? defaultTopicName : topicName;
         if (StringUtils.isBlank(topicName)) {
-            throw new IllegalArgumentException(
-                    "Empty or Invalid value for param [" + SPEC_FIELD_TOPIC + "]!");
+            throw new IllegalArgumentException("Empty or Invalid value for param [" + SPEC_FIELD_TOPIC + "]!");
         }
         queue.setTopicName(topicName);
 
@@ -276,5 +313,4 @@ public abstract class KafkaQueueFactory<T extends KafkaQueue<ID, DATA>, ID, DATA
 
         super.initQueue(queue, spec);
     }
-
 }

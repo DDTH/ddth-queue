@@ -1,26 +1,22 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Collection;
-import java.util.Date;
-
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
-
-import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
+import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.jms.*;
+import java.lang.IllegalStateException;
+import java.util.Collection;
 
 /**
  * (Experimental) ActiveMQ implementation of {@link IQueue}.
+ *
+ * <ul>
+ * <li>Queue-size support: no</li>
+ * <li>Ephemeral storage support: no</li>
+ * </ul>
  *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
@@ -37,8 +33,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     private Connection connection;
 
     /**
-     * Get ActiveMQ's connection URI (see
-     * http://activemq.apache.org/connection-configuration-uri.html).
+     * ActiveMQ's connection URI (see http://activemq.apache.org/connection-configuration-uri.html).
      *
      * @return
      */
@@ -47,8 +42,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Set ActiveMQ's connection URI (see
-     * http://activemq.apache.org/connection-configuration-uri.html).
+     * ActiveMQ's connection URI (see http://activemq.apache.org/connection-configuration-uri.html).
      *
      * @param uri
      * @return
@@ -58,19 +52,41 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return this;
     }
 
+    /**
+     * Username to connect to ActiveMQ server.
+     *
+     * @return
+     */
     public String getUsername() {
         return username;
     }
 
+    /**
+     * Username to connect to ActiveMQ server.
+     *
+     * @param username
+     * @return
+     */
     public ActiveMqQueue<ID, DATA> setUsername(String username) {
         this.username = username;
         return this;
     }
 
+    /**
+     * Password to connect to ActiveMQ server.
+     *
+     * @return
+     */
     public String getPassword() {
         return password;
     }
 
+    /**
+     * Password to connect to ActiveMQ server.
+     *
+     * @param password
+     * @return
+     */
     public ActiveMqQueue<ID, DATA> setPassword(String password) {
         this.password = password;
         return this;
@@ -81,29 +97,42 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      *
      * @return
      */
+    @Override
     public String getQueueName() {
         return queueName;
     }
 
+    /**
+     * Name of ActiveMQ queue to send/receive messages.
+     *
+     * @param queueName
+     * @return
+     */
+    @Override
     public ActiveMqQueue<ID, DATA> setQueueName(String queueName) {
         this.queueName = queueName;
         return this;
     }
 
+    /**
+     * Getter for {@link #connectionFactory}.
+     *
+     * @return
+     */
     protected ActiveMQConnectionFactory getConnectionFactory() {
         return connectionFactory;
     }
 
     /**
      * Setter for {@link #connectionFactory}.
-     * 
+     *
      * @param connectionFactory
      * @param setMyOwnConnectionFactory
      * @return
      * @since 0.7.1
      */
-    protected ActiveMqQueue<ID, DATA> setConnectionFactory(
-            ActiveMQConnectionFactory connectionFactory, boolean setMyOwnConnectionFactory) {
+    protected ActiveMqQueue<ID, DATA> setConnectionFactory(ActiveMQConnectionFactory connectionFactory,
+            boolean setMyOwnConnectionFactory) {
         if (myOwnConnectionFactory && this.connectionFactory != null) {
             // destroy this.connectionFactory
         }
@@ -112,8 +141,13 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return this;
     }
 
-    public ActiveMqQueue<ID, DATA> setConnectionFactory(
-            ActiveMQConnectionFactory connectionFactory) {
+    /**
+     * Setter for {@link #connectionFactory}.
+     *
+     * @param connectionFactory
+     * @return
+     */
+    public ActiveMqQueue<ID, DATA> setConnectionFactory(ActiveMQConnectionFactory connectionFactory) {
         return setConnectionFactory(connectionFactory, false);
     }
 
@@ -121,9 +155,9 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         if (connection == null) {
             synchronized (this) {
                 if (connection == null) {
-                    connection = StringUtils.isEmpty(username)
-                            ? connectionFactory.createConnection()
-                            : connectionFactory.createConnection(getUsername(), getPassword());
+                    connection = StringUtils.isEmpty(username) ?
+                            connectionFactory.createConnection() :
+                            connectionFactory.createConnection(getUsername(), getPassword());
                     connection.start();
                 }
             }
@@ -204,7 +238,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     /*----------------------------------------------------------------------*/
 
     /**
-     * 
      * @return
      * @since 0.6.2.6
      */
@@ -231,7 +264,7 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         super.init();
 
         if (connectionFactory == null) {
-            throw new IllegalStateException("ActiveMQ Connection factory is null.");
+            throw new IllegalStateException("ActiveMQ connection factory is null.");
         }
 
         return this;
@@ -261,7 +294,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 connection.close();
             }
         } catch (Exception e) {
-
         }
     }
 
@@ -271,7 +303,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 session.close();
             }
         } catch (Exception e) {
-
         }
     }
 
@@ -281,7 +312,6 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 consumer.close();
             }
         } catch (Exception e) {
-
         }
     }
 
@@ -291,17 +321,23 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
                 producer.close();
             }
         } catch (Exception e) {
-
         }
     }
 
     /**
-     * Puts a message to ActiveMQ queue.
-     *
-     * @param msg
-     * @return
+     * {@inheritDoc}
      */
-    protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
+    @Override
+    public void finish(IQueueMessage<ID, DATA> msg) {
+        //do nothing as we use Session.AUTO_ACKNOWLEDGE
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>{@code queueCase} is ignore as we always add new message to ActiveMQ.</p>
+     */
+    @Override
+    protected boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase) {
         try {
             BytesMessage message = getProducerSession().createBytesMessage();
             message.writeBytes(serialize(msg));
@@ -314,55 +350,14 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * {@inheritDoc}
-     */
-    @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.incNumRequeues().setQueueTimestamp(now);
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void finish(IQueueMessage<ID, DATA> msg) {
-        // EMPTY
-    }
-
-    /**
-     * {@inheritDoc}
      *
-     * @throws QueueException.EphemeralIsFull
-     *             if the ephemeral storage is full
+     * @throws QueueException.EphemeralIsFull if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
         try {
             MessageConsumer consumer = getMessageConsumer();
             synchronized (consumer) {
-                // Message message = consumer.receiveNoWait();
                 Message message = consumer.receive(1000);
                 if (message instanceof BytesMessage) {
                     BytesMessage msg = (BytesMessage) message;
@@ -383,18 +378,8 @@ public abstract class ActiveMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     @Override
     public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        throw new QueueException.OperationNotSupported(
-                "This queue does not support retrieving orphan messages.");
+        throw new QueueException.OperationNotSupported("This queue does not support retrieving orphan messages.");
     }
-
-//    /**
-//     * {@inheritDoc}
-//     */
-//    @Override
-//    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> msg) {
-//        throw new QueueException.OperationNotSupported(
-//                "This queue does not support ephemeral storage.");
-//    }
 
     /**
      * {@inheritDoc}

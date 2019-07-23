@@ -4,15 +4,12 @@ import com.github.ddth.queue.impl.InmemQueue;
 
 /**
  * Base class for universal in-memory queue implementations.
- * 
- * @author Thanh Nguyen <btnguyen2k@gmail.com>
- * 
+ *
  * @param <T>
+ * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.4.0
  */
-public class BaseUniversalInmemQueue<T extends BaseUniversalQueueMessage<ID>, ID>
-        extends InmemQueue<ID, byte[]> {
-
+public class BaseUniversalInmemQueue<T extends BaseUniversalQueueMessage<ID>, ID> extends InmemQueue<ID, byte[]> {
     public BaseUniversalInmemQueue() {
     }
 

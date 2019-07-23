@@ -1,5 +1,11 @@
 # ddth-queue release notes
 
+## 1.0.0- 2019-07-23
+
+- Migrate to `Java 11`.
+- Bug fixes & enhancements.
+
+
 ## 0.7.1.2 - 2018-06-18
 
 - Bug fixes: `RedisPubSubHub` and `RedisQueue` incorrectly set `redisPassword` field.

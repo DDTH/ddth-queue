@@ -4,33 +4,32 @@ import java.util.Date;
 
 /**
  * Represent a message.
- * 
+ *
  * <p>
  * A message has 3 base attributes: id, data and timestamp.
  * </p>
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public interface IMessage<ID, DATA> extends Cloneable {
-
     /**
      * Clone this message.
-     * 
+     *
      * @return
      */
     IMessage<ID, DATA> clone();
 
     /**
      * Message's unique id in queue.
-     * 
+     *
      * @return
      */
     ID getId();
 
     /**
      * Set message's unique queue id.
-     * 
+     *
      * @param id
      * @return
      */
@@ -38,14 +37,14 @@ public interface IMessage<ID, DATA> extends Cloneable {
 
     /**
      * Message's timestamp.
-     * 
+     *
      * @return
      */
     Date getTimestamp();
 
     /**
      * Set message's timestamp.
-     * 
+     *
      * @param timestamp
      * @return
      */
@@ -53,14 +52,14 @@ public interface IMessage<ID, DATA> extends Cloneable {
 
     /**
      * Data/content attached to the queue message.
-     * 
+     *
      * @return
      */
     DATA getData();
 
     /**
      * Attach data/content to the queue message.
-     * 
+     *
      * @param data
      * @return
      */
@@ -70,11 +69,11 @@ public interface IMessage<ID, DATA> extends Cloneable {
 
     /**
      * An empty message.
-     * 
+     *
      * @author Thanh Nguyen <btnguyen2k@gmail.com>
      */
     @SuppressWarnings("rawtypes")
-    static class EmptyMessage implements IMessage {
+    class EmptyMessage implements IMessage {
         public final static EmptyMessage INSTANCE = new EmptyMessage();
 
         /**

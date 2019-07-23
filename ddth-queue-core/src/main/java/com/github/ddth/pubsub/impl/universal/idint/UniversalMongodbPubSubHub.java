@@ -25,12 +25,10 @@ public class UniversalMongodbPubSubHub extends MongodbPubSubHub<Long, byte[]> {
      */
     @Override
     public UniversalMongodbPubSubHub init() {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdIntMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 

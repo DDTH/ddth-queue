@@ -16,7 +16,7 @@ import org.junit.runners.Suite;
 })
 
 /*
- * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idint.mongodb.MySuiteTest -DenableTestsMongo=true
+ * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idstr.mongodb.MySuiteTest -DenableTestsMongo=true
  */
 
 public class MySuiteTest {

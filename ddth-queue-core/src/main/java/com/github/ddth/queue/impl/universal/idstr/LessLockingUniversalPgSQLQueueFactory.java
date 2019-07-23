@@ -5,15 +5,14 @@ import com.github.ddth.queue.impl.JdbcQueueFactory;
 
 /**
  * Factory to create {@link LessLockingUniversalPgSQLQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
 public class LessLockingUniversalPgSQLQueueFactory
         extends JdbcQueueFactory<LessLockingUniversalPgSQLQueue, String, byte[]> {
-
     public final static String SPEC_FIELD_FIFO = "fifo";
-    private boolean defaultFifo = AbstractLessLockingUniversalJdbcQueue.DEFAULT_FIFO;
+    private boolean defaultFifo = true;
 
     /**
      * @return
@@ -24,7 +23,6 @@ public class LessLockingUniversalPgSQLQueueFactory
     }
 
     /**
-     * 
      * @return
      * @since 0.6.2
      */
@@ -33,7 +31,6 @@ public class LessLockingUniversalPgSQLQueueFactory
     }
 
     /**
-     * 
      * @param defaultFifo
      * @since 0.6.2
      */
@@ -54,5 +51,4 @@ public class LessLockingUniversalPgSQLQueueFactory
         }
         return queue;
     }
-
 }

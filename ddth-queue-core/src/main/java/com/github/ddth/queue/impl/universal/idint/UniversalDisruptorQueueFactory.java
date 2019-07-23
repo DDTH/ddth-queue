@@ -5,13 +5,11 @@ import com.github.ddth.queue.impl.DisruptorQueueFactory;
 
 /**
  * Factory to create {@link UniversalDisruptorQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public class UniversalDisruptorQueueFactory
-        extends DisruptorQueueFactory<UniversalDisruptorQueue, Long, byte[]> {
-
+public class UniversalDisruptorQueueFactory extends DisruptorQueueFactory<UniversalDisruptorQueue, Long, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalDisruptorQueueFactory
         UniversalDisruptorQueue queue = new UniversalDisruptorQueue();
         return queue;
     }
-
 }

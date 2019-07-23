@@ -3,7 +3,7 @@ package com.github.ddth.pubsub;
 import com.github.ddth.queue.IMessage;
 
 /**
- * API Interface used to subscribe to message channels.
+ * API interface used to subscribe to message channels.
  * 
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.7.0

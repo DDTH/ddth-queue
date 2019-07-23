@@ -4,15 +4,13 @@ import com.github.ddth.queue.impl.MongodbQueue;
 
 /**
  * Base class for universal MongoDB queue implementations.
- * 
- * @author Thanh Nguyen
- * 
+ *
  * @param <T>
+ * @author Thanh Nguyen
  * @since 0.7.1
  */
 public abstract class BaseUniversalMongodbQueue<T extends BaseUniversalQueueMessage<ID>, ID>
         extends MongodbQueue<ID, byte[]> {
-
     /**
      * {@inheritDoc}
      */

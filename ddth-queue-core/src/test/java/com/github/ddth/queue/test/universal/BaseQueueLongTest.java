@@ -1,5 +1,17 @@
 package com.github.ddth.queue.test.universal;
 
+import com.github.ddth.commons.utils.IdGenerator;
+import com.github.ddth.queue.IQueue;
+import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.AbstractQueue;
+import com.github.ddth.queue.utils.QueueException;
+import com.github.ddth.queue.utils.QueueException.EphemeralIsFull;
+import com.github.ddth.queue.utils.QueueException.QueueIsFull;
+import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
+
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,22 +20,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.After;
-import org.junit.Before;
-
-import com.github.ddth.commons.utils.IdGenerator;
-import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.AbstractQueue;
-import com.github.ddth.queue.utils.QueueException;
-import com.github.ddth.queue.utils.QueueException.EphemeralIsFull;
-import com.github.ddth.queue.utils.QueueException.QueueIsFull;
-import com.github.ddth.queue.utils.QueueUtils;
-
-import junit.framework.TestCase;
-
 public abstract class BaseQueueLongTest<I> extends TestCase {
-
     protected static IdGenerator idGen = IdGenerator.getInstance(IdGenerator.getMacAddr());
     protected IQueue<I, byte[]> queue;
     protected Random random = new Random(System.currentTimeMillis());
@@ -101,8 +98,7 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
                         String content = idGen.generateId128Hex();
-                        IQueueMessage<I, byte[]> msg = queue
-                                .createMessage(content.getBytes(QueueUtils.UTF8));
+                        IQueueMessage<I, byte[]> msg = queue.createMessage(content.getBytes(StandardCharsets.UTF_8));
                         try {
                             boolean status = false;
                             while (!status) {
@@ -128,16 +124,14 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
         return result;
     }
 
-    protected Thread[] createProducerThreadsDelay(int numThreads, final int delayMs,
-            final int numMsgs) {
+    protected Thread[] createProducerThreadsDelay(int numThreads, final int delayMs, final int numMsgs) {
         Thread[] result = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
             result[i] = new Thread("Producer - " + i) {
                 public void run() {
                     for (int i = 0; i < numMsgs; i++) {
                         String content = idGen.generateId128Hex();
-                        IQueueMessage<I, byte[]> msg = queue
-                                .createMessage(content.getBytes(QueueUtils.UTF8));
+                        IQueueMessage<I, byte[]> msg = queue.createMessage(content.getBytes(StandardCharsets.UTF_8));
                         try {
                             boolean status = false;
                             while (!status) {
@@ -177,7 +171,7 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
                             IQueueMessage<I, byte[]> _msg = queue.take();
                             if (_msg != null) {
                                 queue.finish(_msg);
-                                String content = new String(_msg.getData(), QueueUtils.UTF8);
+                                String content = new String(_msg.getData(), StandardCharsets.UTF_8);
                                 if (!STORAGE_RECEIVED.add(content)) {
                                     throw new IllegalStateException("Something wrong!");
                                 }
@@ -200,8 +194,7 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
         return result;
     }
 
-    protected Thread[] createConsumerThreadsDelay(int numThreads, final int delayMs,
-            final AtomicBoolean signal) {
+    protected Thread[] createConsumerThreadsDelay(int numThreads, final int delayMs, final AtomicBoolean signal) {
         Thread[] result = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
             result[i] = new Thread("Consumer - " + i) {
@@ -211,7 +204,7 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
                             IQueueMessage<I, byte[]> _msg = queue.take();
                             if (_msg != null) {
                                 queue.finish(_msg);
-                                String content = new String(_msg.getData(), QueueUtils.UTF8);
+                                String content = new String(_msg.getData(), StandardCharsets.UTF_8);
                                 if (!STORAGE_RECEIVED.add(content)) {
                                     throw new IllegalStateException("Something wrong!");
                                 }
@@ -284,12 +277,12 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
         }
         long d1 = t2 - t1;
         long d2 = t - t2;
-        System.out.println(MessageFormat.format("== [{0}] TEST - {1}P{2}C",
-                getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
-        System.out.println("  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - "
-                + STORAGE_RECEIVED.size() + " / Duration: " + d1 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
+        System.out.println(MessageFormat
+                .format("== [{0}] TEST - {1}P{2}C", getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
+        System.out.println(
+                "  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - " + STORAGE_RECEIVED.size() + " / Duration: "
+                        + d1 + "ms (" + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
+                        + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
         verify(NUM_MSGS);
     }
 
@@ -322,12 +315,12 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
         }
         long d1 = t2 - t1;
         long d2 = t - t2;
-        System.out.println(MessageFormat.format("== [{0}] TEST - {1}P{2}C",
-                getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
-        System.out.println("  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - "
-                + STORAGE_RECEIVED.size() + " / Duration: " + d1 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
+        System.out.println(MessageFormat
+                .format("== [{0}] TEST - {1}P{2}C", getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
+        System.out.println(
+                "  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - " + STORAGE_RECEIVED.size() + " / Duration: "
+                        + d1 + "ms (" + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
+                        + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
         verify(NUM_MSGS);
     }
 
@@ -360,12 +353,12 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
         }
         long d1 = t2 - t1;
         long d2 = t - t2;
-        System.out.println(MessageFormat.format("== [{0}] TEST - {1}P{2}C",
-                getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
-        System.out.println("  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - "
-                + STORAGE_RECEIVED.size() + " / Duration: " + d1 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
+        System.out.println(MessageFormat
+                .format("== [{0}] TEST - {1}P{2}C", getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
+        System.out.println(
+                "  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - " + STORAGE_RECEIVED.size() + " / Duration: "
+                        + d1 + "ms (" + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
+                        + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
         verify(NUM_MSGS);
     }
 
@@ -398,12 +391,12 @@ public abstract class BaseQueueLongTest<I> extends TestCase {
         }
         long d1 = t2 - t1;
         long d2 = t - t2;
-        System.out.println(MessageFormat.format("== [{0}] TEST - {1}P{2}C",
-                getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
-        System.out.println("  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - "
-                + STORAGE_RECEIVED.size() + " / Duration: " + d1 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
-                + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
+        System.out.println(MessageFormat
+                .format("== [{0}] TEST - {1}P{2}C", getClass().getSimpleName(), NUM_PRODUCERS, NUM_CONSUMER));
+        System.out.println(
+                "  Msgs: " + NUM_MSGS + " - " + STORAGE_SENT.size() + " - " + STORAGE_RECEIVED.size() + " / Duration: "
+                        + d1 + "ms (" + String.format("%,.1f", NUM_MSGS * 1000.0 / d1) + " msg/s) - " + d2 + "ms ("
+                        + String.format("%,.1f", NUM_MSGS * 1000.0 / d2) + " msg/s)");
         verify(NUM_MSGS);
     }
 }

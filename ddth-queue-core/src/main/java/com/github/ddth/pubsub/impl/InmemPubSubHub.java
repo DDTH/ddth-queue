@@ -1,8 +1,5 @@
 package com.github.ddth.pubsub.impl;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-
 import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.ISubscriber;
 import com.github.ddth.queue.IMessage;
@@ -13,14 +10,18 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 
+import java.util.concurrent.ExecutionException;
+
 /**
- * In-Memory implementation of {@link IPubSubHub}.
- * 
+ * In-memory implementation of {@link IPubSubHub}.
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public class InmemPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
-
+    /**
+     * To use with Guava's {@link EventBus}.
+     */
     private class WrapAroundSubscriber {
         private ISubscriber<ID, DATA> subscriber;
         private String channel;
@@ -36,20 +37,17 @@ public class InmemPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
         }
     }
 
-    private LoadingCache<String, EventBus> eventBus = CacheBuilder.newBuilder()
-            .build(new CacheLoader<String, EventBus>() {
-                @Override
-                public EventBus load(String key) throws Exception {
-                    return new EventBus();
-                }
-            });
+    private LoadingCache<String, EventBus> eventBus = CacheBuilder.newBuilder().build(new CacheLoader<>() {
+        @Override
+        public EventBus load(String key) {
+            return new EventBus();
+        }
+    });
 
     private LoadingCache<String, Cache<ISubscriber<ID, DATA>, WrapAroundSubscriber>> subscriptions = CacheBuilder
-            .newBuilder()
-            .build(new CacheLoader<String, Cache<ISubscriber<ID, DATA>, WrapAroundSubscriber>>() {
+            .newBuilder().build(new CacheLoader<String, Cache<ISubscriber<ID, DATA>, WrapAroundSubscriber>>() {
                 @Override
-                public Cache<ISubscriber<ID, DATA>, WrapAroundSubscriber> load(String key)
-                        throws Exception {
+                public Cache<ISubscriber<ID, DATA>, WrapAroundSubscriber> load(String key) {
                     return CacheBuilder.newBuilder().build();
                 }
             });
@@ -58,22 +56,16 @@ public class InmemPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
      * {@inheritDoc}
      */
     @Override
-    public InmemPubSubHub<ID, DATA> init() {
-        super.init();
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void destroy() {
         try {
             eventBus.invalidateAll();
-            subscriptions.invalidateAll();
-        } finally {
-            super.destroy();
+        } catch (Exception e) {
         }
+        try {
+            subscriptions.invalidateAll();
+        } catch (Exception e) {
+        }
+        super.destroy();
     }
 
     /**
@@ -84,7 +76,7 @@ public class InmemPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
         try {
             eventBus.get(channel).post(msg);
         } catch (ExecutionException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getCause());
         }
         return true;
     }
@@ -95,16 +87,11 @@ public class InmemPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
     @Override
     public void subscribe(String channel, ISubscriber<ID, DATA> subscriber) {
         try {
-            WrapAroundSubscriber wrap = subscriptions.get(channel).get(subscriber,
-                    new Callable<WrapAroundSubscriber>() {
-                        @Override
-                        public WrapAroundSubscriber call() throws Exception {
-                            return new WrapAroundSubscriber(channel, subscriber);
-                        }
-                    });
+            WrapAroundSubscriber wrap = subscriptions.get(channel)
+                    .get(subscriber, () -> new WrapAroundSubscriber(channel, subscriber));
             eventBus.get(channel).register(wrap);
         } catch (ExecutionException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException(e.getCause());
         }
     }
 
@@ -122,5 +109,4 @@ public class InmemPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
             throw new RuntimeException(e);
         }
     }
-
 }

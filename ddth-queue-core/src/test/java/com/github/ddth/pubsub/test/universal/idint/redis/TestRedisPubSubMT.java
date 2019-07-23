@@ -4,7 +4,6 @@ import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.impl.RedisPubSubHub;
 import com.github.ddth.pubsub.impl.universal.idint.UniversalRedisPubSubHub;
 import com.github.ddth.pubsub.test.universal.BasePubSubMultiThreadsTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -54,5 +53,4 @@ public class TestRedisPubSubMT extends BasePubSubMultiThreadsTest<Long> {
         }
         return hub;
     }
-
 }

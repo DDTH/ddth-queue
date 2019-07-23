@@ -10,7 +10,6 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.LessLockingUniversalSingleStoragePgSQLQueue;
 
 public class QndLessLockingQueueSingleStoragePgSQL {
-
     public static void main(String[] args) throws Exception {
         BasicDataSource dataSource = new BasicDataSource();
         dataSource.setDriverClassName("org.postgresql.Driver");
@@ -23,16 +22,17 @@ public class QndLessLockingQueueSingleStoragePgSQL {
 
             try (LessLockingUniversalSingleStoragePgSQLQueue queue = new LessLockingUniversalSingleStoragePgSQLQueue()) {
                 queue.setTableName("queuellss").setJdbcHelper(jdbcHelper)
-                        .setQueueName(QndLessLockingQueueSingleStoragePgSQL.class.getSimpleName()).init();
+                        .setQueueName(QndLessLockingQueueSingleStoragePgSQL.class.getSimpleName())
+                        .init();
 
                 UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
-                msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
+                msg.setContent("Content: [" + System.currentTimeMillis() + "] " + new Date());
                 System.out.println("Queue: " + queue.queue(msg));
 
                 msg = queue.take();
                 while (msg.getNumRequeues() < 2) {
                     System.out.println("Message: " + msg);
-                    System.out.println("Content: " + new String(msg.content()));
+                    System.out.println("Content: " + new String(msg.getContent()));
                     System.out.println("Requeue: " + queue.requeue(msg));
                     msg = queue.take();
                 }

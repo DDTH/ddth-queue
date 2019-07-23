@@ -1,35 +1,35 @@
 package com.github.ddth.pubsub.impl.universal;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Map;
 
-import com.github.ddth.queue.utils.QueueUtils;
+import com.github.ddth.pubsub.internal.utils.PubSubUtils;
 
 /**
  * Extended from {@link BaseUniversalMessage} where message's is a
  * {@code String}.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
-
     /**
      * Creates a new {@link UniversalIdStrMessage} object.
-     * 
+     *
      * @return
      */
     @SuppressWarnings("unchecked")
     public static UniversalIdStrMessage newInstance() {
         Date now = new Date();
         UniversalIdStrMessage msg = new UniversalIdStrMessage();
-        msg.setId(QueueUtils.IDGEN.generateId128Hex().toLowerCase()).setTimestamp(now);
+        msg.setId(PubSubUtils.IDGEN.generateId128Hex().toLowerCase()).setTimestamp(now);
         return msg;
     }
 
     /**
      * Create a new {@link UniversalIdStrMessage} object with specified content.
-     * 
+     *
      * @param content
      * @return
      */
@@ -42,7 +42,7 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
     /**
      * Create a new {@link UniversalIdStrMessage} object with specified id and
      * content.
-     * 
+     *
      * @param id
      * @param content
      * @return
@@ -55,7 +55,7 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
 
     /**
      * Create a new {@link UniversalIdStrMessage} object with specified content.
-     * 
+     *
      * @param content
      * @return
      */
@@ -68,7 +68,7 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
     /**
      * Create a new {@link UniversalIdStrMessage} object with specified id and
      * content.
-     * 
+     *
      * @param id
      * @param content
      * @return
@@ -81,7 +81,7 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
 
     /**
      * Create a new {@link UniversalIdStrMessage}.
-     * 
+     *
      * @param data
      * @return
      */
@@ -106,11 +106,10 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
     @Override
     public UniversalIdStrMessage fromBytes(byte[] data) {
         try {
-            UniversalIdStrMessage other = BaseUniversalMessage.fromBytes(data,
-                    UniversalIdStrMessage.class);
+            UniversalIdStrMessage other = BaseUniversalMessage.fromBytes(data, UniversalIdStrMessage.class);
             fromMap(other.toMap());
             return this;
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }
@@ -122,5 +121,4 @@ public class UniversalIdStrMessage extends BaseUniversalMessage<String> {
     public UniversalIdStrMessage fromMap(Map<String, Object> dataMap) {
         return (UniversalIdStrMessage) super.fromMap(dataMap);
     }
-
 }

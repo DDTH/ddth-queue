@@ -1,15 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.concurrent.TimeoutException;
-
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -17,9 +7,22 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.GetResponse;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
+import java.util.concurrent.TimeoutException;
 
 /**
- * RabbitMQ implementation of {@link IQueue}.
+ * (Experimental) RabbitMQ implementation of {@link IQueue}.
+ *
+ * <ul>
+ * <li>Queue-size support: no</li>
+ * <li>Ephemeral storage support: no</li>
+ * </ul>
  *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
@@ -36,8 +39,7 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     private Connection connection;
 
     /**
-     * Get RabbitMQ's connection URI (format
-     * {@code amqp://username:password@host:port/virtualHost}).
+     * RabbitMQ's connection URI (format {@code amqp://username:password@host:port/virtualHost}).
      *
      * @return
      */
@@ -46,8 +48,7 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Set RabbitMQ's connection URI (format
-     * {@code amqp://username:password@host:port/virtualHost}).
+     * RabbitMQ's connection URI (format {@code amqp://username:password@host:port/virtualHost}).
      *
      * @param uri
      * @return
@@ -66,18 +67,29 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return queueName;
     }
 
+    /**
+     * Name of RabbitMQ queue to send/receive messages.
+     *
+     * @param queueName
+     * @return
+     */
     public RabbitMqQueue<ID, DATA> setQueueName(String queueName) {
         this.queueName = queueName;
         return this;
     }
 
+    /**
+     * Getter for {@link #connectionFactory}.
+     *
+     * @return
+     */
     protected ConnectionFactory getConnectionFactory() {
         return connectionFactory;
     }
 
     /**
      * Setter for {@link #connectionFactory}.
-     * 
+     *
      * @param connectionFactory
      * @param setMyOwnConnectionFactory
      * @return
@@ -93,6 +105,12 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return this;
     }
 
+    /**
+     * Setter for {@link #connectionFactory}.
+     *
+     * @param connectionFactory
+     * @return
+     */
     public RabbitMqQueue<ID, DATA> setConnectionFactory(ConnectionFactory connectionFactory) {
         return setConnectionFactory(connectionFactory, false);
     }
@@ -153,8 +171,8 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /*----------------------------------------------------------------------*/
+
     /**
-     * 
      * @return
      * @throws URISyntaxException
      * @throws NoSuchAlgorithmException
@@ -186,7 +204,7 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         super.init();
 
         if (connectionFactory == null) {
-            throw new IllegalStateException("RabbitMQ Connection factory is null.");
+            throw new IllegalStateException("RabbitMQ connection factory is null.");
         }
 
         return this;
@@ -202,7 +220,6 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
             closeQuietly(connection);
             closeQuietly(producerChannel);
             closeQuietly(consumerChannel);
-
             if (connectionFactory != null && myOwnConnectionFactory) {
                 connectionFactory = null;
             }
@@ -228,16 +245,22 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Puts a message to Kafka queue, partitioning message by
-     * {@link IQueueMessage#qId()}
-     *
-     * @param msg
-     * @return
+     * {@inheritDoc}
      */
-    protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
+    @Override
+    public void finish(IQueueMessage<ID, DATA> msg) {
+        //do nothing as we use 'autoAck'
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>{@code queueCase} is ignore as we always add new message to RabbitMQ.</p>
+     */
+    @Override
+    protected boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase) {
         try {
             byte[] msgData = serialize(msg);
-            getProducerChannel().basicPublish("", queueName, null, msgData);
+            getProducerChannel().basicPublish("" /*exchange*/, queueName, null /*basic-properties*/, msgData);
             return true;
         } catch (Exception e) {
             throw e instanceof QueueException ? (QueueException) e : new QueueException(e);
@@ -246,48 +269,8 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * {@inheritDoc}
-     */
-    @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.incNumRequeues().setQueueTimestamp(now);
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void finish(IQueueMessage<ID, DATA> msg) {
-        // EMPTY
-    }
-
-    /**
-     * {@inheritDoc}
      *
-     * @throws QueueException.EphemeralIsFull
-     *             if the ephemeral storage is full
+     * @throws QueueException.EphemeralIsFull if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
@@ -304,19 +287,8 @@ public abstract class RabbitMqQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
      */
     @Override
     public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        throw new QueueException.OperationNotSupported(
-                "This queue does not support retrieving orphan messages.");
+        throw new QueueException.OperationNotSupported("This queue does not support retrieving orphan messages.");
     }
-
-    // /**
-    // * {@inheritDoc}
-    // */
-    // @Override
-    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
-    // msg) {
-    // throw new QueueException.OperationNotSupported(
-    // "This queue does not support ephemeral storage.");
-    // }
 
     /**
      * {@inheritDoc}

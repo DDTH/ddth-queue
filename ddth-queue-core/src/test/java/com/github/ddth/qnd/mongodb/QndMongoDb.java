@@ -10,7 +10,7 @@ import com.github.ddth.commons.utils.DateFormatUtils;
 import com.github.ddth.commons.utils.SerializationUtils;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
-import com.github.ddth.queue.utils.QueueUtils;
+import com.github.ddth.queue.internal.utils.QueueUtils;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;

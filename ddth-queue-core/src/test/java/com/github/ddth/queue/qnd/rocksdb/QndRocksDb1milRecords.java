@@ -7,16 +7,15 @@ import org.rocksdb.DBOptions;
 
 import com.github.ddth.commons.rocksdb.RocksDbUtils;
 import com.github.ddth.commons.rocksdb.RocksDbWrapper;
-import com.github.ddth.queue.utils.QueueUtils;
+import com.github.ddth.queue.internal.utils.QueueUtils;
 
 public class QndRocksDb1milRecords {
-
     public static void main(String[] args) throws Exception {
         File storageDir = new File("/tmp/rocksdb");
         FileUtils.deleteQuietly(storageDir);
         storageDir.mkdirs();
 
-        DBOptions dbOptions = RocksDbUtils.buildDbOptions().setMaxTotalWalSize(16);
+        DBOptions dbOptions = RocksDbUtils.defaultDbOptions().setMaxTotalWalSize(16);
 
         try (RocksDbWrapper rocksDbWrapper = RocksDbWrapper.openReadWrite(storageDir, dbOptions,
                 null, null, (String[]) null)) {
@@ -50,5 +49,4 @@ public class QndRocksDb1milRecords {
             System.out.println("Num keys: " + rocksDbReadonly.getEstimateNumKeys("default"));
         }
     }
-
 }

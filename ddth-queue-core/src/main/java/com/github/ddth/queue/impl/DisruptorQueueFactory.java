@@ -4,7 +4,7 @@ import com.github.ddth.queue.QueueSpec;
 
 /**
  * Factory to create {@link DisruptorQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
@@ -13,7 +13,7 @@ public abstract class DisruptorQueueFactory<T extends DisruptorQueue<ID, DATA>, 
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @throws Exception
      */
     @Override
@@ -26,8 +26,7 @@ public abstract class DisruptorQueueFactory<T extends DisruptorQueue<ID, DATA>, 
             queue.setRingSize(maxSize.intValue());
         }
 
-        Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
-                Boolean.class);
+        Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED, Boolean.class);
         if (ephemeralDisabled != null) {
             queue.setEphemeralDisabled(ephemeralDisabled.booleanValue());
         }
@@ -39,5 +38,4 @@ public abstract class DisruptorQueueFactory<T extends DisruptorQueue<ID, DATA>, 
 
         super.initQueue(queue, spec);
     }
-
 }

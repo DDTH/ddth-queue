@@ -1,14 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.ddth.kafka.KafkaClient;
 import com.github.ddth.kafka.KafkaClient.ProducerType;
 import com.github.ddth.kafka.KafkaMessage;
@@ -16,9 +7,21 @@ import com.github.ddth.queue.IPartitionSupport;
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * (Experimental) Kafka implementation of {@link IQueue}.
+ *
+ * <ul>
+ * <li>Queue-size support: no</li>
+ * <li>Ephemeral storage support: no</li>
+ * </ul>
  *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.2
@@ -44,7 +47,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     private boolean sendAsync = DEFAULT_SEND_ASYNC;
 
     /**
-     * Sends message to Kafka asynchronously or not (default {@code true}).
+     * Should messages sent to Kafka asynchronously (default {@code true})?
      *
      * @return
      * @since 0.5.0
@@ -54,7 +57,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Sends message to Kafka asynchronously or not.
+     * Should messages sent to Kafka asynchronously (default {@code true})?
      *
      * @param value
      * @return
@@ -64,18 +67,28 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return this;
     }
 
+    /**
+     * Kafka's producer type, used to send messages (default {@link ProducerType#LEADER_ACK}).
+     *
+     * @return
+     */
     public ProducerType getProducerType() {
         return producerType;
     }
 
+    /**
+     * Kafka's producer type, used to send messages (default {@link ProducerType#LEADER_ACK}).
+     *
+     * @param producerType
+     * @return
+     */
     public KafkaQueue<ID, DATA> setProducerType(ProducerType producerType) {
         this.producerType = producerType;
         return this;
     }
 
     /**
-     * Kafka bootstrap server list (format
-     * {@code host1:9092,host2:port2,host3:port3}).
+     * Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}).
      *
      * @return
      * @since 0.4.0
@@ -85,8 +98,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Sets Kafka bootstrap server list (format
-     * {@code host1:9092,host2:port2,host3:port3}).
+     * Kafka bootstrap server list (format {@code host1:9092,host2:port2,host3:port3}).
      *
      * @param kafkaBootstrapServers
      * @return
@@ -98,7 +110,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Gets Kafka producer's custom configuration properties.
+     * Custom configuration properties for Kafka producer.
      *
      * @return
      * @since 0.4.0
@@ -108,7 +120,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Sets Kafka producer's custom configuration properties.
+     * Custom configuration properties for Kafka producer.
      *
      * @param kafkaProducerConfigs
      * @return
@@ -120,7 +132,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Gets Kafka consumer's custom configuration properties.
+     * Custom configuration properties for Kafka consumer.
      *
      * @return
      * @since 0.4.0
@@ -130,7 +142,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Sets Kafka consumer's custom configuration properties.
+     * Custom configuration properties for Kafka consumer.
      *
      * @param kafkaConsumerConfigs
      * @return
@@ -150,13 +162,19 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return topicName;
     }
 
+    /**
+     * Name of Kafka topic to store queue messages.
+     *
+     * @param topicName
+     * @return
+     */
     public KafkaQueue<ID, DATA> setTopicName(String topicName) {
         this.topicName = topicName;
         return this;
     }
 
     /**
-     * Kafka's group-id to consume messages.
+     * Kafka group-id to consume messages.
      *
      * @return
      */
@@ -164,24 +182,38 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
         return consumerGroupId;
     }
 
+    /**
+     * Kafka group-id to consume messages.
+     *
+     * @param consumerGroupId
+     * @return
+     */
     public KafkaQueue<ID, DATA> setConsumerGroupId(String consumerGroupId) {
         this.consumerGroupId = consumerGroupId;
         return this;
     }
 
+    /**
+     * An external {@link KafkaClient} can be used. If not set,
+     * {@link KafkaQueue} will automatically create a {@link KafkaClient} for
+     * its own use.
+     *
+     * @return
+     */
     protected KafkaClient getKafkaClient() {
         return kafkaClient;
     }
 
     /**
-     * Setter for {@link #kafkaClient}.
-     * 
+     * An external {@link KafkaClient} can be used. If not set,
+     * {@link KafkaQueue} will automatically create a {@link KafkaClient} for
+     * its own use.
+     *
      * @param kafkaClient
      * @param setMyOwnKafkaClient
      * @return
      */
-    protected KafkaQueue<ID, DATA> setKafkaClient(KafkaClient kafkaClient,
-            boolean setMyOwnKafkaClient) {
+    protected KafkaQueue<ID, DATA> setKafkaClient(KafkaClient kafkaClient, boolean setMyOwnKafkaClient) {
         if (this.kafkaClient != null && myOwnKafkaClient) {
             this.kafkaClient.destroy();
         }
@@ -203,7 +235,7 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /*----------------------------------------------------------------------*/
-    protected KafkaClient buildKafkaClient() throws Exception {
+    protected KafkaClient buildKafkaClient() {
         if (StringUtils.isBlank(bootstrapServers)) {
             throw new IllegalStateException("Kafka bootstrap server list is not defined.");
         }
@@ -253,69 +285,35 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     }
 
     /**
-     * Takes a message from Kafka queue.
+     * Take a message from Kafka queue.
      *
      * @return
      * @since 0.3.3
      */
     protected IQueueMessage<ID, DATA> takeFromQueue() {
-        KafkaMessage kMsg = kafkaClient.consumeMessage(consumerGroupId, true, topicName, 1000,
-                TimeUnit.MILLISECONDS);
+        KafkaMessage kMsg = kafkaClient.consumeMessage(consumerGroupId, true, topicName, 1000, TimeUnit.MILLISECONDS);
         return kMsg != null ? deserialize(kMsg.content()) : null;
     }
 
     /**
-     * Puts a message to Kafka queue, partitioning message by
-     * {@link IQueueMessage#qId()}
-     *
-     * @param msg
-     * @return
+     * {@inheritDoc}
+     * <p>{@code queueCase} is ignore as we always add new message to Kafka.</p>
      */
-    protected boolean putToQueue(IQueueMessage<ID, DATA> msg) {
+    @Override
+    protected boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase) {
         byte[] msgData = serialize(msg);
-        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).getPartitionKey()
-                : msg.getId();
+        Object pKey = msg instanceof IPartitionSupport ? ((IPartitionSupport) msg).getPartitionKey() : msg.getId();
         if (pKey == null) {
             pKey = msg.getId();
         }
-        KafkaMessage kMsg = pKey != null ? new KafkaMessage(topicName, pKey.toString(), msgData)
-                : new KafkaMessage(topicName, msgData);
+        KafkaMessage kMsg = pKey != null ?
+                new KafkaMessage(topicName, pKey.toString(), msgData) :
+                new KafkaMessage(topicName, msgData);
         if (sendAsync) {
             return kafkaClient.sendMessageRaw(producerType, kMsg) != null;
         } else {
             return kafkaClient.sendMessage(producerType, kMsg) != null;
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeue(final IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.incNumRequeues().setQueueTimestamp(now);
-        return putToQueue(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        return putToQueue(msg);
     }
 
     /**
@@ -336,24 +334,13 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
 
     /**
      * {@inheritDoc}
-     *
+     * <p>
      * This method throws {@link QueueException.OperationNotSupported}
      */
     @Override
     public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        throw new QueueException.OperationNotSupported(
-                "This queue does not support retrieving orphan messages");
+        throw new QueueException.OperationNotSupported("This queue does not support retrieving orphan messages");
     }
-
-    // /**
-    // * {@inheritDoc}
-    // */
-    // @Override
-    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
-    // msg) {
-    // throw new QueueException.OperationNotSupported(
-    // "This queue does not support ephemeral storage.");
-    // }
 
     /**
      * {@inheritDoc}
@@ -370,5 +357,4 @@ public abstract class KafkaQueue<ID, DATA> extends AbstractQueue<ID, DATA> {
     public int ephemeralSize() {
         return SIZE_NOT_SUPPORTED;
     }
-
 }

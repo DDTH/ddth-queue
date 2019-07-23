@@ -4,7 +4,6 @@ import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.impl.RedisPubSubHub;
 import com.github.ddth.pubsub.impl.universal.idint.UniversalRedisPubSubHub;
 import com.github.ddth.pubsub.test.universal.BasePubSubFunctionalTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -46,5 +45,4 @@ public class TestRedisPubSubHub extends BasePubSubFunctionalTest<Long> {
         }
         return hub;
     }
-
 }

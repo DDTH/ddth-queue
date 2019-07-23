@@ -4,15 +4,13 @@ import com.github.ddth.queue.impl.RocksDbQueue;
 
 /**
  * Base class for universal RocksDB queue implementations.
- * 
- * @author Thanh Nguyen
- * 
+ *
  * @param <T>
+ * @author Thanh Nguyen
  * @since 0.4.0
  */
 public abstract class BaseUniversalRocksDbQueue<T extends BaseUniversalQueueMessage<ID>, ID>
         extends RocksDbQueue<ID, byte[]> {
-
     /**
      * {@inheritDoc}
      */

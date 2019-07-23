@@ -1,18 +1,17 @@
 package com.github.ddth.queue.impl;
 
-import javax.sql.DataSource;
-
+import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
+import com.github.ddth.dao.jdbc.IJdbcHelper;
+import com.github.ddth.queue.QueueSpec;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.ddth.dao.jdbc.AbstractJdbcHelper;
-import com.github.ddth.dao.jdbc.IJdbcHelper;
-import com.github.ddth.queue.QueueSpec;
+import javax.sql.DataSource;
 
 /**
  * Factory to create {@link JdbcQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
@@ -34,7 +33,8 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     private int defaultTransactionIsolationLevel = JdbcQueue.DEFAULT_TRANX_ISOLATION_LEVEL;
 
     /**
-     * 
+     * Default name of database table to store queue messages, passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -43,7 +43,8 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * Default name of database table to store queue messages, passed to all queues created by this factory.
+     *
      * @param defaultTableName
      * @since 0.6.2
      */
@@ -53,7 +54,8 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * Default name of database table to store ephemeral messages, passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -62,18 +64,19 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * Default name of database table to store ephemeral messages, passed to all queues created by this factory.
+     *
      * @param defaultTableNameEphemeral
      * @since 0.6.2
      */
-    public JdbcQueueFactory<T, ID, DATA> setDefaultTableNameEphemeral(
-            String defaultTableNameEphemeral) {
+    public JdbcQueueFactory<T, ID, DATA> setDefaultTableNameEphemeral(String defaultTableNameEphemeral) {
         this.defaultTableNameEphemeral = defaultTableNameEphemeral;
         return this;
     }
 
     /**
-     * 
+     * Default max number of retires for DB-operations, passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -82,7 +85,8 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * Default max number of retires for DB-operations, passed to all queues created by this factory.
+     *
      * @param defaultMaxRetries
      * @since 0.6.2
      */
@@ -92,7 +96,8 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * Default transaction isolation level used in DB-operations, passed to all queues created by this factory.
+     *
      * @return
      * @since 0.6.2
      */
@@ -100,23 +105,25 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
         return defaultTransactionIsolationLevel;
     }
 
-    public JdbcQueueFactory<T, ID, DATA> setDefaultTransactionIsolationLevel(
-            int defaultTransactionIsolationLevel) {
+    /**
+     * Default transaction isolation level used in DB-operations, passed to all queues created by this factory.
+     *
+     * @param defaultTransactionIsolationLevel
+     * @return
+     * @since 0.6.2
+     */
+    public JdbcQueueFactory<T, ID, DATA> setDefaultTransactionIsolationLevel(int defaultTransactionIsolationLevel) {
         this.defaultTransactionIsolationLevel = defaultTransactionIsolationLevel;
         return this;
     }
 
     /**
-     * Getter for {@link #defaultJdbcHelper}.
-     * 
-     * <p>
      * If all {@link JdbcQueue} instances are connecting to one
      * {@link DataSource}, it's a good idea to pre-create a {@link IJdbcHelper}
      * instance and share it amongst {@link JdbcQueue} instances created from
      * this factory by assigning it to {@link #defaultJdbcHelper} (see
      * {@link #setDefaultJdbcHelper(IJdbcHelper)}).
-     * </p>
-     * 
+     *
      * @return
      * @since 0.5.1.1
      */
@@ -125,17 +132,19 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * Setter for {@link #defaultJdbcHelper}.
-     * 
+     * If all {@link JdbcQueue} instances are connecting to one
+     * {@link DataSource}, it's a good idea to pre-create a {@link IJdbcHelper}
+     * instance and share it amongst {@link JdbcQueue} instances created from
+     * this factory by assigning it to {@link #defaultJdbcHelper} (see
+     * {@link #setDefaultJdbcHelper(IJdbcHelper)}).
+     *
      * @param jdbcHelper
      * @param setMyOwnJdbcHelper
      * @return
      * @since 0.7.1
      */
-    protected JdbcQueueFactory<T, ID, DATA> setDefaultJdbcHelper(IJdbcHelper jdbcHelper,
-            boolean setMyOwnJdbcHelper) {
-        if (myOwnJdbcHelper && this.defaultJdbcHelper != null
-                && this.defaultJdbcHelper instanceof AbstractJdbcHelper) {
+    protected JdbcQueueFactory<T, ID, DATA> setDefaultJdbcHelper(IJdbcHelper jdbcHelper, boolean setMyOwnJdbcHelper) {
+        if (myOwnJdbcHelper && this.defaultJdbcHelper != null && this.defaultJdbcHelper instanceof AbstractJdbcHelper) {
             ((AbstractJdbcHelper) this.defaultJdbcHelper).destroy();
         }
         this.defaultJdbcHelper = jdbcHelper;
@@ -144,8 +153,12 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * Setter for {@link #defaultJdbcHelper}.
-     * 
+     * If all {@link JdbcQueue} instances are connecting to one
+     * {@link DataSource}, it's a good idea to pre-create a {@link IJdbcHelper}
+     * instance and share it amongst {@link JdbcQueue} instances created from
+     * this factory by assigning it to {@link #defaultJdbcHelper} (see
+     * {@link #setDefaultJdbcHelper(IJdbcHelper)}).
+     *
      * @param jdbcHelper
      * @return
      * @since 0.5.1.1
@@ -155,7 +168,12 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * If all {@link JdbcQueue} instances are connecting to one database,
+     * it's a good idea to pre-create a {@link DataSource}
+     * instance and share it amongst {@link JdbcQueue} instances created from
+     * this factory by assigning it to {@link #defaultDataSource} (see
+     * {@link #setDefaultDataSource(DataSource)}).
+     *
      * @return
      * @since 0.6.2.6
      */
@@ -164,7 +182,12 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
     }
 
     /**
-     * 
+     * If all {@link JdbcQueue} instances are connecting to one database,
+     * it's a good idea to pre-create a {@link DataSource}
+     * instance and share it amongst {@link JdbcQueue} instances created from
+     * this factory by assigning it to {@link #defaultDataSource} (see
+     * {@link #setDefaultDataSource(DataSource)}).
+     *
      * @param dataSource
      * @return
      * @since 0.6.2.6
@@ -176,7 +199,7 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.6.2.6
      */
     @Override
@@ -184,8 +207,7 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
         try {
             super.destroy();
         } finally {
-            if (myOwnJdbcHelper && defaultJdbcHelper != null
-                    && defaultJdbcHelper instanceof AbstractJdbcHelper) {
+            if (myOwnJdbcHelper && defaultJdbcHelper != null && defaultJdbcHelper instanceof AbstractJdbcHelper) {
                 try {
                     ((AbstractJdbcHelper) defaultJdbcHelper).destroy();
                 } catch (Exception e) {
@@ -199,17 +221,15 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @throws Exception
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) throws Exception {
         queue.setJdbcHelper(defaultJdbcHelper).setDataSource(defaultDataSource);
 
-        queue.setEphemeralDisabled(getDefaultEphemeralDisabled())
-                .setEphemeralMaxSize(getDefaultEphemeralMaxSize());
-        Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED,
-                Boolean.class);
+        queue.setEphemeralDisabled(getDefaultEphemeralDisabled()).setEphemeralMaxSize(getDefaultEphemeralMaxSize());
+        Boolean ephemeralDisabled = spec.getField(QueueSpec.FIELD_EPHEMERAL_DISABLED, Boolean.class);
         if (ephemeralDisabled != null) {
             queue.setEphemeralDisabled(ephemeralDisabled.booleanValue());
         }
@@ -219,8 +239,7 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
         }
 
         queue.setTableName(defaultTableName).setTableNameEphemeral(defaultTableNameEphemeral)
-                .setMaxRetries(defaultMaxRetries)
-                .setTransactionIsolationLevel(defaultTransactionIsolationLevel);
+                .setMaxRetries(defaultMaxRetries).setTransactionIsolationLevel(defaultTransactionIsolationLevel);
         String tableName = spec.getField(SPEC_FIELD_TABLE_NAME);
         if (!StringUtils.isBlank(tableName)) {
             queue.setTableName(tableName);
@@ -233,13 +252,11 @@ public abstract class JdbcQueueFactory<T extends JdbcQueue<ID, DATA>, ID, DATA>
         if (maxRetries != null) {
             queue.setMaxRetries(maxRetries.intValue());
         }
-        Integer txIsolationLevel = spec.getField(SPEC_FIELD_TRANSACTION_ISOLATION_LEVEL,
-                Integer.class);
+        Integer txIsolationLevel = spec.getField(SPEC_FIELD_TRANSACTION_ISOLATION_LEVEL, Integer.class);
         if (txIsolationLevel != null) {
             queue.setTransactionIsolationLevel(txIsolationLevel.intValue());
         }
 
         super.initQueue(queue, spec);
     }
-
 }

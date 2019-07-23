@@ -9,9 +9,7 @@ import com.github.ddth.queue.impl.MongodbQueueFactory;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.1
  */
-public class UniversalMongodbQueueFactory
-        extends MongodbQueueFactory<UniversalMongodbQueue, String, byte[]> {
-
+public class UniversalMongodbQueueFactory extends MongodbQueueFactory<UniversalMongodbQueue, String, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalMongodbQueueFactory
         UniversalMongodbQueue queue = new UniversalMongodbQueue();
         return queue;
     }
-
 }

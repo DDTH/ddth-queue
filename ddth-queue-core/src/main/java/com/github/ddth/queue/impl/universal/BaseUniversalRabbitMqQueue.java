@@ -11,7 +11,6 @@ import com.github.ddth.queue.impl.RabbitMqQueue;
  */
 public abstract class BaseUniversalRabbitMqQueue<T extends BaseUniversalQueueMessage<ID>, ID>
         extends RabbitMqQueue<ID, byte[]> {
-
     /**
      * {@inheritDoc}
      */

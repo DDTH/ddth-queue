@@ -5,13 +5,11 @@ import com.github.ddth.queue.impl.InmemQueueFactory;
 
 /**
  * Factory to create {@link UniversalInmemQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public class UniversalInmemQueueFactory
-        extends InmemQueueFactory<UniversalInmemQueue, String, byte[]> {
-
+public class UniversalInmemQueueFactory extends InmemQueueFactory<UniversalInmemQueue, String, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalInmemQueueFactory
         UniversalInmemQueue queue = new UniversalInmemQueue();
         return queue;
     }
-
 }

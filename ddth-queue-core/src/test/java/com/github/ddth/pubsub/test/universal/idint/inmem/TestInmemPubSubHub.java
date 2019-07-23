@@ -1,10 +1,8 @@
 package com.github.ddth.pubsub.test.universal.idint.inmem;
 
 import com.github.ddth.pubsub.IPubSubHub;
-import com.github.ddth.pubsub.impl.InmemPubSubHub;
 import com.github.ddth.pubsub.impl.universal.idint.UniversalInmemPubSubHub;
 import com.github.ddth.pubsub.test.universal.BasePubSubFunctionalTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -24,13 +22,10 @@ public class TestInmemPubSubHub extends BasePubSubFunctionalTest<Long> {
      * {@inheritDoc}
      */
     @Override
-    protected IPubSubHub<Long, byte[]> initPubSubHubInstance() throws Exception {
+    protected IPubSubHub<Long, byte[]> initPubSubHubInstance() {
         if (System.getProperty("skipTestsInmem") != null) {
             return null;
         }
-        InmemPubSubHub<Long, byte[]> hub = new UniversalInmemPubSubHub();
-        hub.init();
-        return hub;
+        return new UniversalInmemPubSubHub().init();
     }
-
 }

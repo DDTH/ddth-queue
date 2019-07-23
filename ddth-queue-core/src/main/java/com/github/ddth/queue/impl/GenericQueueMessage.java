@@ -1,21 +1,19 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Date;
-
+import com.github.ddth.commons.utils.DateFormatUtils;
+import com.github.ddth.queue.IQueueMessage;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-import com.github.ddth.commons.utils.DateFormatUtils;
-import com.github.ddth.queue.IQueueMessage;
+import java.util.Date;
 
 /**
  * A generic implementation of {@link IQueueMessage}
- * 
+ *
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.6.0
  */
-public class GenericQueueMessage<ID, DATA> extends GenericMessage<ID, DATA>
-        implements IQueueMessage<ID, DATA> {
+public class GenericQueueMessage<ID, DATA> extends GenericMessage<ID, DATA> implements IQueueMessage<ID, DATA> {
 
     public static <ID, DATA> GenericQueueMessage<ID, DATA> newInstance() {
         return new GenericQueueMessage<>();
@@ -47,62 +45,6 @@ public class GenericQueueMessage<ID, DATA> extends GenericMessage<ID, DATA>
     /**
      * {@inheritDoc}
      */
-    @Deprecated
-    @Override
-    public ID qId() {
-        return getId();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public GenericQueueMessage<ID, DATA> qId(ID queueId) {
-        setId(queueId);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public Date qOriginalTimestamp() {
-        return getTimestamp();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public GenericQueueMessage<ID, DATA> qOriginalTimestamp(Date timestamp) {
-        setTimestamp(timestamp);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public Date qTimestamp() {
-        return getQueueTimestamp();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public GenericQueueMessage<ID, DATA> qTimestamp(Date timestamp) {
-        return setQueueTimestamp(timestamp);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Date getQueueTimestamp() {
         return queueTimestamp;
@@ -115,33 +57,6 @@ public class GenericQueueMessage<ID, DATA> extends GenericMessage<ID, DATA>
     public GenericQueueMessage<ID, DATA> setQueueTimestamp(Date timestamp) {
         this.queueTimestamp = timestamp;
         return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public int qNumRequeues() {
-        return getNumRequeues();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public GenericQueueMessage<ID, DATA> qNumRequeues(int numRequeues) {
-        return setNumRequeues(numRequeues);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public GenericQueueMessage<ID, DATA> qIncNumRequeues() {
-        return incNumRequeues();
     }
 
     /**
@@ -177,30 +92,10 @@ public class GenericQueueMessage<ID, DATA> extends GenericMessage<ID, DATA>
     /**
      * {@inheritDoc}
      */
-    @Deprecated
-    @Override
-    public DATA qData() {
-        return getData();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Deprecated
-    @Override
-    public GenericQueueMessage<ID, DATA> qData(DATA data) {
-        setData(data);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public String toString() {
         ToStringBuilder tsb = new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE);
-        tsb.append("queue_time",
-                DateFormatUtils.toString(queueTimestamp, DateFormatUtils.DF_ISO8601))
+        tsb.append("queue_time", DateFormatUtils.toString(queueTimestamp, DateFormatUtils.DF_ISO8601))
                 .append("num_requeues", numRequeues).appendSuper(super.toString());
         return tsb.toString();
     }

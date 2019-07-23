@@ -1,18 +1,17 @@
 package com.github.ddth.queue.qnd.universal;
 
+import java.util.Date;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalRabbitMqQueue;
 import com.github.ddth.queue.utils.QueueException;
 
-import java.util.Date;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
-
 public class QndMultithreadRabbitMq {
-
     private static AtomicLong NUM_SENT = new AtomicLong(0);
     private static AtomicLong NUM_TAKEN = new AtomicLong(0);
     private static AtomicLong NUM_EXCEPTION = new AtomicLong(0);
@@ -64,7 +63,7 @@ public class QndMultithreadRabbitMq {
                                 if (numItems >= numItems) {
                                     TIMESTAMP.set(System.currentTimeMillis());
                                 }
-                                RECEIVE.put(msg.contentAsString(), Boolean.TRUE);
+                                RECEIVE.put(msg.getContentAsString(), Boolean.TRUE);
                             } else {
                                 TOTAL_DELAY.addAndGet(DELAY_MS);
                                 try {
@@ -88,7 +87,7 @@ public class QndMultithreadRabbitMq {
         for (int i = 0; i < NUM_ITEMS; i++) {
             UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
             String content = "Content: [" + i + "] " + new Date();
-            msg.content(content);
+            msg.setContent(content);
             queue.queue(msg);
             NUM_SENT.incrementAndGet();
             SENT.put(content, Boolean.TRUE);

@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.bson.Document;
 
-import com.github.ddth.queue.utils.MongoUtils;
+import com.github.ddth.qnd.utils.MongoUtils;
 import com.mongodb.CursorType;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;

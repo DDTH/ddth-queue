@@ -26,12 +26,10 @@ public class UniversalRedisPubSubHub extends RedisPubSubHub<String, byte[]> {
      */
     @Override
     public UniversalRedisPubSubHub init() {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdStrMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 

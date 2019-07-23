@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.github.ddth</groupId>
 		<artifactId>ddth-parent</artifactId>
-		<version>6</version>
+		<version>11</version>
 	</parent>
 
 	<artifactId>ddth-queue</artifactId>
@@ -52,15 +52,15 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<skipTests>true</skipTests>
 
-		<version.ddth_commons>0.9.1.3</version.ddth_commons>
-		<version.ddth_dao>0.8.5.1</version.ddth_dao>
-		<version.ddth_kafka>1.3.3</version.ddth_kafka>
-		<version.jedis>2.9.0</version.jedis>
+		<version.ddth_commons>1.1.0</version.ddth_commons>
+		<version.ddth_dao>1.1.1</version.ddth_dao>
+		<version.ddth_kafka>2.0.0</version.ddth_kafka>
+		<version.jedis>2.9.3</version.jedis>
 		<version.disruptor>3.4.2</version.disruptor>
-		<version.rocksdb>5.11.3</version.rocksdb>
-		<version.rabbitmq>5.2.0</version.rabbitmq>
-		<version.activemq>5.15.3</version.activemq>
-		<version.mongodb>3.7.0</version.mongodb>
+		<version.rocksdb>6.0.1</version.rocksdb>
+		<version.rabbitmq>5.7.1</version.rabbitmq>
+		<version.activemq>5.15.9</version.activemq>
+		<version.mongodb>3.10.2</version.mongodb>
 	</properties>
 
 	<repositories>
@@ -99,19 +99,21 @@
 
 		<dependency>
 			<groupId>com.github.ddth</groupId>
-			<artifactId>ddth-dao-core</artifactId>
-			<version>${version.ddth_dao}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.github.ddth</groupId>
 			<artifactId>ddth-commons-core</artifactId>
 			<version>${version.ddth_commons}</version>
+		</dependency>
+		<!--
+		<dependency>
+			<groupId>com.github.ddth</groupId>
+			<artifactId>ddth-dao-core</artifactId>
+			<version>${version.ddth_dao}</version>
 		</dependency>
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec</artifactId>
 			<version>1.11</version>
 		</dependency>
+		-->
 
 		<!-- for LMAX Disruptor-based queues -->
 		<dependency>

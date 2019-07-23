@@ -20,20 +20,16 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.1
  */
-public class UniversalMongodbQueue
-        extends BaseUniversalMongodbQueue<UniversalIdIntQueueMessage, Long> {
-
+public class UniversalMongodbQueue extends BaseUniversalMongodbQueue<UniversalIdIntQueueMessage, Long> {
     /**
      * {@inheritDoc}
      */
     @Override
     public UniversalMongodbQueue init() throws Exception {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 
@@ -44,5 +40,4 @@ public class UniversalMongodbQueue
     protected UniversalIdIntQueueMessage deserialize(byte[] msgData) {
         return deserialize(msgData, UniversalIdIntQueueMessage.class);
     }
-
 }

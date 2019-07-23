@@ -1,14 +1,13 @@
 package com.github.ddth.queue.qnd.universal;
 
+import java.util.Date;
+
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalRabbitMqQueue;
 
-import java.util.Date;
-
 public class QndQueueRabbitMq {
-
     private static void emptyQueue(IQueue<Long, byte[]> queue) {
         IQueueMessage<Long, byte[]> msg = queue.take();
         while (msg != null) {
@@ -26,13 +25,13 @@ public class QndQueueRabbitMq {
             System.out.println("Queue empty: " + msg);
 
             msg = UniversalIdIntQueueMessage.newInstance();
-            msg.content("Content: [" + System.currentTimeMillis() + "] " + new Date());
+            msg.setContent("Content: [" + System.currentTimeMillis() + "] " + new Date());
             System.out.println("Queue: " + queue.queue(msg));
 
             msg = queue.take();
             while (msg.getNumRequeues() < 2) {
                 System.out.println("Message: " + msg);
-                System.out.println("Content: " + new String(msg.content()));
+                System.out.println("Content: " + new String(msg.getContent()));
                 System.out.println("Requeue: " + queue.requeue(msg));
                 msg = queue.take();
             }

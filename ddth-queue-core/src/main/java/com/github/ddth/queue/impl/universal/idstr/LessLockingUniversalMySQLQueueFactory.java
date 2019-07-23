@@ -5,26 +5,25 @@ import com.github.ddth.queue.impl.JdbcQueueFactory;
 
 /**
  * Factory to create {@link LessLockingUniversalMySQLQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
 public class LessLockingUniversalMySQLQueueFactory
         extends JdbcQueueFactory<LessLockingUniversalMySQLQueue, String, byte[]> {
-
     public final static String SPEC_FIELD_FIFO = "fifo";
-    private boolean defaultFifo = AbstractLessLockingUniversalJdbcQueue.DEFAULT_FIFO;
+    private boolean defaultFifo = true;
 
     /**
      * @return
      * @since 0.6.2
+     * @deprecated use {@link #getDefaultFifo()}
      */
     public boolean isDefaultFifo() {
         return defaultFifo;
     }
 
     /**
-     * 
      * @return
      * @since 0.6.2
      */
@@ -33,7 +32,6 @@ public class LessLockingUniversalMySQLQueueFactory
     }
 
     /**
-     * 
      * @param defaultFifo
      * @since 0.6.2
      */
@@ -54,5 +52,4 @@ public class LessLockingUniversalMySQLQueueFactory
         }
         return queue;
     }
-
 }

@@ -20,22 +20,18 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
  */
-public class UniversalRabbitMqQueue
-        extends BaseUniversalRabbitMqQueue<UniversalIdIntQueueMessage, Long> {
-
+public class UniversalRabbitMqQueue extends BaseUniversalRabbitMqQueue<UniversalIdIntQueueMessage, Long> {
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.0
      */
     @Override
     public UniversalRabbitMqQueue init() throws Exception {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 
@@ -46,5 +42,4 @@ public class UniversalRabbitMqQueue
     protected UniversalIdIntQueueMessage deserialize(byte[] msgData) {
         return deserialize(msgData, UniversalIdIntQueueMessage.class);
     }
-
 }

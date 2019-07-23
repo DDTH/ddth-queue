@@ -1,13 +1,5 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.utils.QueueException;
@@ -15,9 +7,13 @@ import com.lmax.disruptor.EventFactory;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.Sequence;
 
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
 /**
  * In-Memory implementation of {@link IQueue} using LMAX Disruptor library.
- * 
+ *
  * <p>
  * Implementation:
  * <ul>
@@ -25,13 +21,19 @@ import com.lmax.disruptor.Sequence;
  * <li>A {@link ConcurrentMap} as ephemeral storage.</li>
  * </ul>
  * </p>
- * 
+ *
+ * <p>Features:</p>
+ * <ul>
+ * <li>Queue-size support: yes</li>
+ * <li>Ephemeral storage support: yes</li>
+ * <li>Ephemeral-size support: yes</li>
+ * </ul>
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
+ * @see <a href="https://lmax-exchange.github.io/disruptor/">LMAXDisruptor</a>
  * @since 0.4.0
- * @see https://lmax-exchange.github.io/disruptor/
  */
-public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
-
+public class DisruptorQueue<ID, DATA> extends AbstractInmemEphemeralQueue<ID, DATA> {
     private final static class Event<ID, DATA> {
         private IQueueMessage<ID, DATA> value;
 
@@ -44,10 +46,9 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         }
     }
 
-    private final EventFactory<Event<ID, DATA>> EVENT_FACTORY = () -> new Event<ID, DATA>();
+    private final EventFactory<Event<ID, DATA>> EVENT_FACTORY = () -> new Event<>();
     private final Lock LOCK_TAKE = new ReentrantLock();
     private final Lock LOCK_PUT = new ReentrantLock();
-    private ConcurrentMap<Object, IQueueMessage<ID, DATA>> ephemeralStorage;
 
     private RingBuffer<Event<ID, DATA>> ringBuffer;
     private Sequence consumedSeq;
@@ -62,8 +63,8 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
     }
 
     /**
-     * Get size of the ring buffer.
-     * 
+     * Size of the ring buffer, should be power of 2.
+     *
      * @return
      */
     protected int getRingSize() {
@@ -90,8 +91,8 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
     }
 
     /**
-     * Set size of the ring buffer, must be power of 2.
-     * 
+     * Size of the ring buffer, should be power of 2.
+     *
      * @param ringSize
      * @return
      */
@@ -102,7 +103,7 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
 
     /**
      * Init method.
-     * 
+     *
      * @return
      * @throws Exception
      */
@@ -111,12 +112,7 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         ringBuffer = RingBuffer.createSingleProducer(EVENT_FACTORY, ringSize);
         // ringBuffer = RingBuffer.createMultiProducer(EVENT_FACTORY, ringSize);
 
-        if (!isEphemeralDisabled()) {
-            int ephemeralBoundSize = Math.max(0, getEphemeralMaxSize());
-            ephemeralStorage = new ConcurrentHashMap<>(
-                    ephemeralBoundSize > 0 ? Math.min(ephemeralBoundSize, ringSize) : ringSize);
-        }
-
+        initEphemeralStorage(ringSize);
         consumedSeq = new Sequence();
         ringBuffer.addGatingSequences(consumedSeq);
         long cursor = ringBuffer.getCursor();
@@ -124,28 +120,27 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
         knownPublishedSeq = cursor;
 
         super.init();
-
         return this;
     }
 
     /**
-     * Put a message to the ring buffer.
-     * 
-     * @param msg
-     * @throws QueueException.QueueIsFull
-     *             if the ring buffer is full
+     * {@inheritDoc}
      */
-    protected void putToRingBuffer(IQueueMessage<ID, DATA> msg) throws QueueException.QueueIsFull {
-        if (msg == null) {
-            throw new NullPointerException("Supplied queue message is null!");
-        }
+    @Override
+    protected boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase)
+            throws QueueException.QueueIsFull {
         LOCK_PUT.lock();
         try {
             if (!ringBuffer.tryPublishEvent((event, _seq) -> {
                 event.set(msg);
                 knownPublishedSeq = _seq > knownPublishedSeq ? _seq : knownPublishedSeq;
+                if (queueCase != null && queueCase != PutToQueueCase.NEW) {
+                    doRemoveFromEphemeralStorage(msg);
+                }
             })) {
                 throw new QueueException.QueueIsFull(getRingSize());
+            } else {
+                return true;
             }
         } finally {
             LOCK_PUT.unlock();
@@ -154,66 +149,15 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
 
     /**
      * {@inheritDoc}
-     * 
-     * @throws QueueException.QueueIsFull
-     *             if the ring buffer is full
-     */
-    @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
-        putToRingBuffer(msg);
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws QueueException.QueueIsFull
-     *             if the ring buffer is full
-     */
-    @Override
-    public boolean requeue(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.incNumRequeues().setQueueTimestamp(now);
-        putToRingBuffer(msg);
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.getId());
-        }
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws QueueException.QueueIsFull
-     *             if the ring buffer is full
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        putToRingBuffer(msg);
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.getId());
-        }
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
      */
     @Override
     public void finish(IQueueMessage<ID, DATA> msg) {
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.getId());
-        }
+        doRemoveFromEphemeralStorage(msg);
     }
 
     /**
-     * Takes a message from the ring buffer.
-     * 
+     * Take a message from the ring buffer.
+     *
      * @return the available message or {@code null} if the ring buffer is empty
      */
     protected IQueueMessage<ID, DATA> takeFromRingBuffer() {
@@ -242,22 +186,14 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
 
     /**
      * {@inheritDoc}
-     * 
-     * @throws QueueException.EphemeralIsFull
-     *             if the ephemeral storage is full
+     *
+     * @throws QueueException.EphemeralIsFull if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
-        if (!isEphemeralDisabled()) {
-            int ephemeralMaxSize = getEphemeralMaxSize();
-            if (ephemeralMaxSize > 0 && ephemeralStorage.size() >= ephemeralMaxSize) {
-                throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
-            }
-        }
+        ensureEphemeralSize();
         IQueueMessage<ID, DATA> msg = takeFromRingBuffer();
-        if (msg != null && !isEphemeralDisabled()) {
-            ephemeralStorage.putIfAbsent(msg.getId(), msg);
-        }
+        doPutToEphemeralStorage(msg);
         return msg;
     }
 
@@ -265,52 +201,7 @@ public class DisruptorQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, 
      * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        if (isEphemeralDisabled()) {
-            return null;
-        }
-        Collection<IQueueMessage<ID, DATA>> orphanMessages = new HashSet<>();
-        long now = System.currentTimeMillis();
-        ephemeralStorage.forEach((key, msg) -> {
-            if (msg.getQueueTimestamp().getTime() + thresholdTimestampMs < now)
-                orphanMessages.add(msg);
-        });
-        return orphanMessages;
-    }
-
-//    /**
-//     * {@inheritDoc}
-//     */
-//    @Override
-//    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> _msg) {
-//        if (!isEphemeralDisabled()) {
-//            IQueueMessage<ID, DATA> msg = ephemeralStorage.remove(_msg.getId());
-//            if (msg != null) {
-//                try {
-//                    putToRingBuffer(msg);
-//                    return true;
-//                } catch (QueueException.QueueIsFull e) {
-//                    ephemeralStorage.putIfAbsent(msg.getId(), msg);
-//                    return false;
-//                }
-//            }
-//        }
-//        return true;
-//    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int queueSize() {
         return (int) (ringBuffer.getCursor() - consumedSeq.get());
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int ephemeralSize() {
-        return !isEphemeralDisabled() ? ephemeralStorage.size() : 0;
     }
 }

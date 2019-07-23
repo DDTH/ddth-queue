@@ -11,7 +11,6 @@ import com.github.ddth.queue.impl.ActiveMqQueue;
  */
 public abstract class BaseUniversalActiveMqQueue<T extends BaseUniversalQueueMessage<ID>, ID>
         extends ActiveMqQueue<ID, byte[]> {
-
     /**
      * {@inheritDoc}
      */

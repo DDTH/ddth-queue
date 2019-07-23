@@ -1,35 +1,35 @@
 package com.github.ddth.pubsub.impl.universal;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.Map;
 
-import com.github.ddth.queue.utils.QueueUtils;
+import com.github.ddth.pubsub.internal.utils.PubSubUtils;
 
 /**
  * Extended from {@link BaseUniversalMessage} where message's id is a
  * {@code long}.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0.
  */
 public class UniversalIdIntMessage extends BaseUniversalMessage<Long> {
-
     /**
      * Create a new {@link UniversalIdIntMessage} object.
-     * 
+     *
      * @return
      */
     @SuppressWarnings("unchecked")
     public static UniversalIdIntMessage newInstance() {
         Date now = new Date();
         UniversalIdIntMessage msg = new UniversalIdIntMessage();
-        msg.setId(QueueUtils.IDGEN.generateId64()).setTimestamp(now);
+        msg.setId(PubSubUtils.IDGEN.generateId64()).setTimestamp(now);
         return msg;
     }
 
     /**
      * Create a new {@link UniversalIdIntMessage} object with specified content.
-     * 
+     *
      * @param content
      * @return
      */
@@ -42,7 +42,7 @@ public class UniversalIdIntMessage extends BaseUniversalMessage<Long> {
     /**
      * Create a new {@link UniversalIdIntMessage} object with specified id and
      * content.
-     * 
+     *
      * @param id
      * @param content
      * @return
@@ -55,7 +55,7 @@ public class UniversalIdIntMessage extends BaseUniversalMessage<Long> {
 
     /**
      * Create a new {@link UniversalIdIntMessage} object with specified content.
-     * 
+     *
      * @param content
      * @return
      */
@@ -68,7 +68,7 @@ public class UniversalIdIntMessage extends BaseUniversalMessage<Long> {
     /**
      * Create a new {@link UniversalIdIntMessage} object with specified id and
      * content.
-     * 
+     *
      * @param id
      * @param content
      * @return
@@ -81,7 +81,7 @@ public class UniversalIdIntMessage extends BaseUniversalMessage<Long> {
 
     /**
      * Create a new {@link UniversalIdIntMessage}.
-     * 
+     *
      * @param data
      * @return
      */
@@ -106,11 +106,10 @@ public class UniversalIdIntMessage extends BaseUniversalMessage<Long> {
     @Override
     public UniversalIdIntMessage fromBytes(byte[] data) {
         try {
-            UniversalIdIntMessage other = BaseUniversalMessage.fromBytes(data,
-                    UniversalIdIntMessage.class);
+            UniversalIdIntMessage other = BaseUniversalMessage.fromBytes(data, UniversalIdIntMessage.class);
             fromMap(other.toMap());
             return this;
-        } catch (InstantiationException | IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

@@ -9,7 +9,6 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
 import com.github.ddth.queue.impl.universal.idint.UniversalInmemQueue;
 
 public class QndMultithreadInmem {
-
     private static AtomicLong NUM_SENT = new AtomicLong(0);
     private static AtomicLong NUM_TAKEN = new AtomicLong(0);
     private static AtomicLong NUM_EXCEPTION = new AtomicLong(0);
@@ -38,7 +37,7 @@ public class QndMultithreadInmem {
                                     if (numItems >= NUM_ITEMS) {
                                         TIMESTAMP.set(System.currentTimeMillis());
                                     }
-                                    RECEIVE.put(new String(msg.content()), Boolean.TRUE);
+                                    RECEIVE.put(new String(msg.getContent()), Boolean.TRUE);
                                 } else {
                                     try {
                                         Thread.sleep(1);
@@ -62,7 +61,7 @@ public class QndMultithreadInmem {
             for (int i = 0; i < NUM_ITEMS; i++) {
                 UniversalIdIntQueueMessage msg = UniversalIdIntQueueMessage.newInstance();
                 String content = "Content: [" + i + "] " + new Date();
-                msg.content(content);
+                msg.setContent(content);
                 // System.out.println("Sending: " + msg.toJson());
                 queue.queue(msg);
                 NUM_SENT.incrementAndGet();

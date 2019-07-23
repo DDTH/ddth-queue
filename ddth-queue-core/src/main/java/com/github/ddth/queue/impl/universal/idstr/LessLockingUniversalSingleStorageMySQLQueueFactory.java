@@ -6,15 +6,14 @@ import com.github.ddth.queue.impl.JdbcQueueFactory;
 /**
  * Factory to create {@link LessLockingUniversalSingleStorageMySQLQueue}
  * instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.0
  */
 public class LessLockingUniversalSingleStorageMySQLQueueFactory
         extends JdbcQueueFactory<LessLockingUniversalSingleStorageMySQLQueue, String, byte[]> {
-
     public final static String SPEC_FIELD_FIFO = "fifo";
-    private boolean defaultFifo = AbstractLessLockingUniversalJdbcQueue.DEFAULT_FIFO;
+    private boolean defaultFifo = true;
 
     /**
      * @return
@@ -25,7 +24,6 @@ public class LessLockingUniversalSingleStorageMySQLQueueFactory
     }
 
     /**
-     * 
      * @return
      * @since 0.6.2
      */
@@ -34,7 +32,6 @@ public class LessLockingUniversalSingleStorageMySQLQueueFactory
     }
 
     /**
-     * 
      * @param defaultFifo
      * @since 0.6.2
      */
@@ -46,8 +43,7 @@ public class LessLockingUniversalSingleStorageMySQLQueueFactory
      * {@inheritDoc}
      */
     @Override
-    protected LessLockingUniversalSingleStorageMySQLQueue createQueueInstance(
-            final QueueSpec spec) {
+    protected LessLockingUniversalSingleStorageMySQLQueue createQueueInstance(final QueueSpec spec) {
         LessLockingUniversalSingleStorageMySQLQueue queue = new LessLockingUniversalSingleStorageMySQLQueue();
         queue.setFifo(defaultFifo);
         Boolean fifo = spec.getField(SPEC_FIELD_FIFO, Boolean.class);
@@ -56,5 +52,4 @@ public class LessLockingUniversalSingleStorageMySQLQueueFactory
         }
         return queue;
     }
-
 }

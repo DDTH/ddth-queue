@@ -1,17 +1,16 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Date;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.ToStringStyle;
-
 import com.github.ddth.commons.utils.DateFormatUtils;
 import com.github.ddth.queue.IMessage;
 import com.github.ddth.queue.IPartitionSupport;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
+import java.util.Date;
 
 /**
  * A generic implementation of {@link IMessage}
- * 
+ *
  * @author Thanh Nguyen <btnguyen2k@gmail.com>
  * @since 0.7.0
  */
@@ -99,27 +98,6 @@ public class GenericMessage<ID, DATA> implements IMessage<ID, DATA>, Cloneable, 
     @Override
     public GenericMessage<ID, DATA> setData(DATA data) {
         this.data = data;
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @deprecated
-     */
-    @Override
-    public String qPartitionKey() {
-        return getPartitionKey();
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @deprecated
-     */
-    @Override
-    public GenericMessage<ID, DATA> qPartitionKey(String partitionKey) {
-        this.partitionKey = partitionKey;
         return this;
     }
 

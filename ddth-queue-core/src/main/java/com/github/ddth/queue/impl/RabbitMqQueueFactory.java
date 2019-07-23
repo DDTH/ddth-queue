@@ -1,9 +1,8 @@
 package com.github.ddth.queue.impl;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.github.ddth.queue.QueueSpec;
 import com.rabbitmq.client.ConnectionFactory;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Factory to create {@link RabbitMqQueue} instances.
@@ -19,30 +18,58 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
 
     private ConnectionFactory defaultConnectionFactory;
     private boolean myOwnConnectionFactory;
-    private String defaultUri = RabbitMqQueue.DEFAULT_URI,
-            defaultQueueName = RabbitMqQueue.DEFAULT_QUEUE_NAME;
+    private String defaultUri = RabbitMqQueue.DEFAULT_URI, defaultQueueName = RabbitMqQueue.DEFAULT_QUEUE_NAME;
 
+    /**
+     * Default RabbitMQ's connection URI (format {@code amqp://username:password@host:port/virtualHost}),
+     * passed to all queues created by this factory.
+     *
+     * @return
+     */
     public String getDefaultUri() {
         return defaultUri;
     }
 
+    /**
+     * Default RabbitMQ's connection URI (format {@code amqp://username:password@host:port/virtualHost}),
+     * passed to all queues created by this factory.
+     *
+     * @param defaultUri
+     * @return
+     */
     public RabbitMqQueueFactory<T, ID, DATA> setDefaultUri(String defaultUri) {
         this.defaultUri = defaultUri;
         return this;
     }
 
+    /**
+     * Default name of RabbitMQ queue to send/receive messages, passed to all queues created by this factory.
+     *
+     * @return
+     */
     public String getDefaultQueueName() {
         return defaultQueueName;
     }
 
+    /**
+     * Default name of RabbitMQ queue to send/receive messages, passed to all queues created by this factory.
+     *
+     * @param defaultQueueName
+     * @return
+     */
     public RabbitMqQueueFactory<T, ID, DATA> setDefaultQueueName(String defaultQueueName) {
         this.defaultQueueName = defaultQueueName;
         return this;
     }
 
     /**
-     * Getter for {@link #defaultConnectionFactory}.
-     * 
+     * If all {@link RabbitMqQueue} instances are connecting to one RabbitMQ
+     * broker, it's a good idea to pre-create an
+     * {@link ConnectionFactory} instance and share it amongst
+     * {@link RabbitMqQueue} instances created from this factory by assigning it
+     * to {@link #defaultConnectionFactory} (see
+     * {@link #setDefaultConnectionFactory(ConnectionFactory)}).
+     *
      * @return
      * @since 0.7.1
      */
@@ -51,15 +78,20 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
     }
 
     /**
-     * Setter for {@link #defaultConnectionFactory}.
-     * 
+     * If all {@link RabbitMqQueue} instances are connecting to one RabbitMQ
+     * broker, it's a good idea to pre-create an
+     * {@link ConnectionFactory} instance and share it amongst
+     * {@link RabbitMqQueue} instances created from this factory by assigning it
+     * to {@link #defaultConnectionFactory} (see
+     * {@link #setDefaultConnectionFactory(ConnectionFactory)}).
+     *
      * @param connectionFactory
      * @param setMyOwnConnectionFactory
      * @return
      * @since 0.7.1
      */
-    protected RabbitMqQueueFactory<T, ID, DATA> setDefaultConnectionFactory(
-            ConnectionFactory connectionFactory, boolean setMyOwnConnectionFactory) {
+    protected RabbitMqQueueFactory<T, ID, DATA> setDefaultConnectionFactory(ConnectionFactory connectionFactory,
+            boolean setMyOwnConnectionFactory) {
         if (myOwnConnectionFactory && this.defaultConnectionFactory != null) {
             // destroy this.defaultConnectionFactory
         }
@@ -69,14 +101,18 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
     }
 
     /**
-     * Setter for {@link #defaultConnectionFactory}.
-     * 
+     * If all {@link RabbitMqQueue} instances are connecting to one RabbitMQ
+     * broker, it's a good idea to pre-create an
+     * {@link ConnectionFactory} instance and share it amongst
+     * {@link RabbitMqQueue} instances created from this factory by assigning it
+     * to {@link #defaultConnectionFactory} (see
+     * {@link #setDefaultConnectionFactory(ConnectionFactory)}).
+     *
      * @param connectionFactory
      * @return
      * @since 0.7.1
      */
-    public RabbitMqQueueFactory<T, ID, DATA> setDefaultConnectionFactory(
-            ConnectionFactory connectionFactory) {
+    public RabbitMqQueueFactory<T, ID, DATA> setDefaultConnectionFactory(ConnectionFactory connectionFactory) {
         return setDefaultConnectionFactory(connectionFactory, false);
     }
 
@@ -95,13 +131,12 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @throws Exception
      */
     @Override
     protected void initQueue(T queue, QueueSpec spec) throws Exception {
-        queue.setConnectionFactory(defaultConnectionFactory).setUri(defaultUri)
-                .setQueueName(defaultQueueName);
+        queue.setConnectionFactory(defaultConnectionFactory).setUri(defaultUri).setQueueName(defaultQueueName);
 
         String uri = spec.getField(SPEC_FIELD_URI);
         if (!StringUtils.isBlank(uri)) {
@@ -115,5 +150,4 @@ public abstract class RabbitMqQueueFactory<T extends RabbitMqQueue<ID, DATA>, ID
 
         super.initQueue(queue, spec);
     }
-
 }

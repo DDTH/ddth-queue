@@ -1,33 +1,29 @@
 package com.github.ddth.pubsub.impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.ddth.commons.redis.JedisConnector;
 import com.github.ddth.pubsub.IPubSubHub;
+import com.github.ddth.pubsub.internal.utils.RedisUtils;
 
 /**
  * Base Redis implementation of {@link IPubSubHub}.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID, DATA> {
-
-    private final Logger LOGGER = LoggerFactory.getLogger(BaseRedisPubSubHub.class);
-
     public final static String DEFAULT_PASSWORD = null;
     private String redisPassword = DEFAULT_PASSWORD;
     private JedisConnector jedisConnector;
+
     /**
      * Flag to mark if the Redis resource (e.g. Redis client pool) is created
-     * and handled by the lock instance.
+     * and handled by this object.
      */
     protected boolean myOwnRedis = true;
 
     /**
-     * Get the current {@link JedisConnector} used by this queue.
-     * 
+     * Get the current {@link JedisConnector} used by this pubsub-hub.
+     *
      * @return
      */
     public JedisConnector getJedisConnector() {
@@ -35,8 +31,8 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
     }
 
     /**
-     * Set the external {@link JedisConnector} to be used by this queue.
-     * 
+     * Set the external {@link JedisConnector} to be used by this pubsub-hub.
+     *
      * @param jedisConnector
      * @return
      */
@@ -45,15 +41,13 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
     }
 
     /**
-     * Set the external {@link JedisConnector} to be used by this queue.
-     * 
+     * Set the external {@link JedisConnector} to be used by this pubsub-hub.
+     *
      * @param jedisConnector
-     * @param setMyOwnRedis
-     *            mark the flag {@link #myOwnRedis}
+     * @param setMyOwnRedis  mark the flag {@link #myOwnRedis}
      * @return
      */
-    protected BaseRedisPubSubHub<ID, DATA> setJedisConnector(JedisConnector jedisConnector,
-            boolean setMyOwnRedis) {
+    protected BaseRedisPubSubHub<ID, DATA> setJedisConnector(JedisConnector jedisConnector, boolean setMyOwnRedis) {
         if (myOwnRedis && this.jedisConnector != null) {
             this.jedisConnector.destroy();
         }
@@ -63,8 +57,8 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
     }
 
     /**
-     * Redis' password.
-     * 
+     * Password to connect to Redis.
+     *
      * @return
      */
     public String getRedisPassword() {
@@ -72,8 +66,8 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
     }
 
     /**
-     * Redis' password.
-     * 
+     * Password to connect to Redis.
+     *
      * @param redisPassword
      * @return
      */
@@ -86,14 +80,14 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
 
     /**
      * Build a {@link JedisConnector} instance for my own use.
-     * 
+     *
      * @return
      */
     protected abstract JedisConnector buildJedisConnector();
 
     /**
      * Init method.
-     * 
+     *
      * @return
      * @throws Exception
      */
@@ -119,16 +113,7 @@ public abstract class BaseRedisPubSubHub<ID, DATA> extends AbstractPubSubHub<ID,
         try {
             super.destroy();
         } finally {
-            if (jedisConnector != null && myOwnRedis) {
-                try {
-                    jedisConnector.destroy();
-                } catch (Exception e) {
-                    LOGGER.warn(e.getMessage(), e);
-                } finally {
-                    jedisConnector = null;
-                }
-            }
+            jedisConnector = RedisUtils.closeJedisConnector(jedisConnector, myOwnRedis);
         }
     }
-
 }

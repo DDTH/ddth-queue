@@ -5,10 +5,9 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 
 import com.github.ddth.commons.rocksdb.RocksDbWrapper;
-import com.github.ddth.queue.utils.QueueUtils;
+import com.github.ddth.queue.internal.utils.QueueUtils;
 
 public class QndRocksDbMultiThreads {
-
     public static void main(String[] args) throws Exception {
         File storageDir = new File("/tmp/rocksdb");
         FileUtils.deleteQuietly(storageDir);
@@ -58,5 +57,4 @@ public class QndRocksDbMultiThreads {
             System.out.println(rocskDbReadonly.getEstimateNumKeys("CF4"));
         }
     }
-
 }

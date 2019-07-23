@@ -1,23 +1,24 @@
 package com.github.ddth.pubsub.impl;
 
-import com.github.ddth.commons.utils.SerializationUtils;
+import com.github.ddth.commons.serialization.FstSerDeser;
+import com.github.ddth.commons.serialization.ISerDeser;
 import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.queue.IMessage;
 import com.github.ddth.queue.IMessageFactory;
 
 /**
  * Abstract implementation of {@link IPubSubHub}.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public abstract class AbstractPubSubHub<ID, DATA> implements IPubSubHub<ID, DATA>, AutoCloseable {
-
     private IMessageFactory<ID, DATA> messageFactory;
+    private ISerDeser serDeser;
 
     /**
-     * Getter for {@link #messageFactory}.
-     * 
+     * Factory to create messages.
+     *
      * @return
      */
     public IMessageFactory<ID, DATA> getMessageFactory() {
@@ -25,8 +26,8 @@ public abstract class AbstractPubSubHub<ID, DATA> implements IPubSubHub<ID, DATA
     }
 
     /**
-     * Setter for {@link #messageFactory}.
-     * 
+     * Factory to create messages.
+     *
      * @param messageFactory
      * @return
      */
@@ -36,11 +37,36 @@ public abstract class AbstractPubSubHub<ID, DATA> implements IPubSubHub<ID, DATA
     }
 
     /**
+     * Message serializer/deserializer.
+     *
+     * @return
+     * @since 1.0.0
+     */
+    public ISerDeser getSerDeser() {
+        return serDeser;
+    }
+
+    /**
+     * Message serializer/deserializer.
+     *
+     * @param serDeser
+     * @return
+     * @since 1.0.0
+     */
+    public AbstractPubSubHub<ID, DATA> setSerDeser(ISerDeser serDeser) {
+        this.serDeser = serDeser;
+        return this;
+    }
+
+    /**
      * Initializing method.
-     * 
+     *
      * @return
      */
     public AbstractPubSubHub<ID, DATA> init() {
+        if (serDeser == null) {
+            serDeser = new FstSerDeser();
+        }
         return this;
     }
 
@@ -85,17 +111,17 @@ public abstract class AbstractPubSubHub<ID, DATA> implements IPubSubHub<ID, DATA
 
     /**
      * Serialize a queue message to store in Redis.
-     * 
+     *
      * @param msg
      * @return
      */
     protected byte[] serialize(IMessage<ID, DATA> msg) {
-        return msg != null ? SerializationUtils.toByteArray(msg) : null;
+        return msg != null ? serDeser.toBytes(msg) : null;
     }
 
     /**
      * Deserialize a message.
-     * 
+     *
      * @param msgData
      * @return
      */
@@ -106,11 +132,11 @@ public abstract class AbstractPubSubHub<ID, DATA> implements IPubSubHub<ID, DATA
 
     /**
      * Deserialize a message.
-     * 
+     *
      * @param msgData
      * @return
      */
     protected <T extends IMessage<ID, DATA>> T deserialize(byte[] msgData, Class<T> clazz) {
-        return msgData != null ? SerializationUtils.fromByteArray(msgData, clazz) : null;
+        return msgData != null ? serDeser.fromBytes(msgData, clazz) : null;
     }
 }

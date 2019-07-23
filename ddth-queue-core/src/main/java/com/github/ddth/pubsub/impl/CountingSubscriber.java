@@ -14,7 +14,6 @@ import com.google.common.util.concurrent.AtomicLongMap;
  * @since 0.7.0
  */
 public class CountingSubscriber<ID, DATA> implements ISubscriber<ID, DATA> {
-
     private AtomicLong counterAll = new AtomicLong(0);
     private AtomicLongMap<String> counterMap = AtomicLongMap.create();
 
@@ -63,5 +62,4 @@ public class CountingSubscriber<ID, DATA> implements ISubscriber<ID, DATA> {
         counterMap.incrementAndGet(channel);
         return true;
     }
-
 }

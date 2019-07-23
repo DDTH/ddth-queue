@@ -4,8 +4,7 @@ import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.impl.MongodbPubSubHub;
 import com.github.ddth.pubsub.impl.universal.idstr.UniversalMongodbPubSubHub;
 import com.github.ddth.pubsub.test.universal.BasePubSubMultiThreadsTest;
-import com.github.ddth.queue.utils.MongoUtils;
-
+import com.github.ddth.qnd.utils.MongoUtils;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -67,15 +66,13 @@ public class TestMongodbPubSubMT extends BasePubSubMultiThreadsTest<String> {
      * {@inheritDoc}
      */
     @Override
-    protected IPubSubHub<String, byte[]> initPubSubHubInstance() throws Exception {
-        if (System.getProperty("enableTestsMongo") == null
-                && System.getProperty("enableTestsMongoDB") == null
+    protected IPubSubHub<String, byte[]> initPubSubHubInstance() {
+        if (System.getProperty("enableTestsMongo") == null && System.getProperty("enableTestsMongoDB") == null
                 && System.getProperty("enableTestsMongoDb") == null
                 && System.getProperty("enableTestsMongodb") == null) {
             return null;
         }
-        String mongoUri = System.getProperty("mongo.uri",
-                "mongodb://test:test@localhost:27017/test");
+        String mongoUri = System.getProperty("mongo.uri", "mongodb://test:test@localhost:27017/test");
         String mongoDb = System.getProperty("mongo.db", "test");
 
         MongodbPubSubHub<String, byte[]> hub = new MyMongodbPubSubHub();
@@ -83,5 +80,4 @@ public class TestMongodbPubSubMT extends BasePubSubMultiThreadsTest<String> {
         hub.init();
         return hub;
     }
-
 }

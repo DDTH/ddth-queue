@@ -5,7 +5,6 @@ import com.github.ddth.pubsub.impl.InmemPubSubHub;
 import com.github.ddth.queue.IMessage;
 
 public class QndInmemPubSub {
-
     @SuppressWarnings("unchecked")
     public static void main(String[] args) {
         try (InmemPubSubHub<Object, Object> pubSubHub = new InmemPubSubHub<>()) {
@@ -46,5 +45,4 @@ public class QndInmemPubSub {
             System.out.println();
         }
     }
-
 }

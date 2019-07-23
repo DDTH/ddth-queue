@@ -1,39 +1,34 @@
 package com.github.ddth.pubsub.impl;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.ddth.commons.redis.JedisConnector;
 import com.github.ddth.commons.redis.JedisUtils;
 import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.ISubscriber;
 import com.github.ddth.queue.IMessage;
-import com.github.ddth.queue.utils.QueueUtils;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.BinaryJedisPubSub;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Protocol;
 
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+
 /**
  * Redis implementation of {@link IPubSubHub}.
- * 
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.0
  */
 public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
-
     private final Logger LOGGER = LoggerFactory.getLogger(RedisPubSubHub.class);
 
-    public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":"
-            + Protocol.DEFAULT_PORT;
+    public final static String DEFAULT_HOST_AND_PORT = Protocol.DEFAULT_HOST + ":" + Protocol.DEFAULT_PORT;
 
     private String redisHostAndPort = DEFAULT_HOST_AND_PORT;
 
@@ -47,7 +42,7 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
     }
 
     /**
-     * Set Redis' host and port scheme (format {@code host:port}).
+     * Redis' host and port scheme (format {@code host:port}).
      *
      * @param redisHostAndPort
      * @return
@@ -62,17 +57,17 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
 
     /**
      * Return {@code true} if this hub is ready for subscribing.
-     * 
+     *
      * @return
      */
     public boolean isReady() {
         return ready;
     }
 
-    private LoadingCache<String, Set<ISubscriber<ID, DATA>>> subscriptions = CacheBuilder
-            .newBuilder().build(new CacheLoader<String, Set<ISubscriber<ID, DATA>>>() {
+    private LoadingCache<String, Set<ISubscriber<ID, DATA>>> subscriptions = CacheBuilder.newBuilder()
+            .build(new CacheLoader<>() {
                 @Override
-                public Set<ISubscriber<ID, DATA>> load(String key) throws Exception {
+                public Set<ISubscriber<ID, DATA>> load(String key) {
                     return new HashSet<>();
                 }
             });
@@ -111,7 +106,7 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
         }
 
         private void handleMessage(byte[] _channel, byte[] _message) {
-            String channel = new String(_channel, QueueUtils.UTF8);
+            String channel = new String(_channel, StandardCharsets.UTF_8);
             try {
                 Set<ISubscriber<ID, DATA>> subs = subscriptions.get(channel);
                 if (subs != null && subs.size() > 0) {
@@ -156,8 +151,7 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
     protected JedisConnector buildJedisConnector() {
         JedisConnector jedisConnector = new JedisConnector();
         jedisConnector.setJedisPoolConfig(JedisUtils.defaultJedisPoolConfig())
-                .setRedisHostsAndPorts(getRedisHostAndPort()).setRedisPassword(getRedisPassword())
-                .init();
+                .setRedisHostsAndPorts(getRedisHostAndPort()).setRedisPassword(getRedisPassword()).init();
         return jedisConnector;
     }
 
@@ -168,12 +162,10 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
     public RedisPubSubHub<ID, DATA> init() {
         super.init();
 
-        new Thread() {
-            public void run() {
-                myPubSubJedis = getJedisConnector().getJedis();
-                myPubSubJedis.psubscribe(myPubSubGateway, "*".getBytes());
-            }
-        }.start();
+        new Thread(() -> {
+            myPubSubJedis = getJedisConnector().getJedis();
+            myPubSubJedis.psubscribe(myPubSubGateway, "*".getBytes());
+        }).start();
 
         return this;
     }
@@ -188,8 +180,7 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
                 if (myPubSubGateway != null) {
                     myPubSubGateway.punsubscribe();
                     long now = System.currentTimeMillis();
-                    while (myPubSubGateway.isSubscribed()
-                            && System.currentTimeMillis() - now < 1000) {
+                    while (myPubSubGateway.isSubscribed() && System.currentTimeMillis() - now < 1000) {
                         Thread.sleep(1);
                     }
                 }
@@ -216,7 +207,7 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
     public boolean publish(String channel, IMessage<ID, DATA> msg) {
         try (Jedis jedis = getJedisConnector().getJedis()) {
             byte[] message = serialize(msg);
-            Long result = jedis.publish(channel.getBytes(QueueUtils.UTF8), message);
+            Long result = jedis.publish(channel.getBytes(StandardCharsets.UTF_8), message);
             return result != null;
         }
     }
@@ -250,5 +241,4 @@ public class RedisPubSubHub<ID, DATA> extends BaseRedisPubSubHub<ID, DATA> {
             throw new RuntimeException(e);
         }
     }
-
 }

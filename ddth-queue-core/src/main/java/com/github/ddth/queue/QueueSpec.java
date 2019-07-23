@@ -17,7 +17,7 @@ public class QueueSpec {
 
     public final static int NO_BOUNDARY = -1;
 
-    private SortedMap<String, Object> fieldData = new TreeMap<String, Object>();
+    private SortedMap<String, Object> fieldData = new TreeMap<>();
     public final static String FIELD_EPHEMERAL_DISABLED = "ephemeral_disabled";
     public final static String FIELD_MAX_SIZE = "max_size";
     public final static String FIELD_EPHEMERAL_MAX_SIZE = "ephemeral_max_size";

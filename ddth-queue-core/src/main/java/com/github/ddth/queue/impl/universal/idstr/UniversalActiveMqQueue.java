@@ -20,22 +20,18 @@ import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
  */
-public class UniversalActiveMqQueue
-        extends BaseUniversalActiveMqQueue<UniversalIdStrQueueMessage, String> {
-
+public class UniversalActiveMqQueue extends BaseUniversalActiveMqQueue<UniversalIdStrQueueMessage, String> {
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.0
      */
     @Override
     public UniversalActiveMqQueue init() throws Exception {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 
@@ -46,5 +42,4 @@ public class UniversalActiveMqQueue
     protected UniversalIdStrQueueMessage deserialize(byte[] msgData) {
         return deserialize(msgData, UniversalIdStrQueueMessage.class);
     }
-
 }

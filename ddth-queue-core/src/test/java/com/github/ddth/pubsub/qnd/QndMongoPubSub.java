@@ -4,8 +4,8 @@ import com.github.ddth.pubsub.impl.CountingSubscriber;
 import com.github.ddth.pubsub.impl.MongodbPubSubHub;
 import com.github.ddth.pubsub.impl.universal.UniversalIdIntMessage;
 import com.github.ddth.pubsub.impl.universal.UniversalIdIntMessageFactory;
+import com.github.ddth.qnd.utils.MongoUtils;
 import com.github.ddth.queue.IMessage;
-import com.github.ddth.queue.utils.MongoUtils;
 
 public class QndMongoPubSub {
     private static class MyMongodbPubSubHub extends MongodbPubSubHub<Long, byte[]> {
@@ -75,5 +75,4 @@ public class QndMongoPubSub {
             System.out.println();
         }
     }
-
 }

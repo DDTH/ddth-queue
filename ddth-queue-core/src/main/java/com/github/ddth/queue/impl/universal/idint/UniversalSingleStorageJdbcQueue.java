@@ -1,209 +1,151 @@
 package com.github.ddth.queue.impl.universal.idint;
 
+import com.github.ddth.commons.utils.MapUtils;
+import com.github.ddth.dao.jdbc.utils.DefaultNamedParamsFilters;
+import com.github.ddth.dao.jdbc.utils.DefaultNamedParamsSqlBuilders;
+import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
+import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
+
 import java.sql.Connection;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.impl.universal.BaseUniversalJdbcQueue;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessage;
-import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
-
 /**
  * Same as {@link UniversalJdbcQueue} but messages from all queues are stored in
  * one same storage.
- * 
+ *
  * <p>
  * Queue db table schema:
  * </p>
  * <ul>
- * <li>{@code queue_name}: {@code string}, queue's name, to group queue
- * messages</li>
- * <li>{@code queue_id}: {@code bigint, auto increment}, see
- * {@link IQueueMessage#qId()}, {@link #COL_QUEUE_ID}</li>
- * <li>{@code msg_org_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qOriginalTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
- * <li>{@code msg_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qTimestamp()}, {@link #COL_TIMESTAMP}</li>
- * <li>{@code msg_num_requeues}: {@code int}, see
- * {@link IQueueMessage#qNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
- * <li>{@code msg_content}: {@code blob}, message's content, see
- * {@link #COL_CONTENT}</li>
+ * <li>{@code queue_name}: {@code string}, queue's name, to group queue messages</li>
+ * <li>{@code queue_id}: {@code bigint, should be auto-number}, see {@link IQueueMessage#getId()}, {@link #COL_QUEUE_ID}</li>
+ * <li>{@code msg_org_timestamp}: {@code datetime}, see {@link IQueueMessage#getTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
+ * <li>{@code msg_timestamp}: {@code datetime}, see {@link IQueueMessage#getQueueTimestamp()}, {@link #COL_TIMESTAMP}</li>
+ * <li>{@code msg_num_requeues}: {@code int}, see {@link IQueueMessage#getNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
+ * <li>{@code msg_content}: {@code blob}, message's content, see {@link #COL_CONTENT}</li>
  * </ul>
- * 
+ *
  * <p>
  * Ephemeral db table schema:
  * </p>
  * <ul>
- * <li>{@code queue_name}: {@code string}, queue's name, to group queue
- * messages</li>
- * <li>{@code queue_id}: {@code bigint}, see {@link IQueueMessage#qId()},
- * {@link #COL_QUEUE_ID}</li>
- * <li>{@code msg_org_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qOriginalTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
- * <li>{@code msg_timestamp}: {@code datetime}, see
- * {@link IQueueMessage#qTimestamp()}, {@link #COL_TIMESTAMP}</li>
- * <li>{@code msg_num_requeues}: {@code int}, see
- * {@link IQueueMessage#qNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
- * <li>{@code msg_content}: {@code blob}, message's content, see
- * {@link #COL_CONTENT}</li>
+ * <li>{@code queue_name}: {@code string}, queue's name, to group queue messages</li>
+ * <li>{@code queue_id}: {@code bigint}, see {@link IQueueMessage#getId()}, {@link #COL_QUEUE_ID}</li>
+ * <li>{@code msg_org_timestamp}: {@code datetime}, see {@link IQueueMessage#getTimestamp()}, {@link #COL_ORG_TIMESTAMP}</li>
+ * <li>{@code msg_timestamp}: {@code datetime}, see {@link IQueueMessage#getQueueTimestamp()}, {@link #COL_TIMESTAMP}</li>
+ * <li>{@code msg_num_requeues}: {@code int}, see {@link IQueueMessage#getNumRequeues()}, {@link #COL_NUM_REQUEUES}</li>
+ * <li>{@code msg_content}: {@code blob}, message's content, see {@link #COL_CONTENT}</li>
  * </ul>
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
- * @since 0.6.0
  * @see UniversalJdbcQueue
+ * @since 0.6.0
  */
-public class UniversalSingleStorageJdbcQueue
-        extends BaseUniversalJdbcQueue<UniversalIdIntQueueMessage, Long> {
+public class UniversalSingleStorageJdbcQueue extends BaseUniversalJdbcQueue<UniversalIdIntQueueMessage, Long> {
 
-    /** Table's column name to store queue-name */
+    /**
+     * Table's column name to store queue-name
+     */
     public final static String COL_QUEUE_NAME = "queue_name";
 
-    /** Table's column name to store queue-id */
+    /**
+     * Table's column name to store queue-id
+     */
     public final static String COL_QUEUE_ID = "queue_id";
 
-    /** Table's column name to store message's original timestamp */
+    /**
+     * Table's column name to store message's original timestamp
+     */
     public final static String COL_ORG_TIMESTAMP = "msg_org_timestamp";
 
-    /** Table's column name to store message's timestamp */
+    /**
+     * Table's column name to store message's timestamp
+     */
     public final static String COL_TIMESTAMP = "msg_timestamp";
 
-    /** Table's column name to store message's number of requeues */
+    /**
+     * Table's column name to store message's number of requeues
+     */
     public final static String COL_NUM_REQUEUES = "msg_num_requeues";
 
-    /** Table's column name to store message's content */
+    /**
+     * Table's column name to store message's content
+     */
     public final static String COL_CONTENT = "msg_content";
-
-    private boolean fifo = true;
-
-    /**
-     * When set to {@code true}, queue message with lower id is ensured to be
-     * taken first. When set to {@code false}, order of taken queue messages
-     * depends on the DBMS (usually FIFO in most cases).
-     * 
-     * @param fifo
-     * @return
-     */
-    public UniversalSingleStorageJdbcQueue setFifo(boolean fifo) {
-        this.fifo = fifo;
-        return this;
-    }
-
-    /**
-     * When set to {@code true}, queue message with lower id is ensured to be
-     * taken first. When set to {@code false}, order of taken queue messages
-     * depends on the DBMS (usually FIFO in most cases).
-     * 
-     * @param fifo
-     * @return
-     */
-    public UniversalSingleStorageJdbcQueue markFifo(boolean fifo) {
-        this.fifo = fifo;
-        return this;
-    }
-
-    /**
-     * If {@code true}, queue message with lower id is ensured to be taken
-     * first. Otherwise, order of taken queue messages depends on the DBMS
-     * (usually FIFO in most cases).
-     * 
-     * @return
-     */
-    public boolean isFifo() {
-        return fifo;
-    }
-
-    /**
-     * If {@code true}, queue message with lower id is ensured to be taken
-     * first. Otherwise, order of taken queue messages depends on the DBMS
-     * (usually FIFO in most cases).
-     * 
-     * @return
-     */
-    public boolean getFifo() {
-        return fifo;
-    }
 
     /*----------------------------------------------------------------------*/
 
-    private String SQL_READ_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
+    private String SQL_PEEK_FROM_QUEUE, SQL_READ_FROM_EPHEMERAL;
     private String SQL_GET_ORPHAN_MSGS;
     private String SQL_PUT_NEW_TO_QUEUE, SQL_REPUT_TO_QUEUE, SQL_PUT_TO_EPHEMERAL;
     private String SQL_REMOVE_FROM_QUEUE, SQL_REMOVE_FROM_EPHEMERAL;
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public UniversalSingleStorageJdbcQueue init() throws Exception {
-        super.init();
-
-        if (getMessageFactory() == null) {
-            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
-        }
-
-        final String WHERE_QUEUE_NAME = COL_QUEUE_NAME + "=?";
-        final String WHERE_QUEUE_NAME_AND = WHERE_QUEUE_NAME + " AND ";
-
-        Object[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
+        String[] COLS_SELECT = { COL_QUEUE_ID + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_ID,
                 COL_ORG_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_TIMESTAMP,
                 COL_TIMESTAMP + " AS " + UniversalIdIntQueueMessage.FIELD_QUEUE_TIMESTAMP,
                 COL_NUM_REQUEUES + " AS " + UniversalIdIntQueueMessage.FIELD_NUM_REQUEUES,
                 COL_CONTENT + " AS " + UniversalIdIntQueueMessage.FIELD_DATA };
 
-        /*
-         * Takes a message from queue
-         */
-        SQL_READ_FROM_QUEUE = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0}" + " WHERE "
-                + WHERE_QUEUE_NAME + (fifo ? (" ORDER BY " + COL_QUEUE_ID) : "");
-        SQL_READ_FROM_QUEUE = MessageFormat.format(SQL_READ_FROM_QUEUE,
-                ArrayUtils.insert(0, COLS_SELECT, getTableName()));
+        /* peek a message off a queue */
+        SQL_PEEK_FROM_QUEUE = new DefaultNamedParamsSqlBuilders.SelectBuilder().withColumns(COLS_SELECT)
+                .withFilterWhere(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_NAME, "=", "dummy"))
+                .withSorting(isFifo() ? MapUtils.createMap(COL_ORG_TIMESTAMP, Boolean.FALSE) : null).withLimit(1)
+                .withTableNames(getTableName()).build().clause;
+        /* read a message from ephemeral storage */
+        SQL_READ_FROM_EPHEMERAL = new DefaultNamedParamsSqlBuilders.SelectBuilder().withColumns(COLS_SELECT)
+                .withFilterWhere(new DefaultNamedParamsFilters.FilterAnd()
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_NAME, "=", "dummy"))
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_ID, "=", "dummy")))
+                .withTableNames(getTableNameEphemeral()).build().clause;
 
-        /*
-         * Reads a message from ephemeral storage
-         */
-        SQL_READ_FROM_EPHEMERAL = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE "
-                + WHERE_QUEUE_NAME_AND + COL_QUEUE_ID + "=?";
-        SQL_READ_FROM_EPHEMERAL = MessageFormat.format(SQL_READ_FROM_EPHEMERAL,
-                ArrayUtils.insert(0, COLS_SELECT, getTableNameEphemeral()));
+        /* read orphan messages from ephemeral storage */
+        SQL_GET_ORPHAN_MSGS = new DefaultNamedParamsSqlBuilders.SelectBuilder().withColumns(COLS_SELECT)
+                .withFilterWhere(new DefaultNamedParamsFilters.FilterAnd()
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_NAME, "=", "dummy"))
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_TIMESTAMP, "<", "dummy")))
+                .withTableNames(getTableNameEphemeral()).build().clause;
 
-        SQL_GET_ORPHAN_MSGS = "SELECT {1}, {2}, {3}, {4}, {5} FROM {0} WHERE "
-                + WHERE_QUEUE_NAME_AND + COL_TIMESTAMP + "<?";
-        SQL_GET_ORPHAN_MSGS = MessageFormat.format(SQL_GET_ORPHAN_MSGS,
-                ArrayUtils.insert(0, COLS_SELECT, getTableNameEphemeral()));
+        /* put a new message (message without pre-set queue id) to queue, assuming column COL_QUEUE_ID is auto-number. */
+        SQL_PUT_NEW_TO_QUEUE = new DefaultNamedParamsSqlBuilders.InsertBuilder(getTableName(),
+                MapUtils.createMap(COL_QUEUE_NAME, "dummy", COL_ORG_TIMESTAMP, "dummy", COL_TIMESTAMP, "dummy",
+                        COL_NUM_REQUEUES, "dummy", COL_CONTENT, "dummy")).build().clause;
+        /* put a message with pre-set queue id to queue */
+        SQL_REPUT_TO_QUEUE = new DefaultNamedParamsSqlBuilders.InsertBuilder(getTableName(),
+                MapUtils.createMap(COL_QUEUE_NAME, "dummy", COL_QUEUE_ID, "dummy", COL_ORG_TIMESTAMP, "dummy",
+                        COL_TIMESTAMP, "dummy", COL_NUM_REQUEUES, "dummy", COL_CONTENT, "dummy")).build().clause;
+        /* put a message to ephemeral storage */
+        SQL_PUT_TO_EPHEMERAL = new DefaultNamedParamsSqlBuilders.InsertBuilder(getTableNameEphemeral(),
+                MapUtils.createMap(COL_QUEUE_NAME, "dummy", COL_QUEUE_ID, "dummy", COL_ORG_TIMESTAMP, "dummy",
+                        COL_TIMESTAMP, "dummy", COL_NUM_REQUEUES, "dummy", COL_CONTENT, "dummy")).build().clause;
 
-        /*
-         * Puts a new message (message without pre-set queue id) to queue,
-         * assuming column COL_QUEUE_ID is auto-number
-         */
-        SQL_PUT_NEW_TO_QUEUE = "INSERT INTO {0} ({1},{2},{3},{4},{5}) VALUES (?,?,?,?,?)";
-        SQL_PUT_NEW_TO_QUEUE = MessageFormat.format(SQL_PUT_NEW_TO_QUEUE, COL_QUEUE_NAME,
-                COL_QUEUE_NAME, COL_ORG_TIMESTAMP, COL_TIMESTAMP, COL_NUM_REQUEUES, COL_CONTENT);
+        /* remove a message from queue */
+        SQL_REMOVE_FROM_QUEUE = new DefaultNamedParamsSqlBuilders.DeleteBuilder(getTableName(),
+                new DefaultNamedParamsFilters.FilterAnd()
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_NAME, "=", "dummy"))
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_ID, "=", "dummy")))
+                .build().clause;
+        /* remove a message from ephemeral storage */
+        SQL_REMOVE_FROM_EPHEMERAL = new DefaultNamedParamsSqlBuilders.DeleteBuilder(getTableNameEphemeral(),
+                new DefaultNamedParamsFilters.FilterAnd()
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_NAME, "=", "dummy"))
+                        .addFilter(new DefaultNamedParamsFilters.FilterFieldValue(COL_QUEUE_ID, "=", "dummy")))
+                .build().clause;
 
-        /*
-         * Put a message with pre-set queue id to queue
-         */
-        SQL_REPUT_TO_QUEUE = "INSERT INTO {0} ({1},{2},{3},{4},{5},{6}) VALUES (?,?,?,?,?,?)";
-        SQL_REPUT_TO_QUEUE = MessageFormat.format(SQL_REPUT_TO_QUEUE, getTableName(),
-                COL_QUEUE_NAME, COL_QUEUE_ID, COL_ORG_TIMESTAMP, COL_TIMESTAMP, COL_NUM_REQUEUES,
-                COL_CONTENT);
-
-        SQL_PUT_TO_EPHEMERAL = "INSERT INTO {0} ({1},{2},{3},{4},{5},{6}) VALUES (?,?,?,?,?,?)";
-        SQL_PUT_TO_EPHEMERAL = MessageFormat.format(SQL_PUT_TO_EPHEMERAL, getTableNameEphemeral(),
-                COL_QUEUE_NAME, COL_QUEUE_ID, COL_ORG_TIMESTAMP, COL_TIMESTAMP, COL_NUM_REQUEUES,
-                COL_CONTENT);
-
-        SQL_REMOVE_FROM_QUEUE = "DELETE FROM {0} WHERE " + WHERE_QUEUE_NAME_AND + COL_QUEUE_ID
-                + "=?";
-        SQL_REMOVE_FROM_QUEUE = MessageFormat.format(SQL_REMOVE_FROM_QUEUE, getTableName());
-
-        SQL_REMOVE_FROM_EPHEMERAL = "DELETE FROM {0} WHERE " + WHERE_QUEUE_NAME_AND + COL_QUEUE_ID
-                + "=?";
-        SQL_REMOVE_FROM_EPHEMERAL = MessageFormat.format(SQL_REMOVE_FROM_EPHEMERAL,
-                getTableNameEphemeral());
-
+        if (getMessageFactory() == null) {
+            setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
+        }
+        super.init();
         return this;
     }
 
@@ -211,47 +153,41 @@ public class UniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected UniversalIdIntQueueMessage readFromQueueStorage(Connection conn) {
-        Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_QUEUE,
-                getQueueName());
-        if (dbRow != null) {
-            UniversalIdIntQueueMessage msg = new UniversalIdIntQueueMessage();
-            return msg.fromMap(dbRow);
-        }
-        return null;
+    protected UniversalIdIntQueueMessage peekFromQueueStorage(Connection conn) {
+        Map<String, Object> dbRow = getJdbcHelper()
+                .executeSelectOne(conn, SQL_PEEK_FROM_QUEUE, MapUtils.createMap(COL_QUEUE_NAME, getQueueName()));
+        return dbRow != null ? createMessge(dbRow) : null;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected UniversalIdIntQueueMessage readFromEphemeralStorage(Connection conn,
-            IQueueMessage<Long, byte[]> msg) {
+    protected UniversalIdIntQueueMessage readFromEphemeralStorage(Connection conn, Long id) {
         Map<String, Object> dbRow = getJdbcHelper().executeSelectOne(conn, SQL_READ_FROM_EPHEMERAL,
-                getQueueName(), msg.getId());
-        if (dbRow != null) {
-            UniversalIdIntQueueMessage myMsg = new UniversalIdIntQueueMessage();
-            return myMsg.fromMap(dbRow);
-        }
-        return null;
+                MapUtils.createMap(COL_QUEUE_NAME, getQueueName(), COL_QUEUE_ID, id));
+        return dbRow != null ? createMessge(dbRow) : null;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    protected Collection<UniversalIdIntQueueMessage> getOrphanFromEphemeralStorage(Connection conn,
+    protected Collection<UniversalIdIntQueueMessage> getOrphanMessagesFromEphemeralStorage(Connection conn,
             long thresholdTimestampMs) {
         Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
         Collection<UniversalIdIntQueueMessage> result = new ArrayList<>();
-        try (Stream<Map<String, Object>> dbRows = getJdbcHelper().executeSelectAsStream(conn,
-                SQL_GET_ORPHAN_MSGS, getQueueName(), threshold)) {
-            dbRows.forEach(row -> {
-                UniversalIdIntQueueMessage msg = new UniversalIdIntQueueMessage().fromMap(row);
-                result.add(msg);
-            });
+        try (Stream<Map<String, Object>> dbRows = getJdbcHelper().executeSelectAsStream(conn, SQL_GET_ORPHAN_MSGS,
+                MapUtils.createMap(COL_QUEUE_NAME, getQueueName(), COL_TIMESTAMP, threshold))) {
+            dbRows.forEach(row -> result.add(UniversalIdIntQueueMessage.newInstance(row)));
         }
         return result;
+    }
+
+    private Map<String, Object> toMapForSqlBuilder(UniversalIdIntQueueMessage msg) {
+        return MapUtils.createMap(COL_QUEUE_NAME, getQueueName(), COL_QUEUE_ID, msg.getId(), COL_ORG_TIMESTAMP,
+                msg.getTimestamp(), COL_TIMESTAMP, msg.getQueueTimestamp(), COL_NUM_REQUEUES, msg.getNumRequeues(),
+                COL_CONTENT, msg.getContent());
     }
 
     /**
@@ -259,21 +195,13 @@ public class UniversalSingleStorageJdbcQueue
      */
     @Override
     protected boolean putToQueueStorage(Connection conn, IQueueMessage<Long, byte[]> _msg) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
+        UniversalIdIntQueueMessage msg = ensureMessageType(_msg, UniversalIdIntQueueMessage.class);
         Long qid = msg.getId();
         if (qid == null || qid.longValue() == 0) {
-            int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE, getQueueName(),
-                    msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
-                    msg.getContent());
+            int numRows = getJdbcHelper().execute(conn, SQL_PUT_NEW_TO_QUEUE, toMapForSqlBuilder(msg));
             return numRows > 0;
         } else {
-            int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, getQueueName(), qid,
-                    msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
-                    msg.getContent());
+            int numRows = getJdbcHelper().execute(conn, SQL_REPUT_TO_QUEUE, toMapForSqlBuilder(msg));
             return numRows > 0;
         }
     }
@@ -283,14 +211,8 @@ public class UniversalSingleStorageJdbcQueue
      */
     @Override
     protected boolean putToEphemeralStorage(Connection conn, IQueueMessage<Long, byte[]> _msg) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, getQueueName(),
-                msg.getId(), msg.getTimestamp(), msg.getQueueTimestamp(), msg.getNumRequeues(),
-                msg.getContent());
+        UniversalIdIntQueueMessage msg = ensureMessageType(_msg, UniversalIdIntQueueMessage.class);
+        int numRows = getJdbcHelper().execute(conn, SQL_PUT_TO_EPHEMERAL, toMapForSqlBuilder(msg));
         return numRows > 0;
     }
 
@@ -299,13 +221,9 @@ public class UniversalSingleStorageJdbcQueue
      */
     @Override
     protected boolean removeFromQueueStorage(Connection conn, IQueueMessage<Long, byte[]> _msg) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE, getQueueName(),
-                msg.getId());
+        UniversalIdIntQueueMessage msg = ensureMessageType(_msg, UniversalIdIntQueueMessage.class);
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_QUEUE,
+                MapUtils.createMap(COL_QUEUE_NAME, getQueueName(), COL_QUEUE_ID, msg.getId()));
         return numRows > 0;
     }
 
@@ -313,16 +231,10 @@ public class UniversalSingleStorageJdbcQueue
      * {@inheritDoc}
      */
     @Override
-    protected boolean removeFromEphemeralStorage(Connection conn,
-            IQueueMessage<Long, byte[]> _msg) {
-        if (!(_msg instanceof UniversalIdIntQueueMessage)) {
-            throw new IllegalArgumentException("This method requires an argument of type ["
-                    + UniversalIdIntQueueMessage.class.getName() + "]!");
-        }
-        UniversalIdIntQueueMessage msg = (UniversalIdIntQueueMessage) _msg;
-        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL, getQueueName(),
-                msg.getId());
+    protected boolean removeFromEphemeralStorage(Connection conn, IQueueMessage<Long, byte[]> _msg) {
+        UniversalIdIntQueueMessage msg = ensureMessageType(_msg, UniversalIdIntQueueMessage.class);
+        int numRows = getJdbcHelper().execute(conn, SQL_REMOVE_FROM_EPHEMERAL,
+                MapUtils.createMap(COL_QUEUE_NAME, getQueueName(), COL_QUEUE_ID, msg.getId()));
         return numRows > 0;
     }
-
 }

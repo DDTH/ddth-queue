@@ -8,33 +8,30 @@ import com.github.ddth.queue.impl.universal.UniversalIdIntQueueMessageFactory;
 
 /**
  * Universal Redis implementation of {@link IQueue}.
- * 
+ *
  * <p>
  * Queue and Take {@link UniversalIdIntQueueMessage}s.
  * </p>
- * 
+ *
  * <p>
  * Implementation: see {@link RedisQueue}.
  * </p>
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.3.0
  */
 public class UniversalRedisQueue extends BaseUniversalRedisQueue<UniversalIdIntQueueMessage, Long> {
-
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.0
      */
     @Override
     public UniversalRedisQueue init() throws Exception {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdIntQueueMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
 

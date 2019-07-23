@@ -5,10 +5,7 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 
-@Suite.SuiteClasses({ 
-    TestRedisPubSubHub.class,
-    TestRedisPubSubMT.class 
-})
+@Suite.SuiteClasses({ TestRedisPubSubHub.class, TestRedisPubSubMT.class })
 
 /*
  * mvn test -DskipTests=false -Dtest=com.github.ddth.pubsub.test.universal.idint.redis.MySuiteTest -DenableTestsRedis=true

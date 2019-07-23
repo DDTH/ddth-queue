@@ -5,13 +5,11 @@ import com.github.ddth.queue.impl.JdbcQueueFactory;
 
 /**
  * Factory to create {@link UniversalJdbcQueue} instances.
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.1
  */
-public class UniversalJdbcQueueFactory
-        extends JdbcQueueFactory<UniversalJdbcQueue, String, byte[]> {
-
+public class UniversalJdbcQueueFactory extends JdbcQueueFactory<UniversalJdbcQueue, String, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalJdbcQueueFactory
         UniversalJdbcQueue queue = new UniversalJdbcQueue();
         return queue;
     }
-
 }

@@ -1,23 +1,19 @@
 package com.github.ddth.queue.impl;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingQueue;
-
 import com.github.ddth.queue.IQueue;
 import com.github.ddth.queue.IQueueMessage;
 import com.github.ddth.queue.QueueSpec;
 import com.github.ddth.queue.utils.QueueException;
 
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingQueue;
+
 /**
  * In-Memory implementation of {@link IQueue}.
- * 
+ *
  * <p>
  * Implementation:
  * <ul>
@@ -25,14 +21,19 @@ import com.github.ddth.queue.utils.QueueException;
  * <li>A {@link ConcurrentMap} as ephemeral storage.</li>
  * </ul>
  * </p>
- * 
+ *
+ * <p>Features:</p>
+ * <ul>
+ * <li>Queue-size support: yes</li>
+ * <li>Ephemeral storage support: yes</li>
+ * <li>Ephemeral-size support: yes</li>
+ * </ul>
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.0
  */
-public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA> {
-
+public class InmemQueue<ID, DATA> extends AbstractInmemEphemeralQueue<ID, DATA> {
     private Queue<IQueueMessage<ID, DATA>> queue;
-    private ConcurrentMap<Object, IQueueMessage<ID, DATA>> ephemeralStorage;
 
     /**
      * A value less than {@code 1} mean "no boundary".
@@ -48,7 +49,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
 
     /**
      * Gets queue's boundary (max number of elements).
-     * 
+     *
      * @return
      */
     public int getBoundary() {
@@ -57,10 +58,9 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
 
     /**
      * Sets queue's boundary (max number of elements).
-     * 
-     * @param boundary
-     *            queue's max number of elements, a value less than {@code 1}
-     *            mean "no boundary".
+     *
+     * @param boundary queue's max number of elements, a value less than {@code 1}
+     *                 mean "no boundary".
      * @return
      */
     public InmemQueue<ID, DATA> setBoundary(int boundary) {
@@ -71,7 +71,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
     /**
      * This method will create a {@link Queue} instance with the following
      * rules:
-     * 
+     *
      * <ul>
      * <li>If {@link #boundary} is set and larger than {@code 1024}, a
      * {@link LinkedBlockingQueue} is created; if {@link #boundary} is less than
@@ -79,7 +79,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
      * instead.</li>
      * <li>Otherwise, a {@link ConcurrentLinkedQueue} is created.</li>
      * </ul>
-     * 
+     *
      * @param boundary
      * @return
      */
@@ -97,80 +97,28 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
 
     /**
      * Init method.
-     * 
+     *
      * @return
      * @throws Exception
      */
     public InmemQueue<ID, DATA> init() throws Exception {
         queue = createQueue(boundary);
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage = new ConcurrentHashMap<>();
-        }
-
+        initEphemeralStorage(1024);
         super.init();
-
         return this;
     }
 
     /**
-     * Puts a message to the queue buffer.
-     * 
-     * @param msg
-     * @throws QueueException.QueueIsFull
-     *             if the ring buffer is full
-     * 
+     * {@inheritDoc}
      */
-    protected void putToQueue(IQueueMessage<ID, DATA> msg) throws QueueException.QueueIsFull {
+    @Override
+    protected boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase)
+            throws QueueException.QueueIsFull {
         if (!queue.offer(msg)) {
             throw new QueueException.QueueIsFull(getBoundary());
         }
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws QueueException.QueueIsFull
-     *             if queue buffer is full
-     */
-    @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
-        putToQueue(msg);
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws QueueException.QueueIsFull
-     *             if queue buffer is full
-     */
-    @Override
-    public boolean requeue(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.incNumRequeues().setQueueTimestamp(now);
-        putToQueue(msg);
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.getId());
-        }
-        return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     * 
-     * @throws QueueException.QueueIsFull
-     *             if queue buffer is full
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) throws QueueException.QueueIsFull {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        putToQueue(msg);
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.getId());
+        if (queueCase != null && queueCase != PutToQueueCase.NEW) {
+            doRemoveFromEphemeralStorage(msg);
         }
         return true;
     }
@@ -180,14 +128,12 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
      */
     @Override
     public void finish(IQueueMessage<ID, DATA> msg) {
-        if (!isEphemeralDisabled()) {
-            ephemeralStorage.remove(msg.getId());
-        }
+        doRemoveFromEphemeralStorage(msg);
     }
 
     /**
      * Takes a message from the internal queue.
-     * 
+     *
      * @return
      */
     protected IQueueMessage<ID, DATA> takeFromQueue() {
@@ -196,22 +142,14 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
 
     /**
      * {@inheritDoc}
-     * 
-     * @throws QueueException.EphemeralIsFull
-     *             if the ephemeral storage is full
+     *
+     * @throws QueueException.EphemeralIsFull if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
-        if (!isEphemeralDisabled()) {
-            int ephemeralMaxSize = getEphemeralMaxSize();
-            if (ephemeralMaxSize > 0 && ephemeralStorage.size() >= ephemeralMaxSize) {
-                throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
-            }
-        }
+        ensureEphemeralSize();
         IQueueMessage<ID, DATA> msg = takeFromQueue();
-        if (msg != null && !isEphemeralDisabled()) {
-            ephemeralStorage.putIfAbsent(msg.getId(), msg);
-        }
+        doPutToEphemeralStorage(msg);
         return msg;
     }
 
@@ -219,52 +157,7 @@ public class InmemQueue<ID, DATA> extends AbstractEphemeralSupportQueue<ID, DATA
      * {@inheritDoc}
      */
     @Override
-    public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        if (isEphemeralDisabled()) {
-            return null;
-        }
-        Collection<IQueueMessage<ID, DATA>> orphanMessages = new HashSet<>();
-        long now = System.currentTimeMillis();
-        ephemeralStorage.forEach((key, msg) -> {
-            if (msg.getQueueTimestamp().getTime() + thresholdTimestampMs < now)
-                orphanMessages.add(msg);
-        });
-        return orphanMessages;
-    }
-
-//    /**
-//     * {@inheritDoc}
-//     */
-//    @Override
-//    public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA> _msg) {
-//        if (!isEphemeralDisabled()) {
-//            IQueueMessage<ID, DATA> msg = ephemeralStorage.remove(_msg.getId());
-//            if (msg != null) {
-//                try {
-//                    putToQueue(msg);
-//                    return true;
-//                } catch (QueueException.QueueIsFull e) {
-//                    ephemeralStorage.putIfAbsent(msg.getId(), msg);
-//                    return false;
-//                }
-//            }
-//        }
-//        return true;
-//    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public int queueSize() {
         return queue.size();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int ephemeralSize() {
-        return !isEphemeralDisabled() ? ephemeralStorage.size() : 0;
     }
 }

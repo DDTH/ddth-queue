@@ -1,24 +1,18 @@
 package com.github.ddth.queue.test.universal.idstr.mysql;
 
-import java.sql.SQLException;
-
-import org.apache.commons.dbcp2.BasicDataSource;
-
-import com.github.ddth.dao.jdbc.IJdbcHelper;
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.NoopQueueObserver;
-import com.github.ddth.queue.impl.universal.idstr.UniversalSingleStorageJdbcQueue;
 import com.github.ddth.queue.test.universal.BaseQueueMultiThreadsTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import org.apache.commons.dbcp2.BasicDataSource;
+
+import java.sql.SQLException;
 
 /*
  * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idstr.mysql.TestMySQLSingleStorageQueueMTEphemeralDisabled -DenableTestsMySql=true
  */
 
-public class TestMySQLSingleStorageQueueMTEphemeralDisabled
-        extends BaseQueueMultiThreadsTest<String> {
+public class TestMySQLSingleStorageQueueMTEphemeralDisabled extends BaseQueueMultiThreadsTest<String> {
     public TestMySQLSingleStorageQueueMTEphemeralDisabled(String testName) {
         super(testName);
     }
@@ -27,16 +21,8 @@ public class TestMySQLSingleStorageQueueMTEphemeralDisabled
         return new TestSuite(TestMySQLSingleStorageQueueMTEphemeralDisabled.class);
     }
 
-    private static class MyJdbcQueue extends UniversalSingleStorageJdbcQueue {
-        public void flush() throws SQLException {
-            IJdbcHelper jdbcHelper = getJdbcHelper();
-            jdbcHelper.execute("DELETE FROM " + getTableName());
-        }
-    }
-
     protected IQueue<String, byte[]> initQueueInstance() throws Exception {
-        if (System.getProperty("enableTestsMySql") == null
-                && System.getProperty("enableTestsMySQL") == null) {
+        if (System.getProperty("enableTestsMySql") == null && System.getProperty("enableTestsMySQL") == null) {
             return null;
         }
         String mysqlHost = System.getProperty("db.host", "localhost");
@@ -53,16 +39,19 @@ public class TestMySQLSingleStorageQueueMTEphemeralDisabled
         dataSource.setUsername(mysqlUser);
         dataSource.setPassword(mysqlPassword);
 
-        MyJdbcQueue queue = new MyJdbcQueue();
-        queue.setObserver(new NoopQueueObserver<String, byte[]>() {
-            public void postDestroy(IQueue<String, byte[]> queue) {
+        MySSQueue queue = new MySSQueue() {
+            public void destroy() {
                 try {
-                    dataSource.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                    super.destroy();
+                } finally {
+                    try {
+                        dataSource.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        });
+        };
         queue.setDataSource(dataSource).setTableName(tableQueue).setEphemeralDisabled(true)
                 .setQueueName(this.getClass().getSimpleName()).init();
         queue.flush();
@@ -71,7 +60,6 @@ public class TestMySQLSingleStorageQueueMTEphemeralDisabled
     }
 
     protected int numTestMessages() {
-        return 4 * 1024;
+        return 1 * 1024;
     }
-
 }

@@ -4,7 +4,6 @@ import com.github.ddth.pubsub.IPubSubHub;
 import com.github.ddth.pubsub.impl.InmemPubSubHub;
 import com.github.ddth.pubsub.impl.universal.idstr.UniversalInmemPubSubHub;
 import com.github.ddth.pubsub.test.universal.BasePubSubFunctionalTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
@@ -24,7 +23,7 @@ public class TestInmemPubSubHub extends BasePubSubFunctionalTest<String> {
      * {@inheritDoc}
      */
     @Override
-    protected IPubSubHub<String, byte[]> initPubSubHubInstance() throws Exception {
+    protected IPubSubHub<String, byte[]> initPubSubHubInstance() {
         if (System.getProperty("skipTestsInmem") != null) {
             return null;
         }
@@ -32,5 +31,4 @@ public class TestInmemPubSubHub extends BasePubSubFunctionalTest<String> {
         hub.init();
         return hub;
     }
-
 }

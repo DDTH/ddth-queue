@@ -1,17 +1,12 @@
 package com.github.ddth.queue.test.universal.idstr.mysql;
 
-import java.sql.SQLException;
-
-import org.apache.commons.dbcp2.BasicDataSource;
-
-import com.github.ddth.dao.jdbc.IJdbcHelper;
 import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.NoopQueueObserver;
-import com.github.ddth.queue.impl.universal.idstr.UniversalSingleStorageJdbcQueue;
 import com.github.ddth.queue.test.universal.BaseQueueLongTest;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
+import org.apache.commons.dbcp2.BasicDataSource;
+
+import java.sql.SQLException;
 
 /*
  * mvn test -DskipTests=false -Dtest=com.github.ddth.queue.test.universal.idstr.mysql.TestMySQLSingleStorageQueueLongBoundEphemeralSize -DenableTestsMySql=true
@@ -26,17 +21,8 @@ public class TestMySQLSingleStorageQueueLongBoundEphemeralSize extends BaseQueue
         return new TestSuite(TestMySQLSingleStorageQueueLongBoundEphemeralSize.class);
     }
 
-    private static class MyJdbcQueue extends UniversalSingleStorageJdbcQueue {
-        public void flush() throws SQLException {
-            IJdbcHelper jdbcHelper = getJdbcHelper();
-            jdbcHelper.execute("DELETE FROM " + getTableName());
-            jdbcHelper.execute("DELETE FROM " + getTableNameEphemeral());
-        }
-    }
-
     protected IQueue<String, byte[]> initQueueInstance() throws Exception {
-        if (System.getProperty("enableTestsMySql") == null
-                && System.getProperty("enableTestsMySQL") == null) {
+        if (System.getProperty("enableTestsMySql") == null && System.getProperty("enableTestsMySQL") == null) {
             return null;
         }
         String mysqlHost = System.getProperty("db.host", "localhost");
@@ -54,19 +40,22 @@ public class TestMySQLSingleStorageQueueLongBoundEphemeralSize extends BaseQueue
         dataSource.setUsername(mysqlUser);
         dataSource.setPassword(mysqlPassword);
 
-        MyJdbcQueue queue = new MyJdbcQueue();
-        queue.setObserver(new NoopQueueObserver<String, byte[]>() {
-            public void postDestroy(IQueue<String, byte[]> queue) {
+        MySSQueue queue = new MySSQueue() {
+            public void destroy() {
                 try {
-                    dataSource.close();
-                } catch (SQLException e) {
-                    e.printStackTrace();
+                    super.destroy();
+                } finally {
+                    try {
+                        dataSource.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
-        });
-        queue.setDataSource(dataSource).setTableName(tableQueue)
-                .setTableNameEphemeral(tableEphemeral).setEphemeralDisabled(false)
-                .setEphemeralMaxSize(16).setQueueName(this.getClass().getSimpleName()).init();
+        };
+        queue.setDataSource(dataSource).setTableName(tableQueue).setTableNameEphemeral(tableEphemeral)
+                .setEphemeralDisabled(false).setEphemeralMaxSize(16).setQueueName(this.getClass().getSimpleName())
+                .init();
         queue.flush();
 
         return queue;
@@ -74,7 +63,6 @@ public class TestMySQLSingleStorageQueueLongBoundEphemeralSize extends BaseQueue
 
     protected int numTestMessages() {
         // to make a very long queue
-        return 4 * 1024;
+        return 1 * 1024;
     }
-
 }

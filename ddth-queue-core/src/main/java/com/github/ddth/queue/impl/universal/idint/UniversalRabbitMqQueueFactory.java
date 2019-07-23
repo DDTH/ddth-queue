@@ -9,9 +9,7 @@ import com.github.ddth.queue.impl.RabbitMqQueueFactory;
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.6.1
  */
-public class UniversalRabbitMqQueueFactory
-        extends RabbitMqQueueFactory<UniversalRabbitMqQueue, Long, byte[]> {
-
+public class UniversalRabbitMqQueueFactory extends RabbitMqQueueFactory<UniversalRabbitMqQueue, Long, byte[]> {
     /**
      * {@inheritDoc}
      */
@@ -20,5 +18,4 @@ public class UniversalRabbitMqQueueFactory
         UniversalRabbitMqQueue queue = new UniversalRabbitMqQueue();
         return queue;
     }
-
 }

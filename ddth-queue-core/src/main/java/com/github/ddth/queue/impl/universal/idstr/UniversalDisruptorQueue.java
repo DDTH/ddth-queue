@@ -7,17 +7,15 @@ import com.github.ddth.queue.impl.universal.UniversalIdStrQueueMessageFactory;
 
 /**
  * Universal LMAX Disruptor implementation of {@link IQueue}.
- * 
+ *
  * <p>
  * Queue and Take {@link UniversalIdStrQueueMessage}s.
  * </p>
- * 
+ *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.4.0
  */
-public class UniversalDisruptorQueue
-        extends BaseUniversalDisruptorQueue<UniversalIdStrQueueMessage, String> {
-
+public class UniversalDisruptorQueue extends BaseUniversalDisruptorQueue<UniversalIdStrQueueMessage, String> {
     public UniversalDisruptorQueue() {
     }
 
@@ -27,18 +25,15 @@ public class UniversalDisruptorQueue
 
     /**
      * {@inheritDoc}
-     * 
+     *
      * @since 0.7.0
      */
     @Override
     public UniversalDisruptorQueue init() throws Exception {
-        super.init();
-
         if (getMessageFactory() == null) {
             setMessageFactory(UniversalIdStrQueueMessageFactory.INSTANCE);
         }
-
+        super.init();
         return this;
     }
-
 }

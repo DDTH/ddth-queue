@@ -1,10 +1,15 @@
 package com.github.ddth.queue.impl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.function.Consumer;
-
+import com.github.ddth.queue.IQueue;
+import com.github.ddth.queue.IQueueMessage;
+import com.github.ddth.queue.internal.utils.MongoUtils;
+import com.github.ddth.queue.internal.utils.QueueUtils;
+import com.github.ddth.queue.utils.QueueException;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.*;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -12,25 +17,19 @@ import org.bson.types.Binary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.ddth.queue.IQueue;
-import com.github.ddth.queue.IQueueMessage;
-import com.github.ddth.queue.utils.MongoUtils;
-import com.github.ddth.queue.utils.QueueException;
-import com.github.ddth.queue.utils.QueueUtils;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Filters;
-import com.mongodb.client.model.FindOneAndDeleteOptions;
-import com.mongodb.client.model.FindOneAndUpdateOptions;
-import com.mongodb.client.model.IndexOptions;
-import com.mongodb.client.model.ReplaceOptions;
-import com.mongodb.client.model.Sorts;
-import com.mongodb.client.model.Updates;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.function.Consumer;
 
 /**
  * (Experimental) MongoDB implementation of {@link IQueue}.
+ *
+ * <ul>
+ * <li>Queue-size support: yes</li>
+ * <li>Ephemeral storage support: yes</li>
+ * <li>Ephemeral-size support: yes</li>
+ * </ul>
  *
  * @author Thanh Ba Nguyen <bnguyen2k@gmail.com>
  * @since 0.7.1
@@ -49,8 +48,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     private String collectionName = DEFAULT_COLLECTION_NAME;
 
     /**
-     * Getter for {@link #connectionString} (see
-     * http://mongodb.github.io/mongo-java-driver/3.7/driver/getting-started/quick-start/).
+     * MongoDB's connection string (see http://mongodb.github.io/mongo-java-driver/3.10/driver/getting-started/quick-start/).
      *
      * @return
      */
@@ -59,8 +57,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     }
 
     /**
-     * Setter for {@link #connectionString} (see
-     * http://mongodb.github.io/mongo-java-driver/3.7/driver/getting-started/quick-start/).
+     * MongoDB's connection string (see http://mongodb.github.io/mongo-java-driver/3.10/driver/getting-started/quick-start/).
      *
      * @param connectionString
      * @return
@@ -71,7 +68,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     }
 
     /**
-     * Getter for {@link #databaseName}.
+     * Name of MongoDB database to store data.
      *
      * @return
      */
@@ -80,7 +77,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     }
 
     /**
-     * Setter for {@link #databaseName}.
+     * Name of MongoDB database to store data.
      *
      * @param databaseName
      * @return
@@ -91,7 +88,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     }
 
     /**
-     * Getter for {@link #collectionName}.
+     * Name of MongoDB collection to store queue messages.
      *
      * @return
      */
@@ -100,7 +97,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     }
 
     /**
-     * Setter for {@link #collectionName}.
+     * Name of MongoDB collection to store queue messages.
      *
      * @param collectionName
      * @return
@@ -136,8 +133,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      * @param setMyOwnMongoClient
      * @return
      */
-    protected MongodbQueue<ID, DATA> setMongoClient(MongoClient mongoClient,
-            boolean setMyOwnMongoClient) {
+    protected MongodbQueue<ID, DATA> setMongoClient(MongoClient mongoClient, boolean setMyOwnMongoClient) {
         if (myOwnMongoClient && this.mongoClient != null) {
             this.mongoClient.close();
         }
@@ -176,7 +172,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
 
     /**
      * Initialize collection:
-     * 
+     *
      * <ul>
      * <li>Check if collection exists.</li>
      * <li>If collection does not exist, create collection and indexes.</li>
@@ -186,30 +182,28 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         boolean collectionExists = MongoUtils.collectionExists(getDatabase(), getCollectionName());
         if (!collectionExists) {
             LOGGER.info("Creating collection [" + getCollectionName() + "]...");
-            getDatabase().createCollection(getCollectionName());
+            MongoUtils.createCollection(getDatabase(), getCollectionName(), null);
             MongoCollection<?> collection = getCollection();
 
-            LOGGER.info("Creating index for field [" + getCollectionName() + "."
-                    + MongodbQueue.COLLECTION_FIELD_ID + "]...");
+            LOGGER.info("Creating index for field [" + getCollectionName() + "." + MongodbQueue.COLLECTION_FIELD_ID
+                    + "]...");
             collection.createIndex(new Document().append(MongodbQueue.COLLECTION_FIELD_ID, 1),
                     new IndexOptions().unique(true));
 
             LOGGER.info("Creating index for field [" + getCollectionName() + "."
                     + MongodbQueue.COLLECTION_FIELD_EPHEMERAL_KEY + "]...");
-            collection.createIndex(
-                    new Document().append(MongodbQueue.COLLECTION_FIELD_EPHEMERAL_KEY, 1),
+            collection.createIndex(new Document().append(MongodbQueue.COLLECTION_FIELD_EPHEMERAL_KEY, 1),
                     new IndexOptions());
 
-            LOGGER.info("Creating index for field [" + getCollectionName() + "."
-                    + MongodbQueue.COLLECTION_FIELD_QUEUE_TIME + "]...");
-            collection.createIndex(
-                    new Document().append(MongodbQueue.COLLECTION_FIELD_QUEUE_TIME, 1),
+            LOGGER.info(
+                    "Creating index for field [" + getCollectionName() + "." + MongodbQueue.COLLECTION_FIELD_QUEUE_TIME
+                            + "]...");
+            collection.createIndex(new Document().append(MongodbQueue.COLLECTION_FIELD_QUEUE_TIME, 1),
                     new IndexOptions());
 
-            LOGGER.info("Creating index for field [" + getCollectionName() + "."
-                    + MongodbQueue.COLLECTION_FIELD_TIME + "]...");
-            collection.createIndex(new Document().append(MongodbQueue.COLLECTION_FIELD_TIME, 1),
-                    new IndexOptions());
+            LOGGER.info("Creating index for field [" + getCollectionName() + "." + MongodbQueue.COLLECTION_FIELD_TIME
+                    + "]...");
+            collection.createIndex(new Document().append(MongodbQueue.COLLECTION_FIELD_TIME, 1), new IndexOptions());
 
         }
     }
@@ -224,8 +218,7 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
         if (StringUtils.isBlank(connectionString)) {
             throw new IllegalStateException("MongoDB ConnectionString is not defined.");
         }
-        MongoClient mc = MongoClients.create(connectionString);
-        return mc;
+        return MongoClients.create(connectionString);
     }
 
     /**
@@ -278,20 +271,16 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     public final static String COLLECTION_FIELD_EPHEMERAL_KEY = "ekey";
 
     protected Document toDocument(IQueueMessage<ID, DATA> msg) {
-        return new Document(COLLECTION_FIELD_ID, msg.getId())
-                .append(COLLECTION_FIELD_EPHEMERAL_KEY, null)
+        return new Document(COLLECTION_FIELD_ID, msg.getId()).append(COLLECTION_FIELD_EPHEMERAL_KEY, null)
                 .append(COLLECTION_FIELD_TIME, msg.getTimestamp())
                 .append(COLLECTION_FIELD_QUEUE_TIME, msg.getQueueTimestamp())
                 .append(COLLECTION_FIELD_QUEUE_DATA, serialize(msg));
     }
 
     protected IQueueMessage<ID, DATA> fromDocument(Document doc) {
-        return doc != null
-                ? deserialize(doc.get(COLLECTION_FIELD_QUEUE_DATA, Binary.class).getData()) : null;
+        return doc != null ? deserialize(doc.get(COLLECTION_FIELD_QUEUE_DATA, Binary.class).getData()) : null;
     }
 
-    // private final static UpdateOptions UPDATE_OPTIONS = new
-    // UpdateOptions().upsert(true);
     private final static ReplaceOptions REPLACE_OPTIONS = new ReplaceOptions().upsert(true);
 
     /**
@@ -301,14 +290,13 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      * @return
      */
     protected boolean upsertToCollection(IQueueMessage<ID, DATA> msg) {
-        getCollection().replaceOne(Filters.eq(COLLECTION_FIELD_ID, msg.getId()), toDocument(msg),
-                REPLACE_OPTIONS);
+        getCollection().replaceOne(Filters.eq(COLLECTION_FIELD_ID, msg.getId()), toDocument(msg), REPLACE_OPTIONS);
         return true;
     }
 
     /**
      * Insert a new message to collection.
-     * 
+     *
      * @param msg
      * @return
      */
@@ -321,31 +309,10 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      * {@inheritDoc}
      */
     @Override
-    public boolean queue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.setNumRequeues(0).setQueueTimestamp(now).setTimestamp(now);
-        return insertToCollection(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeue(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        Date now = new Date();
-        msg.incNumRequeues().setQueueTimestamp(now);
-        return upsertToCollection(msg);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean requeueSilent(IQueueMessage<ID, DATA> _msg) {
-        IQueueMessage<ID, DATA> msg = _msg.clone();
-        return upsertToCollection(msg);
+    protected boolean doPutToQueue(IQueueMessage<ID, DATA> msg, PutToQueueCase queueCase) {
+        return queueCase == null || queueCase == PutToQueueCase.NEW || isEphemeralDisabled() ?
+                insertToCollection(msg) :
+                upsertToCollection(msg);
     }
 
     /**
@@ -368,23 +335,22 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
     /**
      * {@inheritDoc}
      *
-     * @throws QueueException.EphemeralIsFull
-     *             if the ephemeral storage is full
+     * @throws QueueException.EphemeralIsFull if the ephemeral storage is full
      */
     @Override
     public IQueueMessage<ID, DATA> take() throws QueueException.EphemeralIsFull {
         Document document;
         if (isEphemeralDisabled()) {
-            document = getCollection().findOneAndDelete(FILTER_TAKE,
-                    TAKE_EPHEMERAL_DISABLED_OPTIONS);
+            document = getCollection().findOneAndDelete(FILTER_TAKE, TAKE_EPHEMERAL_DISABLED_OPTIONS);
         } else {
             int ephemeralMaxSize = getEphemeralMaxSize();
             if (ephemeralMaxSize > 0 && ephemeralSize() >= ephemeralMaxSize) {
                 throw new QueueException.EphemeralIsFull(ephemeralMaxSize);
             }
             String ephemeralId = QueueUtils.IDGEN.generateId128Hex();
-            document = getCollection().findOneAndUpdate(FILTER_TAKE,
-                    Updates.set(COLLECTION_FIELD_EPHEMERAL_KEY, ephemeralId), TAKE_OPTIONS);
+            document = getCollection()
+                    .findOneAndUpdate(FILTER_TAKE, Updates.set(COLLECTION_FIELD_EPHEMERAL_KEY, ephemeralId),
+                            TAKE_OPTIONS);
         }
         return fromDocument(document);
     }
@@ -394,33 +360,22 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     @Override
     public Collection<IQueueMessage<ID, DATA>> getOrphanMessages(long thresholdTimestampMs) {
-        if (isEphemeralDisabled()) {
-            return null;
+        Collection<IQueueMessage<ID, DATA>> orphanMessages = new HashSet<>();
+        if (!isEphemeralDisabled()) {
+            Consumer<Document> processor = (doc) -> orphanMessages.add(fromDocument(doc));
+            Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
+            getCollection().find(Filters.and(Filters.ne(COLLECTION_FIELD_EPHEMERAL_KEY, null),
+                    Filters.lte(COLLECTION_FIELD_QUEUE_TIME, threshold))).forEach(processor);
         }
-        Collection<IQueueMessage<ID, DATA>> result = new ArrayList<>();
-        Consumer<Document> processor = (doc) -> result.add(fromDocument(doc));
-        Date threshold = new Date(System.currentTimeMillis() - thresholdTimestampMs);
-        getCollection().find(Filters.and(Filters.ne(COLLECTION_FIELD_EPHEMERAL_KEY, null),
-                Filters.lte(COLLECTION_FIELD_QUEUE_TIME, threshold))).forEach(processor);
-        return result;
+        return orphanMessages;
     }
-
-    // /**
-    // * {@inheritDoc}
-    // */
-    // @Override
-    // public boolean moveFromEphemeralToQueueStorage(IQueueMessage<ID, DATA>
-    // msg) {
-    // throw new QueueException.OperationNotSupported(
-    // "This queue does not support ephemeral storage.");
-    // }
 
     /**
      * {@inheritDoc}
      */
     @Override
     public int queueSize() {
-        return (int) getCollection().count(Filters.eq(COLLECTION_FIELD_EPHEMERAL_KEY, null));
+        return (int) getCollection().countDocuments(Filters.eq(COLLECTION_FIELD_EPHEMERAL_KEY, null));
     }
 
     /**
@@ -428,9 +383,8 @@ public abstract class MongodbQueue<ID, DATA> extends AbstractEphemeralSupportQue
      */
     @Override
     public int ephemeralSize() {
-        if (isEphemeralDisabled()) {
-            return 0;
-        }
-        return (int) getCollection().count(Filters.ne(COLLECTION_FIELD_EPHEMERAL_KEY, null));
+        return isEphemeralDisabled() ?
+                0 :
+                (int) getCollection().countDocuments(Filters.ne(COLLECTION_FIELD_EPHEMERAL_KEY, null));
     }
 }
