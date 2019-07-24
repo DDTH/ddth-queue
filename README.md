@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/DDTH/ddth-queue.svg?branch=master)](https://travis-ci.org/DDTH/ddth-queue) [![Javadocs](http://javadoc.io/badge/com.github.ddth/ddth-queue-core.svg)](http://javadoc.io/doc/com.github.ddth/ddth-dao-queue)
+[![Build Status](https://travis-ci.org/DDTH/ddth-queue.svg?branch=master)](https://travis-ci.org/DDTH/ddth-queue) [![Javadocs](http://javadoc.io/badge/com.github.ddth/ddth-queue-core.svg)](http://javadoc.io/doc/com.github.ddth/ddth-queue-core)
 
 # ddth-queue
 
